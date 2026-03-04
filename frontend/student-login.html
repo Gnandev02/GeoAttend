@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Portal | GeoAttend</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+
+        .saas-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid #e2e8f0;
+            background-color: #ffffff;
+            color: #0f172a;
+            outline: 2px solid transparent;
+            outline-offset: 2px;
+            transition-property: all;
+            transition-duration: 200ms;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+
+        .saas-input:focus {
+            outline: none;
+            border-color: #0284c7;
+            box-shadow: 0 0 0 1px #0284c7;
+        }
+
+        .saas-card {
+            background-color: #ffffff;
+            border: 1px solid #f1f5f9;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s;
+        }
+
+        .saas-card:hover {
+            box-shadow: 0 8px 30px -4px rgba(0, 0, 0, 0.08);
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 0.875rem 1.5rem;
+            background-color: #0284c7;
+            color: #ffffff;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            transition: all 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background-color: #0369a1;
+            transform: translateY(-2px);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="min-h-screen flex items-center justify-center p-6 relative overflow-hidden">
+        <!-- Background design elements -->
+        <div
+            class="absolute top-0 right-0 w-[600px] h-[600px] bg-[#0284c7]/5 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2">
+        </div>
+        <div
+            class="absolute bottom-0 left-0 w-[600px] h-[600px] bg-indigo-50/50 rounded-full blur-3xl transform -translate-x-1/2 translate-y-1/2">
+        </div>
+
+        <div class="w-full max-w-md relative z-10">
+            <!-- Logo Area -->
+            <div class="text-center mb-8">
+                <div
+                    class="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-[#0284c7] text-white shadow-[0_8px_16px_rgba(2,132,199,0.2)] mb-4">
+                    <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                </div>
+                <h2 class="text-3xl font-extrabold text-slate-900 tracking-tight">Student Portal</h2>
+                <p class="mt-2 text-slate-500 font-medium text-sm">Verify your campus attendance live</p>
+            </div>
+
+            <div class="saas-card p-8 sm:p-10 relative overflow-hidden">
+                <!-- Top highlight bar -->
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#0284c7] to-indigo-500"></div>
+
+                <form id="login-form" class="space-y-6">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">Email
+                                Address</label>
+                            <input type="email" id="email" required class="saas-input" placeholder="student@geo.edu"
+                                value="student@geo.edu">
+                        </div>
+                        <div>
+                            <label
+                                class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-2 flex justify-between">
+                                <span>Password</span>
+                                <a href="#"
+                                    class="text-[#0284c7] hover:text-[#0369a1] capitalize tracking-normal font-semibold">Forgot?</a>
+                            </label>
+                            <input type="password" id="password" required class="saas-input" placeholder="••••••••"
+                                value="password">
+                        </div>
+                    </div>
+
+                    <div id="error-msg"
+                        class="hidden bg-red-50 border border-red-100 text-red-600 text-sm py-3 px-4 rounded-lg font-medium flex items-center gap-2">
+                        <span class="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0"></span>
+                        <span id="error-text"></span>
+                    </div>
+
+                    <button type="submit" id="submit-btn" class="btn-primary py-3.5 text-base">
+                        <span id="btn-text">Sign in securely</span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Back Link -->
+            <div class="mt-8 text-center text-sm font-medium">
+                <a href="index.html"
+                    class="text-slate-500 hover:text-slate-800 transition-colors inline-flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    Back to GeoAttend
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const submitBtn = document.getElementById('submit-btn');
+            const btnText = document.getElementById('btn-text');
+            const errorMsg = document.getElementById('error-msg');
+            const errorText = document.getElementById('error-text');
+
+            submitBtn.disabled = true;
+            btnText.innerHTML = `
+                <span class="flex items-center gap-2">
+                    <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    Authenticating...
+                </span>`;
+            errorMsg.classList.add('hidden');
+
+            try {
+                const response = await fetch('http://localhost:5000/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    localStorage.setItem('geoattend_token', data.token);
+                    localStorage.setItem('geoattend_user', JSON.stringify(data.user));
+
+                    if (data.user.role === 'admin') {
+                        window.location.href = 'admin-dashboard.html';
+                    } else {
+                        window.location.href = 'student-dashboard.html';
+                    }
+                } else {
+                    errorText.textContent = data.message || 'Login failed';
+                    errorMsg.classList.remove('hidden');
+                }
+            } catch (error) {
+                errorText.textContent = 'Server connection error. Please try again.';
+                errorMsg.classList.remove('hidden');
+            } finally {
+                submitBtn.disabled = false;
+                btnText.textContent = 'Sign in securely';
+            }
+        });
+    </script>
+</body>
+
+</html>

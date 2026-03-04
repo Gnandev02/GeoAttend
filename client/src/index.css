@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-800 antialiased font-sans;
+  }
+}
+
+@layer components {
+
+  /* Premium SaaS Input */
+  .saas-input {
+    @apply w-full px-4 py-3 rounded-lg border border-slate-200 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0284c7] focus:border-transparent transition-all duration-200 shadow-sm placeholder-slate-400;
+  }
+
+  /* Modern Card */
+  .saas-card {
+    @apply bg-white border border-slate-100 rounded-xl shadow-[0_4px_20px_-4px_rgba(0, 0, 0, 0.05)] hover:shadow-[0_8px_30px_-4px_rgba(0, 0, 0, 0.08)] transition-all duration-300;
+  }
+
+  /* Primary Button */
+  .btn-primary {
+    @apply px-6 py-2.5 bg-[#0284c7] text-white rounded-lg font-semibold shadow-sm hover:bg-[#0369a1] hover:-translate-y-0.5 transition-all duration-200 flex justify-center items-center;
+  }
+
+  /* Secondary Button */
+  .btn-secondary {
+    @apply px-6 py-2.5 bg-white text-slate-700 border border-slate-200 rounded-lg font-semibold shadow-sm hover:bg-slate-50 hover:border-slate-300 hover:-translate-y-0.5 transition-all duration-200 flex justify-center items-center;
+  }
+
+  /* Status Badge */
+  .badge-success {
+    @apply bg-green-50 text-green-700 border border-green-200 px-2.5 py-0.5 rounded-full text-xs font-bold tracking-wide;
+  }
+
+  .badge-danger {
+    @apply bg-red-50 text-red-700 border border-red-200 px-2.5 py-0.5 rounded-full text-xs font-bold tracking-wide;
+  }
+
+  /* Metric Card */
+  .metric-card {
+    @apply bg-slate-50 border border-slate-100 rounded-xl p-5;
+  }
+}
+
+/* Custom Scrollbar for a premium feel */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f8fafc;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
