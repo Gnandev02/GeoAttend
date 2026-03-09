@@ -1,0 +1,29 @@
+{
+  "name": "se-project",
+  "version": "1.0.0",
+  "description": "GeoAttend is a modern, mathematically secure, and highly scalable attendance management system. Built on the MERN stack, it eliminates proxy attendance through real-time GPS validation and Haversine geofence calculations.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Gnandev02/GeoAttend.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Gnandev02/GeoAttend/issues"
+  },
+  "homepage": "https://github.com/Gnandev02/GeoAttend#readme",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.20.0"
+  }
+}

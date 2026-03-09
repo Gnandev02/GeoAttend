@@ -220,7 +220,7 @@
             successMsg.classList.add('hidden');
 
             try {
-                const response = await fetch('http://localhost:5000/api/admin/signup', {
+                const response = await fetch('/api/adminSignup', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name, email, password, collegeName, collegeCode })
@@ -242,7 +242,8 @@
                     window.location.href = 'admin-login.html';
                 }, 1500);
             } catch (error) {
-                errorText.textContent = 'Unable to connect to server. Please ensure backend is running.';
+                console.error("Signup error:", error);
+                errorText.textContent = error.message || 'A network or serverless API error occurred.';
                 errorMsg.classList.remove('hidden');
                 submitBtn.disabled = false;
                 btnText.textContent = 'Sign Up';

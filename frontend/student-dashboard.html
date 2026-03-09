@@ -275,12 +275,12 @@
         async function fetchDashboardData() {
             try {
                 // Determine correct user ID endpoint based on user instruction: GET /api/attendance/student/:id
-                const attendanceRes = await fetch(`http://localhost:5000/api/attendance/student/${user.id || user._id}`, {
+                const attendanceRes = await fetch(`/api/attendance`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
                 // Also fetch profile if available, otherwise just use token data
-                const profileRes = await fetch('http://localhost:5000/api/student/profile', {
+                const profileRes = await fetch('/api/studentProfile', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 }).catch(() => ({ null: true }));
 
@@ -288,7 +288,7 @@
                     attendanceData = await attendanceRes.json();
                 } else {
                     // Fallback to older route if backend hasn't updated to :id yet
-                    const fallback = await fetch('http://localhost:5000/api/student/attendance', {
+                    const fallback = await fetch('/api/attendance', {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
                     if (fallback.ok) attendanceData = await fallback.json();
@@ -409,7 +409,7 @@
                     try {
                         const { latitude, longitude } = position.coords;
 
-                        const res = await fetch('http://localhost:5000/api/attendance/mark', {
+                        const res = await fetch('/api/attendance', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',

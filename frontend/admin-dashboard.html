@@ -341,16 +341,16 @@
         async function fetchAdminData() {
             try {
                 // Students
-                const s = await fetch('http://localhost:5000/api/admin/students', { headers: { 'Authorization': `Bearer ${token}` } });
+                const s = await fetch('/api/students', { headers: { 'Authorization': `Bearer ${token}` } });
                 const studentsData = await s.json();
 
                 // Logs
-                let l = await fetch('http://localhost:5000/api/admin/logs', { headers: { 'Authorization': `Bearer ${token}` } });
-                if (!l.ok) l = await fetch('http://localhost:5000/api/admin/attendance', { headers: { 'Authorization': `Bearer ${token}` } });
+                let l = await fetch('/api/analytics', { headers: { 'Authorization': `Bearer ${token}` } });
+                if (!l.ok) l = await fetch('/api/attendance', { headers: { 'Authorization': `Bearer ${token}` } });
                 const logsData = await l.json();
 
                 // Campus/Geofence
-                let c = await fetch('http://localhost:5000/api/admin/geofence', { headers: { 'Authorization': `Bearer ${token}` } });
+                let c = await fetch('/api/campuses', { headers: { 'Authorization': `Bearer ${token}` } });
                 const campusData = await c.json();
 
                 renderOverview(studentsData, logsData, campusData);
@@ -439,7 +439,7 @@
             };
 
             try {
-                const res = await fetch('http://localhost:5000/api/admin/geofence', {
+                const res = await fetch('/api/campuses', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify(payload)
