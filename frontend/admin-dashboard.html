@@ -349,9 +349,8 @@
                 if (!l.ok) l = await fetch('http://localhost:5000/api/admin/attendance', { headers: { 'Authorization': `Bearer ${token}` } });
                 const logsData = await l.json();
 
-                // Campus
-                let c = await fetch('http://localhost:5000/api/geofence/list', { headers: { 'Authorization': `Bearer ${token}` } });
-                if (!c.ok) c = await fetch('http://localhost:5000/api/admin/campus', { headers: { 'Authorization': `Bearer ${token}` } });
+                // Campus/Geofence
+                let c = await fetch('http://localhost:5000/api/admin/geofence', { headers: { 'Authorization': `Bearer ${token}` } });
                 const campusData = await c.json();
 
                 renderOverview(studentsData, logsData, campusData);
@@ -440,8 +439,7 @@
             };
 
             try {
-                // Determine creation/update URL based on requested API specification POST /api/geofence/create OR old one PUT
-                const res = await fetch('http://localhost:5000/api/geofence/create', {
+                const res = await fetch('http://localhost:5000/api/admin/geofence', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify(payload)
@@ -451,17 +449,7 @@
                     alert('Geofence updated successfully!');
                     fetchAdminData();
                 } else {
-                    const failRes = await fetch('http://localhost:5000/api/admin/campus', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                        body: JSON.stringify(payload)
-                    });
-                    if (failRes.ok) {
-                        alert('Geofence updated successfully! (Fallback endpoint)');
-                        fetchAdminData();
-                    } else {
-                        alert('Error updating geofence.');
-                    }
+                    alert('Error updating geofence.');
                 }
             } catch (err) {
                 alert('Connection error.');

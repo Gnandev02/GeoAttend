@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const { getStudentProfile, getStudentAttendance, markAttendance } = require('../controllers/studentController');
-const { protect } = require('../middleware/authMiddleware');
+const { studentLogin } = require('../controllers/authController');
+const { getStudentProfile } = require('../controllers/studentController');
+const { protectStudent } = require('../middleware/authMiddleware');
 
-router.use(protect);
+router.post('/login', studentLogin);
 
+router.use(protectStudent);
 router.get('/profile', getStudentProfile);
-router.get('/attendance', getStudentAttendance);
-router.post('/mark', markAttendance);
 
 module.exports = router;

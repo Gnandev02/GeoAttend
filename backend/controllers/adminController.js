@@ -1,67 +1,32 @@
-const User = require('../models/User');
-const Student = require('../models/Student');
-const Attendance = require('../models/Attendance');
-const Campus = require('../models/Campus');
 const bcrypt = require('bcryptjs');
 
 // @desc    Add a new student
-// @route   POST /api/admin/student
-// @access  Private (admin only)
+// @route   POST /api/admin/create-student
 const addStudent = async (req, res) => {
     try {
-        const { name, email, password, rollNumber, department, campusId } = req.body;
+        // Compatible with both camelCase and flat body properties depending on frontend
+        const studentName = req.body.studentName || req.body.name;
+        const { rollNumber, email, password, department } = req.body;
 
-        if (!name || !email || !password || !rollNumber || !department || !campusId) {
-            return res.status(400).json({ message: 'Please provide all required fields including campusId' });
+        if (!studentName || !email || !password || !rollNumber) {
+            return res.status(400).json({ message: 'Please provide all required fields' });
         }
 
-        // Check if campus exists
-        const campus = await Campus.findById(campusId);
-        if (!campus) {
-            return res.status(404).json({ message: 'Campus not found' });
-        }
+        const studentExists = await req.app.locals.pool.query('SELECT * FROM students WHERE email = $1', [email]);
+        if (studentExists.rows.length > 0) return res.status(400).json({ message: 'Student email already exists' });
 
-        // Check if user/student exists
-        const userExists = await User.findOne({ email });
-        const studentExists = await Student.findOne({ rollNumber });
+        const rollExists = await req.app.locals.pool.query('SELECT * FROM students WHERE roll_number = $1 AND college_code = $2', [rollNumber, req.admin.college_code]);
+        if (rollExists.rows.length > 0) return res.status(400).json({ message: 'Roll number already exists in this college' });
 
-        if (userExists) {
-            return res.status(400).json({ message: 'User with this email already exists' });
-        }
-        if (studentExists) {
-            return res.status(400).json({ message: 'Student with this roll number already exists' });
-        }
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Create user account
-        const user = await User.create({
-            name,
-            email,
-            password,
-            role: 'student',
-            campusId // Link to campus in User model as well
-        });
+        const newStudent = await req.app.locals.pool.query(
+            'INSERT INTO students (name, email, password, roll_number, department, college_code) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+            [studentName, email, hashedPassword, rollNumber, department || 'General', req.admin.college_code]
+        );
 
-        // Create student profile
-        const student = await Student.create({
-            userId: user._id,
-            rollNumber,
-            department,
-            campusId
-        });
-
-        res.status(201).json({
-            message: 'Student created successfully',
-            student: {
-                id: student._id,
-                userId: user._id,
-                name: user.name,
-                email: user.email,
-                rollNumber: student.rollNumber,
-                department: student.department,
-                campus: campus.name
-            }
-        });
-
+        res.status(201).json({ message: 'Student created successfully', student: newStudent.rows[0] });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -69,72 +34,23 @@ const addStudent = async (req, res) => {
 
 // @desc    Get all students
 // @route   GET /api/admin/students
-// @access  Private (admin only)
 const getStudents = async (req, res) => {
     try {
-        const students = await Student.find().populate('userId', 'name email createdAt');
-        res.json(students);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
+        const studentsQuery = await req.app.locals.pool.query('SELECT id, name, email, roll_number, department, college_code FROM students WHERE college_code = $1', [req.admin.college_code]);
 
-// @desc    Update a student
-// @route   PUT /api/admin/student/:id
-// @access  Private (admin only)
-const updateStudent = async (req, res) => {
-    try {
-        const student = await Student.findById(req.params.id);
-
-        if (!student) {
-            return res.status(404).json({ message: 'Student not found' });
-        }
-
-        const { name, email, rollNumber, department, password } = req.body;
-
-        // Update User details
-        const user = await User.findById(student.userId);
-        if (user) {
-            if (name) user.name = name;
-            if (email) user.email = email;
-            if (password) {
-                user.password = password; // Will be hashed by pre-save middleware
-            }
-            await user.save();
-        }
-
-        // Update Student details
-        if (rollNumber) student.rollNumber = rollNumber;
-        if (department) student.department = department;
-        await student.save();
-
-        res.json({ message: 'Student updated successfully' });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
-
-// @desc    Delete a student
-// @route   DELETE /api/admin/student/:id
-// @access  Private (admin only)
-const deleteStudent = async (req, res) => {
-    try {
-        const student = await Student.findById(req.params.id);
-
-        if (!student) {
-            return res.status(404).json({ message: 'Student not found' });
-        }
-
-        // Delete associated User
-        await User.findByIdAndDelete(student.userId);
-
-        // Delete associated Attendance records
-        await Attendance.deleteMany({ studentId: student.userId });
-
-        // Delete Student profile
-        await student.deleteOne();
-
-        res.json({ message: 'Student and associated data removed' });
+        // Map to match frontend expectations: student.userId.name -> student.name
+        const mappedStudents = studentsQuery.rows.map(s => {
+            return {
+                _id: s.id,
+                name: s.name,
+                email: s.email,
+                rollNumber: s.roll_number,
+                department: s.department,
+                collegeCode: s.college_code,
+                userId: { name: s.name, email: s.email } // provide backwards compatibility
+            };
+        });
+        res.json(mappedStudents);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -142,143 +58,119 @@ const deleteStudent = async (req, res) => {
 
 // @desc    Get all attendance records
 // @route   GET /api/admin/attendance
-// @access  Private (admin only)
 const getAllAttendance = async (req, res) => {
     try {
-        const dateQuery = req.query.date; // Optional filter by date
+        const collegeCode = req.admin.college_code;
+        let queryText = `
+            SELECT a.id, a.student_id, a.latitude, a.longitude, a.distance_from_center, a.status, a.timestamp, a.date, a.time, a.session_name,
+                   s.name as student_name, s.email as student_email, s.roll_number
+            FROM attendance a
+            JOIN students s ON a.student_id = s.id
+            WHERE a.college_code = $1
+        `;
+        const queryParams = [collegeCode];
 
-        let query = {};
-        if (dateQuery) {
-            query.date = dateQuery;
+        if (req.query.date) {
+            queryText += ` AND a.date = $2`;
+            queryParams.push(req.query.date);
         }
 
-        const attendance = await Attendance.find(query)
-            .populate('studentId', 'name email role')
-            .sort({ createdAt: -1 });
+        queryText += ` ORDER BY a.timestamp DESC`;
 
-        res.json(attendance);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-};
+        const attendanceQuery = await req.app.locals.pool.query(queryText, queryParams);
 
-// @desc    Manually mark attendance
-// @route   POST /api/admin/manual
-// @access  Private (admin only)
-const manualMarkAttendance = async (req, res) => {
-    try {
-        const { studentId, date, time, status, sessionName } = req.body;
-
-        if (!studentId || !date || !time || !sessionName) {
-            return res.status(400).json({ message: 'Please provide studentId, date, time, and sessionName' });
-        }
-
-        const attendance = await Attendance.create({
-            studentId,
-            date,
-            time,
-            locationCoordinates: { lat: 0, lng: 0 }, // Admin manual override doesn't need GPS
-            status: status || 'Manual',
-            distance: 0,
-            sessionName
+        // Provide backwards compatibility for frontend
+        const mappedAttendance = attendanceQuery.rows.map(a => {
+            return {
+                _id: a.id,
+                studentId: {
+                    _id: a.student_id,
+                    name: a.student_name,
+                    email: a.student_email,
+                    rollNumber: a.roll_number
+                },
+                locationCoordinates: {
+                    lat: a.latitude,
+                    lng: a.longitude
+                },
+                distanceFromCenter: a.distance_from_center,
+                status: a.status,
+                createdAt: a.timestamp,
+                date: a.date,
+                time: a.time,
+                sessionName: a.session_name,
+                collegeCode: collegeCode
+            };
         });
 
-        res.status(201).json({ message: 'Attendance marked manually', attendance });
+        res.json(mappedAttendance);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
 
 // @desc    Create Campus Geofence
-// @route   POST /api/admin/campus
-// @access  Private (admin only)
-const createCampus = async (req, res) => {
+// @route   POST /api/admin/geofence
+const createGeofence = async (req, res) => {
     try {
         const { name, latitude, longitude, radius } = req.body;
-
-        if (!name || !latitude || !longitude || !radius) {
-            return res.status(400).json({ message: 'Please provide all campus details' });
+        if (!latitude || !longitude || !radius) {
+            return res.status(400).json({ message: 'Please provide all geofence details' });
         }
 
-        const campus = await Campus.create({
-            name,
-            latitude,
-            longitude,
-            radius
+        const geofenceCheck = await req.app.locals.pool.query('SELECT * FROM geofence WHERE college_code = $1', [req.admin.college_code]);
+        let geofenceResult;
+
+        if (geofenceCheck.rows.length > 0) {
+            const currentGeofence = geofenceCheck.rows[0];
+            geofenceResult = await req.app.locals.pool.query(
+                'UPDATE geofence SET name = $1, latitude = $2, longitude = $3, radius = $4 WHERE college_code = $5 RETURNING *',
+                [name || currentGeofence.name, latitude, longitude, radius, req.admin.college_code]
+            );
+        } else {
+            geofenceResult = await req.app.locals.pool.query(
+                'INSERT INTO geofence (name, latitude, longitude, radius, college_code) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+                [name || 'Main Campus', latitude, longitude, radius, req.admin.college_code]
+            );
+        }
+
+        const geofence = geofenceResult.rows[0];
+        // Convert to frontend format
+        res.status(201).json({
+            message: 'Geofence updated successfully',
+            geofence: {
+                _id: geofence.id,
+                name: geofence.name,
+                latitude: geofence.latitude,
+                longitude: geofence.longitude,
+                radius: geofence.radius,
+                collegeCode: geofence.college_code
+            }
         });
-
-        res.status(201).json({ message: 'Campus created successfully', campus });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 }
 
-// @desc    Update Campus Geofence
-// @route   PUT /api/admin/campus/:id
-// @access  Private (admin only)
-const updateCampus = async (req, res) => {
+// @desc    Get singular geofence for frontend
+// @route   GET /api/admin/geofence
+const getGeofence = async (req, res) => {
     try {
-        const { name, latitude, longitude, radius } = req.body;
-        const campus = await Campus.findById(req.params.id);
+        const geofenceQuery = await req.app.locals.pool.query('SELECT * FROM geofence WHERE college_code = $1', [req.admin.college_code]);
 
-        if (!campus) {
-            return res.status(404).json({ message: 'Campus not found' });
+        if (geofenceQuery.rows.length > 0) {
+            const geofence = geofenceQuery.rows[0];
+            res.json({
+                _id: geofence.id,
+                name: geofence.name,
+                latitude: geofence.latitude,
+                longitude: geofence.longitude,
+                radius: geofence.radius,
+                collegeCode: geofence.college_code
+            });
+        } else {
+            res.json({});
         }
-
-        if (name) campus.name = name;
-        if (latitude) campus.latitude = latitude;
-        if (longitude) campus.longitude = longitude;
-        if (radius) campus.radius = radius;
-
-        await campus.save();
-        res.json({ message: 'Campus updated successfully', campus });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-}
-
-// @desc    Delete Campus
-// @route   DELETE /api/admin/campus/:id
-// @access  Private (admin only)
-const deleteCampus = async (req, res) => {
-    try {
-        const campus = await Campus.findById(req.params.id);
-        if (!campus) {
-            return res.status(404).json({ message: 'Campus not found' });
-        }
-
-        // check if students are linked to this campus
-        const studentCount = await Student.countDocuments({ campusId: req.params.id });
-        if (studentCount > 0) {
-            return res.status(400).json({ message: `Cannot delete campus. ${studentCount} students are currently linked to it.` });
-        }
-
-        await campus.deleteOne();
-        res.json({ message: 'Campus removed successfully' });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-}
-
-// @desc    Get all Campuses
-// @route   GET /api/admin/campuses
-// @access  Private (admin only)
-const getCampuses = async (req, res) => {
-    try {
-        const campuses = await Campus.find().sort({ createdAt: -1 });
-        res.json(campuses);
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-}
-
-// @desc    Get singular campus for frontend compatibility
-// @route   GET /api/admin/campus
-// @access  Private (admin only)
-const getCampus = async (req, res) => {
-    try {
-        const campus = await Campus.findOne();
-        res.json(campus || {});
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -286,79 +178,40 @@ const getCampus = async (req, res) => {
 
 // @desc    Get Attendance Analytics
 // @route   GET /api/admin/analytics
-// @access  Private (admin only)
 const getAnalytics = async (req, res) => {
     try {
-        const totalStudents = await Student.countDocuments();
-        const totalCampuses = await Campus.countDocuments();
+        const collegeCode = req.admin.college_code;
 
-        // aggregate attendance by status
-        const stats = await Attendance.aggregate([
-            {
-                $group: {
-                    _id: "$status",
-                    count: { $sum: 1 }
-                }
-            }
-        ]);
+        const totalStudentsQuery = await req.app.locals.pool.query('SELECT COUNT(*) FROM students WHERE college_code = $1', [collegeCode]);
+        const totalStudents = parseInt(totalStudentsQuery.rows[0].count);
+
+        const totalCampusesQuery = await req.app.locals.pool.query('SELECT COUNT(*) FROM geofence WHERE college_code = $1', [collegeCode]);
+        const totalCampuses = parseInt(totalCampusesQuery.rows[0].count);
+
+        const statsQuery = await req.app.locals.pool.query(
+            'SELECT status, COUNT(*) as count FROM attendance WHERE college_code = $1 GROUP BY status',
+            [collegeCode]
+        );
 
         const formattedStats = {
             Present: 0,
             Rejected: 0,
-            Manual: 0
+            Manual: 0,
+            "Outside Zone": 0
         };
 
-        stats.forEach(stat => {
-            if (formattedStats.hasOwnProperty(stat._id)) {
-                formattedStats[stat._id] = stat.count;
+        statsQuery.rows.forEach(stat => {
+            if (formattedStats.hasOwnProperty(stat.status)) {
+                formattedStats[stat.status] = parseInt(stat.count);
             }
         });
-
-        // Attendance percentage per student
-        const studentStats = await Attendance.aggregate([
-            {
-                $group: {
-                    _id: "$studentId",
-                    presentCount: {
-                        $sum: { $cond: [{ $eq: ["$status", "Present"] }, 1, 0] }
-                    },
-                    totalCount: { $sum: 1 }
-                }
-            },
-            {
-                $lookup: {
-                    from: "users",
-                    localField: "_id",
-                    foreignField: "_id",
-                    as: "studentInfo"
-                }
-            },
-            {
-                $unwind: "$studentInfo"
-            },
-            {
-                $project: {
-                    name: "$studentInfo.name",
-                    email: "$studentInfo.email",
-                    presentCount: 1,
-                    totalCount: 1,
-                    percentage: {
-                        $multiply: [
-                            { $divide: ["$presentCount", "$totalCount"] },
-                            100
-                        ]
-                    }
-                }
-            }
-        ]);
 
         res.json({
             overall: {
                 totalStudents,
                 totalCampuses,
                 ...formattedStats
-            },
-            studentStats
+            }
         });
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -368,14 +221,8 @@ const getAnalytics = async (req, res) => {
 module.exports = {
     addStudent,
     getStudents,
-    updateStudent,
-    deleteStudent,
     getAllAttendance,
-    manualMarkAttendance,
-    createCampus,
-    updateCampus,
-    deleteCampus,
-    getCampuses,
-    getAnalytics,
-    getCampus
+    createGeofence,
+    getGeofence,
+    getAnalytics
 };

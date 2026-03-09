@@ -177,7 +177,7 @@
             errorMsg.classList.add('hidden');
 
             try {
-                const response = await fetch('http://localhost:5000/api/auth/login', {
+                const response = await fetch('http://localhost:5000/api/admin/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
@@ -185,21 +185,22 @@
 
                 const data = await response.json();
 
-                if (response.ok) {
-                    localStorage.setItem('geoattend_token', data.token);
-                    localStorage.setItem('geoattend_user', JSON.stringify(data.user));
-
-                    if (data.user.role === 'admin') {
-                        window.location.href = 'admin-dashboard.html';
-                    } else {
-                        window.location.href = 'student-dashboard.html';
-                    }
-                } else {
-                    errorText.textContent = data.message || 'Login failed';
+                if (!response.ok) {
+                    errorText.textContent = data.message || 'Request failed';
                     errorMsg.classList.remove('hidden');
+                    return;
+                }
+
+                localStorage.setItem('geoattend_token', data.token);
+                localStorage.setItem('geoattend_user', JSON.stringify(data.user));
+
+                if (data.user.role === 'admin') {
+                    window.location.href = 'admin-dashboard.html';
+                } else {
+                    window.location.href = 'student-dashboard.html';
                 }
             } catch (error) {
-                errorText.textContent = 'Server connection error. Please try again.';
+                errorText.textContent = 'Unable to connect to server. Please ensure backend is running.';
                 errorMsg.classList.remove('hidden');
             } finally {
                 submitBtn.disabled = false;
