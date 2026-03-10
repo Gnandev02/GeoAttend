@@ -20,7 +20,7 @@ module.exports = async (req, res) => {
 
         const adminExists = await query('SELECT * FROM admins WHERE email = $1', [email]);
         if (adminExists.rows.length > 0) {
-            return res.status(400).json({ message: 'Admin email already exists' });
+            return res.status(400).json({ message: 'Email already exists' });
         }
 
         const collegeExists = await query('SELECT * FROM admins WHERE college_code = $1', [collegeCode]);
