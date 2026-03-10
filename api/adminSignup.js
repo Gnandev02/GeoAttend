@@ -12,10 +12,10 @@ module.exports = async (req, res) => {
     }
 
     try {
-        const { name, email, password, collegeName, collegeCode } = req.body;
+        const { name, email, password, collegeName, collegeCode, otp } = req.body;
 
-        if (!name || !email || !password || !collegeName || !collegeCode) {
-            return res.status(400).json({ message: 'Please add all fields' });
+        if (!name || !email || !password || !collegeName || !collegeCode || !otp) {
+            return res.status(400).json({ message: 'Please add all fields, including OTP' });
         }
 
         const adminExists = await query('SELECT * FROM admins WHERE email = $1', [email]);
@@ -27,6 +27,27 @@ module.exports = async (req, res) => {
         if (collegeExists.rows.length > 0) {
             return res.status(400).json({ message: 'College Code already in use' });
         }
+
+        const otpRecord = await query('SELECT * FROM otps WHERE email = $1', [email]);
+        if (otpRecord.rows.length === 0) {
+            return res.status(400).json({ message: 'No OTP found for this email. Please request a new one.' });
+        }
+
+        const dbOtp = otpRecord.rows[0];
+
+        // Check EXP expiration (10 minutes)
+        const otpTime = new Date(dbOtp.created_at).getTime();
+        const currentTime = new Date().getTime();
+        if (currentTime - otpTime > 10 * 60 * 1000) {
+            await query('DELETE FROM otps WHERE email = $1', [email]);
+            return res.status(400).json({ message: 'OTP has expired. Please request a new one.' });
+        }
+
+        if (dbOtp.otp !== otp) {
+            return res.status(400).json({ message: 'Invalid OTP' });
+        }
+
+        await query('DELETE FROM otps WHERE email = $1', [email]);
 
         const hashedPassword = await hashPassword(password);
 

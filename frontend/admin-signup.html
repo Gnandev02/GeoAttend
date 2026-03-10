@@ -163,6 +163,20 @@
                         </div>
                     </div>
 
+                    <!-- OTP Section (Hidden initially) -->
+                    <div id="otp-section" class="hidden space-y-4 pt-4 border-t border-slate-100">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">
+                                Verification Code (OTP)
+                            </label>
+                            <input type="text" id="otp"
+                                class="saas-input text-center text-lg tracking-[0.5em] font-mono" placeholder="------"
+                                maxlength="6">
+                            <p id="otp-error" class="text-xs text-red-500 mt-1 hidden"></p>
+                            <p class="text-xs text-slate-500 mt-2">Enter the 6-digit code sent to your email.</p>
+                        </div>
+                    </div>
+
                     <div id="error-msg"
                         class="hidden bg-red-50 border border-red-100 text-red-600 text-sm py-3 px-4 rounded-lg font-medium flex items-center gap-2">
                         <span class="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0"></span>
@@ -217,10 +231,15 @@
             const errorMsg = document.getElementById('error-msg');
             const errorText = document.getElementById('error-text');
             const successMsg = document.getElementById('success-msg');
+            const otpSection = document.getElementById('otp-section');
+            const otpInput = document.getElementById('otp');
+
+            // Determine if we are in Step 1 (Send OTP) or Step 2 (Verify & Signup)
+            const isStepTwo = !otpSection.classList.contains('hidden');
 
             // Clear previous errors
             document.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
-            ['email-error', 'password-error', 'confirm-password-error'].forEach(id => {
+            ['email-error', 'password-error', 'confirm-password-error', 'otp-error'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) {
                     el.classList.add('hidden');
@@ -268,6 +287,67 @@
                 return;
             }
 
+            if (isStepTwo) {
+                // Step 2: Verify OTP and Create Account
+                const otpValue = otpInput.value.trim();
+
+                if (!otpValue || otpValue.length !== 6) {
+                    otpInput.classList.add('input-error');
+                    const otpError = document.getElementById('otp-error');
+                    otpError.textContent = 'Please enter a valid 6-digit OTP.';
+                    otpError.classList.remove('hidden');
+                    return;
+                }
+
+                submitBtn.disabled = true;
+                btnText.innerHTML = `
+                    <span class="flex items-center gap-2">
+                        <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        Verifying & Creating account...
+                    </span>`;
+                errorMsg.classList.add('hidden');
+                successMsg.classList.add('hidden');
+
+                try {
+                    const response = await fetch('/api/adminSignup', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name, email, password, collegeName, collegeCode, otp: otpValue })
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        if (data.message === 'Invalid OTP' || data.message.includes('expired')) {
+                            otpInput.classList.add('input-error');
+                            const otpError = document.getElementById('otp-error');
+                            otpError.textContent = data.message;
+                            otpError.classList.remove('hidden');
+                        } else {
+                            errorText.textContent = data.message || 'Signup failed';
+                            errorMsg.classList.remove('hidden');
+                        }
+                        submitBtn.disabled = false;
+                        btnText.textContent = 'Verify & Sign Up';
+                        return;
+                    }
+
+                    successMsg.classList.remove('hidden');
+                    document.getElementById('success-text').textContent = 'Email verified successfully! Creating account...';
+                    setTimeout(() => {
+                        window.location.href = 'admin-login.html';
+                    }, 1500);
+                } catch (error) {
+                    console.error("Signup error:", error);
+                    errorText.textContent = error.message || 'A network error occurred.';
+                    errorMsg.classList.remove('hidden');
+                    submitBtn.disabled = false;
+                    btnText.textContent = 'Verify & Sign Up';
+                }
+                return;
+            }
+
+            // Step 1: Send OTP request
             submitBtn.disabled = true;
             btnText.innerHTML = `
                 <span class="flex items-center gap-2">
@@ -278,7 +358,7 @@
             successMsg.classList.add('hidden');
 
             try {
-                const response = await fetch('/api/adminSignup', {
+                const response = await fetch('/api/sendAdminOtp', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name, email, password, collegeName, collegeCode })
@@ -301,11 +381,24 @@
                     return;
                 }
 
+                // Make form fields readonly since they are locked in
+                document.querySelectorAll('.saas-input').forEach(input => {
+                    input.readOnly = true;
+                    input.classList.add('bg-slate-50', 'text-slate-500');
+                });
+                otpInput.readOnly = false;
+                otpInput.classList.remove('bg-slate-50', 'text-slate-500');
+
+                // Show OTP section and update UI states
+                otpSection.classList.remove('hidden');
                 successMsg.classList.remove('hidden');
-                alert('Account created successfully');
-                setTimeout(() => {
-                    window.location.href = 'admin-login.html';
-                }, 1500);
+                document.getElementById('success-text').textContent = 'Verification email sent!';
+                submitBtn.disabled = false;
+                btnText.textContent = 'Verify & Sign Up';
+
+                // Set focus to OTP field
+                setTimeout(() => otpInput.focus(), 100);
+
             } catch (error) {
                 console.error("Signup error:", error);
                 errorText.textContent = error.message || 'A network or serverless API error occurred.';
