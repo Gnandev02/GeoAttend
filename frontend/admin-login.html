@@ -186,22 +186,32 @@
                 const data = await response.json();
 
                 if (!response.ok) {
-                    errorText.textContent = data.message || 'Request failed';
+                    errorText.textContent = data.message || 'Invalid credentials';
                     errorMsg.classList.remove('hidden');
                     return;
                 }
 
                 localStorage.setItem('geoattend_token', data.token);
-                localStorage.setItem('geoattend_user', JSON.stringify(data.user));
+                // Construct the user object from the flat response
+                const userObj = {
+                    _id: data._id,
+                    name: data.name,
+                    email: data.email,
+                    role: data.role,
+                    collegeCode: data.collegeCode
+                };
+                localStorage.setItem('geoattend_user', JSON.stringify(userObj));
 
-                if (data.user.role === 'admin') {
+                if (data && data.role === 'admin') {
                     window.location.href = 'admin-dashboard.html';
                 } else {
                     window.location.href = 'student-dashboard.html';
                 }
             } catch (error) {
                 console.error("Login error:", error);
-                errorText.textContent = error.message || 'A network or serverless API error occurred.';
+                errorText.textContent = error.message.includes('fetch')
+                    ? 'Failed to connect to the server. Please check your network or Vercel deployment.'
+                    : error.message;
                 errorMsg.classList.remove('hidden');
             } finally {
                 submitBtn.disabled = false;

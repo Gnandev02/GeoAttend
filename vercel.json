@@ -1,6 +1,38 @@
 {
     "rewrites": [
         {
+            "source": "/api/adminLogin",
+            "destination": "/api/auth?action=adminLogin"
+        },
+        {
+            "source": "/api/adminSignup",
+            "destination": "/api/auth?action=adminSignup"
+        },
+        {
+            "source": "/api/sendAdminOtp",
+            "destination": "/api/auth?action=sendAdminOtp"
+        },
+        {
+            "source": "/api/studentLogin",
+            "destination": "/api/auth?action=studentLogin"
+        },
+        {
+            "source": "/api/createStudent",
+            "destination": "/api/students?action=createStudent"
+        },
+        {
+            "source": "/api/studentProfile",
+            "destination": "/api/students?action=studentProfile"
+        },
+        {
+            "source": "/api/campuses",
+            "destination": "/api/admin?action=campuses"
+        },
+        {
+            "source": "/api/analytics",
+            "destination": "/api/admin?action=analytics"
+        },
+        {
             "source": "/api/(.*)",
             "destination": "/api/$1"
         },

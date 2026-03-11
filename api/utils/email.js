@@ -3,7 +3,9 @@ const nodemailer = require('nodemailer');
 const sendVerificationEmail = async (toEmail, otp) => {
     try {
         const transporter = nodemailer.createTransport({
-            service: 'gmail',
+            host: 'smtp.gmail.com',
+            port: 465,
+            secure: true,
             auth: {
                 user: process.env.EMAIL_USER,
                 pass: process.env.EMAIL_PASS,
@@ -24,8 +26,32 @@ const sendVerificationEmail = async (toEmail, otp) => {
             `,
         };
 
-        const info = await transporter.sendMail(mailOptions);
-        console.log('Verification email sent: %s', info.messageId);
+        // Verify connection configuration
+        await new Promise((resolve, reject) => {
+            transporter.verify(function (error, success) {
+                if (error) {
+                    console.error("SMTP Connection Error:", error);
+                    reject(error);
+                } else {
+                    console.log("Server is ready to take our messages");
+                    resolve(success);
+                }
+            });
+        });
+
+        // Explicitly wrap sendMail in a promise to ensure serverless function waits for it
+        const info = await new Promise((resolve, reject) => {
+            transporter.sendMail(mailOptions, (err, info) => {
+                if (err) {
+                    console.error("sendMail Error:", err);
+                    reject(err);
+                } else {
+                    console.log('Verification email sent: %s', info.messageId);
+                    resolve(info);
+                }
+            });
+        });
+
         return true;
     } catch (error) {
         console.error('Error sending verification email:', error);
