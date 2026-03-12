@@ -1,6 +1,6 @@
 const { query } = require('./utils/db');
-const { protectAdmin, protectStudent } = require('./utils/auth');
-const bcrypt = require('bcryptjs');
+const { protectAdmin, protectStudent, hashPassword } = require('./utils/auth');
+const bcrypt = require('bcryptjs'); // Still kept for any direct needs if any, but hashing will use utility
 
 export default async function handler(req, res) {
     // Explicit CORS Headers
@@ -34,8 +34,7 @@ export default async function handler(req, res) {
             const rollExists = await query('SELECT * FROM students WHERE roll_number = $1 AND college_code = $2', [rollNumber, admin.college_code]);
             if (rollExists.rows.length > 0) return res.status(400).json({ message: 'Roll number already exists in this college' });
 
-            const salt = await bcrypt.genSalt(10);
-            const hashedPassword = await bcrypt.hash(password, salt);
+            const hashedPassword = await hashPassword(password);
 
             const newStudent = await query(
                 'INSERT INTO students (name, email, password, roll_number, department, college_code) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
