@@ -149,18 +149,6 @@
                                 placeholder="••••••••">
                             <p id="confirm-password-error" class="text-xs text-red-500 mt-1 hidden"></p>
                         </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">College
-                                Name</label>
-                            <input type="text" id="collegeName" required class="saas-input"
-                                placeholder="University of Technology">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">College
-                                Code</label>
-                            <input type="text" id="collegeCode" required class="saas-input" placeholder="UOT123">
-                            <p class="text-xs text-slate-400 mt-1 font-medium">Must be a unique identifier</p>
-                        </div>
                     </div>
 
                     <!-- OTP Section (Hidden initially) -->
@@ -223,8 +211,6 @@
             const name = document.getElementById('name').value;
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            const collegeName = document.getElementById('collegeName').value;
-            const collegeCode = document.getElementById('collegeCode').value;
 
             const submitBtn = document.getElementById('submit-btn');
             const btnText = document.getElementById('btn-text');
@@ -309,10 +295,10 @@
                 successMsg.classList.add('hidden');
 
                 try {
-                    const response = await fetch('/api/adminSignup', {
+                    const response = await fetch('/api/auth?action=adminSignup', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ name, email, password, collegeName, collegeCode, otp: otpValue })
+                        body: JSON.stringify({ name, email, password, otp: otpValue })
                     });
 
                     const data = await response.json();
@@ -358,10 +344,10 @@
             successMsg.classList.add('hidden');
 
             try {
-                const response = await fetch('/api/sendAdminOtp', {
+                const response = await fetch('/api/auth?action=sendAdminOtp', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, email, password, collegeName, collegeCode })
+                    body: JSON.stringify({ name, email, password })
                 });
 
                 const data = await response.json();

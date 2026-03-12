@@ -23,58 +23,79 @@ export default async function handler(req, res) {
     }
 
     try {
-        if (action === 'campuses') {
-            if (req.method === 'GET') {
-                const geofenceQuery = await query('SELECT * FROM geofence WHERE college_code = $1', [admin.college_code]);
+        if (action === 'getCampusSetup' && req.method === 'GET') {
+            const geofenceQuery = await query('SELECT * FROM campus_setup WHERE college_code = $1', [admin.college_code]);
 
-                if (geofenceQuery.rows.length > 0) {
-                    const geofence = geofenceQuery.rows[0];
-                    return res.status(200).json({
-                        _id: geofence.id, name: geofence.name, latitude: geofence.latitude, longitude: geofence.longitude, radius: geofence.radius, collegeCode: geofence.college_code
-                    });
-                } else {
-                    return res.status(200).json({});
-                }
-
-            } else if (req.method === 'POST') {
-                const { name, latitude, longitude, radius } = req.body;
-                if (!latitude || !longitude || !radius) {
-                    return res.status(400).json({ message: 'Please provide all geofence details' });
-                }
-
-                const geofenceCheck = await query('SELECT * FROM geofence WHERE college_code = $1', [admin.college_code]);
-                let geofenceResult;
-
-                if (geofenceCheck.rows.length > 0) {
-                    const currentGeofence = geofenceCheck.rows[0];
-                    geofenceResult = await query(
-                        'UPDATE geofence SET name = $1, latitude = $2, longitude = $3, radius = $4 WHERE college_code = $5 RETURNING *',
-                        [name || currentGeofence.name, latitude, longitude, radius, admin.college_code]
-                    );
-                } else {
-                    geofenceResult = await query(
-                        'INSERT INTO geofence (name, latitude, longitude, radius, college_code) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-                        [name || 'Main Campus', latitude, longitude, radius, admin.college_code]
-                    );
-                }
-
-                const geofence = geofenceResult.rows[0];
-                return res.status(201).json({
-                    message: 'Geofence updated successfully',
-                    geofence: { _id: geofence.id, name: geofence.name, latitude: geofence.latitude, longitude: geofence.longitude, radius: geofence.radius, collegeCode: geofence.college_code }
+            if (geofenceQuery.rows.length > 0) {
+                const geofence = geofenceQuery.rows[0];
+                return res.status(200).json({
+                    _id: geofence.id, name: geofence.name, latitude: geofence.latitude, longitude: geofence.longitude, radius: geofence.radius, collegeCode: geofence.college_code
                 });
             } else {
-                return res.status(405).json({ message: 'Method Not Allowed' });
+                return res.status(200).json({});
             }
         }
 
-        if (action === 'analytics' && req.method === 'GET') {
+        if (action === 'saveCampusSetup' && req.method === 'POST') {
+            const { name, collegeName, collegeCode, latitude, longitude, radius } = req.body;
+            if (!latitude || !longitude || !radius) {
+                return res.status(400).json({ message: 'Please provide all geofence details' });
+            }
+
+            // If the admin doesn't have a college code yet, update their profile
+            let adminCollegeCode = admin.college_code;
+            if (!adminCollegeCode) {
+                if (!collegeName || !collegeCode) {
+                     return res.status(400).json({ message: 'College Name and College Code are required for initial setup' });
+                }
+                
+                // Check if college code is already taken by another admin
+                const codeCheck = await query('SELECT * FROM admins WHERE college_code = $1', [collegeCode]);
+                if (codeCheck.rows.length > 0) {
+                     return res.status(400).json({ message: 'College Code is already in use by another institution' });
+                }
+
+                await query('UPDATE admins SET college_name = $1, college_code = $2 WHERE id = $3', [collegeName, collegeCode, admin.id]);
+                adminCollegeCode = collegeCode;
+            }
+
+            const geofenceCheck = await query('SELECT * FROM campus_setup WHERE college_code = $1', [adminCollegeCode]);
+            let geofenceResult;
+
+            if (geofenceCheck.rows.length > 0) {
+                const currentGeofence = geofenceCheck.rows[0];
+                geofenceResult = await query(
+                    'UPDATE campus_setup SET name = $1, latitude = $2, longitude = $3, radius = $4 WHERE college_code = $5 RETURNING *',
+                    [name || currentGeofence.name, latitude, longitude, radius, adminCollegeCode]
+                );
+            } else {
+                geofenceResult = await query(
+                    'INSERT INTO campus_setup (name, latitude, longitude, radius, college_code) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+                    [name || 'Main Campus', latitude, longitude, radius, adminCollegeCode]
+                );
+            }
+
+            const geofence = geofenceResult.rows[0];
+            const { generateToken } = require('./utils/auth');
+            return res.status(201).json({
+                message: 'Campus setup updated successfully',
+                token: generateToken(admin.id, adminCollegeCode), // Return a new JWT so the frontend knows the admin has a college_code
+                geofence: { _id: geofence.id, name: geofence.name, latitude: geofence.latitude, longitude: geofence.longitude, radius: geofence.radius, collegeCode: geofence.college_code }
+            });
+        }
+
+        if (action === 'getDashboardStats' && req.method === 'GET') {
             const collegeCode = admin.college_code;
+            if (!collegeCode) {
+                 return res.status(200).json({
+                    overall: { totalStudents: 0, totalCampuses: 0, Present: 0, Rejected: 0, Manual: 0, "Outside Zone": 0 }
+                 });
+            }
 
             const totalStudentsQuery = await query('SELECT COUNT(*) FROM students WHERE college_code = $1', [collegeCode]);
             const totalStudents = parseInt(totalStudentsQuery.rows[0].count);
 
-            const totalCampusesQuery = await query('SELECT COUNT(*) FROM geofence WHERE college_code = $1', [collegeCode]);
+            const totalCampusesQuery = await query('SELECT COUNT(*) FROM campus_setup WHERE college_code = $1', [collegeCode]);
             const totalCampuses = parseInt(totalCampusesQuery.rows[0].count);
 
             const statsQuery = await query('SELECT status, COUNT(*) as count FROM attendance WHERE college_code = $1 GROUP BY status', [collegeCode]);

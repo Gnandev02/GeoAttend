@@ -19,9 +19,10 @@ export default async function handler(req, res) {
     const { action } = req.query;
 
     try {
-        if (action === 'createStudent' && req.method === 'POST') {
+        if (action === 'addStudent' && req.method === 'POST') {
             const admin = await protectAdmin(req);
             if (!admin) return res.status(401).json({ message: 'Not authorized as an admin' });
+            if (!admin.college_code) return res.status(400).json({ message: 'Please complete campus setup first' });
 
             const studentName = req.body.studentName || req.body.name;
             const { rollNumber, email, password, department } = req.body;
@@ -44,9 +45,10 @@ export default async function handler(req, res) {
             return res.status(201).json({ message: 'Student created successfully', student: newStudent.rows[0] });
         }
 
-        if (action === 'students' && req.method === 'GET') {
+        if (action === 'getStudents' && req.method === 'GET') {
             const admin = await protectAdmin(req);
             if (!admin) return res.status(401).json({ message: 'Not authorized as an admin' });
+            if (!admin.college_code) return res.status(200).json([]);
 
             const studentsQuery = await query('SELECT id, name, email, roll_number, department, college_code FROM students WHERE college_code = $1', [admin.college_code]);
             const mappedStudents = studentsQuery.rows.map(s => ({
@@ -54,6 +56,25 @@ export default async function handler(req, res) {
             }));
 
             return res.status(200).json(mappedStudents);
+        }
+
+        if (action === 'deleteStudent' && req.method === 'DELETE') {
+            const admin = await protectAdmin(req);
+            if (!admin) return res.status(401).json({ message: 'Not authorized as an admin' });
+
+            const { id } = req.body;
+            if (!id) return res.status(400).json({ message: 'Please provide student ID' });
+
+            // Ensure the admin can only delete students from their own college
+            const deleteResult = await query('DELETE FROM students WHERE id = $1 AND college_code = $2 RETURNING *', [id, admin.college_code]);
+            if (deleteResult.rows.length === 0) {
+                 return res.status(404).json({ message: 'Student not found or not in your college' });
+            }
+
+            // Optional: Also delete their attendance logs to avoid dangling relations
+            await query('DELETE FROM attendance WHERE student_id = $1', [id]);
+
+            return res.status(200).json({ message: 'Student deleted successfully' });
         }
 
         if (action === 'studentProfile' && req.method === 'GET') {

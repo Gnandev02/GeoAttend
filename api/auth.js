@@ -40,14 +40,11 @@ export default async function handler(req, res) {
         }
 
         if (action === 'adminSignup') {
-            const { name, email, password, collegeName, collegeCode, otp } = req.body;
-            if (!name || !email || !password || !collegeName || !collegeCode || !otp) return res.status(400).json({ message: 'Please add all fields, including OTP' });
+            const { name, email, password, otp } = req.body;
+            if (!name || !email || !password || !otp) return res.status(400).json({ message: 'Please add all fields, including OTP' });
 
             const adminExists = await query('SELECT * FROM admins WHERE email = $1', [email]);
             if (adminExists.rows.length > 0) return res.status(400).json({ message: 'Email already exists' });
-
-            const collegeExists = await query('SELECT * FROM admins WHERE college_code = $1', [collegeCode]);
-            if (collegeExists.rows.length > 0) return res.status(400).json({ message: 'College Code already in use' });
 
             const otpRecord = await query('SELECT * FROM otps WHERE email = $1', [email]);
             if (otpRecord.rows.length === 0) return res.status(400).json({ message: 'No OTP found for this email. Please request a new one.' });
@@ -66,7 +63,7 @@ export default async function handler(req, res) {
             const hashedPassword = await hashPassword(password);
             const newAdmin = await query(
                 'INSERT INTO admins (name, email, password, college_name, college_code) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-                [name, email, hashedPassword, collegeName, collegeCode]
+                [name, email, hashedPassword, null, null]
             );
 
             const admin = newAdmin.rows[0];
@@ -76,14 +73,11 @@ export default async function handler(req, res) {
         }
 
         if (action === 'sendAdminOtp') {
-            const { name, email, password, collegeName, collegeCode } = req.body;
-            if (!name || !email || !password || !collegeName || !collegeCode) return res.status(400).json({ message: 'Please provide all required fields' });
+            const { name, email, password } = req.body;
+            if (!name || !email || !password) return res.status(400).json({ message: 'Please provide all required fields' });
 
             const adminExists = await query('SELECT * FROM admins WHERE email = $1', [email]);
             if (adminExists.rows.length > 0) return res.status(400).json({ message: 'Email already exists' });
-
-            const collegeExists = await query('SELECT * FROM admins WHERE college_code = $1', [collegeCode]);
-            if (collegeExists.rows.length > 0) return res.status(400).json({ message: 'College Code already in use' });
 
             const otp = Math.floor(100000 + Math.random() * 900000).toString();
             await query(`CREATE TABLE IF NOT EXISTS otps (email VARCHAR(255) PRIMARY KEY, otp VARCHAR(10) NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
@@ -108,7 +102,7 @@ export default async function handler(req, res) {
             }
         }
 
-        return res.status(404).json({ message: 'API Action Not Found' });
+        return res.status(404).json({ message: 'API Action Not Found in auth.js' });
 
     } catch (error) {
         console.error("Auth API Error:", error);

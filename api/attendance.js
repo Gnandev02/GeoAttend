@@ -9,7 +9,9 @@ module.exports = async (req, res) => {
     }
 
     try {
-        if (req.method === 'POST') {
+        const { action } = req.query;
+
+        if (req.method === 'POST' && action === 'markAttendance') {
             // Mark Attendance (Student Only)
             const student = await protectStudent(req);
             if (!student) return res.status(401).json({ message: 'Not authorized as a student' });
@@ -31,7 +33,7 @@ module.exports = async (req, res) => {
                 return res.status(400).json({ message: `Attendance already marked for ${sessionName} today` });
             }
 
-            const geofenceQuery = await query('SELECT * FROM geofence WHERE college_code = $1', [collegeCode]);
+            const geofenceQuery = await query('SELECT * FROM campus_setup WHERE college_code = $1', [collegeCode]);
             if (geofenceQuery.rows.length === 0) {
                 return res.status(500).json({ message: 'College geofence not found' });
             }
@@ -67,12 +69,13 @@ module.exports = async (req, res) => {
                 }
             });
 
-        } else if (req.method === 'GET') {
+        } else if (req.method === 'GET' && action === 'getAttendanceLogs') {
             // View Attendance (Admin or Student)
             const admin = await protectAdmin(req);
             if (admin) {
                 // Return All Attendance for Admin
                 const collegeCode = admin.college_code;
+                if (!collegeCode) return res.status(200).json([]);
                 let queryText = `
                     SELECT a.id, a.student_id, a.latitude, a.longitude, a.distance_from_center, a.status, a.timestamp, a.date, a.time, a.session_name,
                            s.name as student_name, s.email as student_email, s.roll_number
