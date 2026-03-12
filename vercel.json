@@ -33,6 +33,10 @@
             "destination": "/api/admin?action=analytics"
         },
         {
+            "source": "/api/migrate",
+            "destination": "/api/migrate"
+        },
+        {
             "source": "/api/(.*)",
             "destination": "/api/$1"
         },
