@@ -24,20 +24,39 @@ export default async function handler(req, res) {
         await query('ALTER TABLE admins ALTER COLUMN college_code DROP NOT NULL');
         console.log("Dropped NOT NULL on college_code");
 
-        // 2. Rename geofence table if it exists
+        // 3. Update attendance table for Check-In / Check-Out
         try {
-            await query('ALTER TABLE geofence RENAME TO campus_setup');
-            console.log("Renamed geofence table to campus_setup");
-        } catch (renameErr) {
-            console.log("Geofence table might already be renamed or doesn't exist. Skipping...");
+            // First, add new columns if they don't exist
+            await query('ALTER TABLE attendance ADD COLUMN IF NOT EXISTS attendance_date DATE');
+            await query('ALTER TABLE attendance ADD COLUMN IF NOT EXISTS check_in_time TIME');
+            await query('ALTER TABLE attendance ADD COLUMN IF NOT EXISTS check_out_time TIME');
+            await query('ALTER TABLE attendance ADD COLUMN IF NOT EXISTS distance_at_checkin INTEGER');
+            
+            // Populate attendance_date from existing date column if needed
+            await query('UPDATE attendance SET attendance_date = CAST(date AS DATE) WHERE attendance_date IS NULL AND date IS NOT NULL');
+
+            // Add unique constraint (student_id, attendance_date)
+            // Note: We try-catch this in case it exists
+            try {
+                await query('ALTER TABLE attendance ADD CONSTRAINT unique_student_daily_attendance UNIQUE (student_id, attendance_date)');
+                console.log("Added unique constraint on student_id and attendance_date");
+            } catch (constraintErr) {
+                console.log("Unique constraint might already exist or failed. Skipping...");
+            }
+            
+            console.log("Updated attendance table schema");
+        } catch (attendErr) {
+            console.error("Attendance table migration error:", attendErr);
         }
 
         return res.status(200).json({ 
-            message: "Migration Successful! You can now sign up without college details.",
+            message: "Migration Successful! The system now supports automatic check-in/out.",
             steps: [
                 "Dropped NOT NULL on admins.college_name",
                 "Dropped NOT NULL on admins.college_code",
-                "Attempted rename of geofence to campus_setup"
+                "Attempted rename of geofence to campus_setup",
+                "Added attendance columns: attendance_date, check_in_time, check_out_time, distance_at_checkin",
+                "Attempted to add unique constraint for daily attendance"
             ]
         });
 
