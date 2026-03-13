@@ -131,12 +131,6 @@
                 <button onclick="switchTab('overview')" id="tab-overview" class="tab-btn active shrink-0 md:w-full">
                     <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard
                 </button>
-                <button onclick="switchTab('subjects')" id="tab-subjects" class="tab-btn inactive shrink-0 md:w-full">
-                    <i data-lucide="book-open" class="w-4 h-4"></i> My Subjects
-                </button>
-                <button onclick="switchTab('analytics')" id="tab-analytics" class="tab-btn inactive shrink-0 md:w-full">
-                    <i data-lucide="bar-chart-3" class="w-4 h-4"></i> Analytics
-                </button>
             </div>
         </div>
 
@@ -146,7 +140,7 @@
             <div id="content-overview" class="tab-content active space-y-6">
                 <!-- Top Metrics Row -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <!-- Overall Percentage -->
+                    <!-- Monthly Attendance Percentage -->
                     <div class="saas-card p-6 flex items-center gap-5">
                         <div class="relative w-16 h-16 flex items-center justify-center">
                             <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
@@ -159,11 +153,11 @@
                             <span id="attendance-percent" class="absolute text-sm font-bold text-slate-800">0%</span>
                         </div>
                         <div>
-                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Overall Attendance</p>
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Campus Presence</p>
                             <h3 class="text-2xl font-extrabold text-slate-900 mt-1"><span
                                     id="attendance-present">0</span> <span
                                     class="text-base font-semibold text-slate-400">/ <span
-                                        id="attendance-total">0</span> classes</span></h3>
+                                        id="attendance-total">0</span> total</span></h3>
                         </div>
                     </div>
 
@@ -218,43 +212,28 @@
                         </div>
                     </div>
 
-                    <!-- Analytics / Breakdown Overview Mock -->
-                    <div class="space-y-6">
+                    <!-- Stats Grid -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         <div class="saas-card p-6">
-                            <h3 class="font-bold text-slate-900 mb-6">Subject Breakdown</h3>
-                            <div class="space-y-4">
-                                <div>
-                                    <div class="flex justify-between items-end mb-1.5">
-                                        <span class="text-sm font-bold text-slate-700">Software Engineering</span>
-                                        <span class="text-xs font-extrabold text-slate-400">85%</span>
-                                    </div>
-                                    <div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                                        <div class="h-full bg-blue-500 rounded-full" style="width: 85%"></div>
-                                    </div>
-                                </div>
-                                <div>
-                                    <div class="flex justify-between items-end mb-1.5">
-                                        <span class="text-sm font-bold text-slate-700">Database Systems</span>
-                                        <span class="text-xs font-extrabold text-slate-400">90%</span>
-                                    </div>
-                                    <div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                                        <div class="h-full bg-purple-500 rounded-full" style="width: 90%"></div>
-                                    </div>
-                                </div>
+                            <h3 class="font-bold text-slate-900 mb-4">Live Distance</h3>
+                            <div class="flex items-end gap-2">
+                                <span id="current-distance" class="text-3xl font-extrabold text-slate-900">--</span>
+                                <span class="text-slate-400 font-bold mb-1">meters</span>
                             </div>
+                            <p class="text-xs text-slate-500 mt-2">Distance from campus center at last check-in</p>
+                        </div>
+                        <div class="saas-card p-6">
+                            <h3 class="font-bold text-slate-900 mb-4">Presence Alert</h3>
+                            <div id="presence-badge" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-500">
+                                Unknown Status
+                            </div>
+                            <p class="text-xs text-slate-500 mt-3">Verified by campus geofence radius</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Other empty tabs for mockup -->
-            <div id="content-subjects" class="tab-content saas-card p-8 text-center text-slate-500">
-                Subjects module coming soon...
-            </div>
 
-            <div id="content-analytics" class="tab-content saas-card p-8 text-center text-slate-500">
-                Detailed Analytics coming soon...
-            </div>
 
         </div>
     </div>
@@ -333,16 +312,29 @@
 
             // Check today status
             const today = new Date().toISOString().split('T')[0];
-            if (attendanceData.length > 0 && (attendanceData[0].date === today || new Date(attendanceData[0].date).toISOString().split('T')[0] === today)) {
+            const todayRecord = attendanceData.find(r => r.date === today || new Date(r.date).toISOString().split('T')[0] === today);
+            
+            if (todayRecord) {
                 document.getElementById('today-status').innerHTML = `
-                    <div class="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-green-600">
-                        <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+                    <div class="w-10 h-10 rounded-full ${todayRecord.status === 'Present' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'} flex items-center justify-center">
+                        <i data-lucide="${todayRecord.status === 'Present' ? 'check-circle-2' : 'x-circle'}" class="w-5 h-5"></i>
                     </div>
                     <div>
-                        <p class="font-bold text-slate-900">Marked Present</p>
-                        <p class="text-xs font-semibold text-slate-400">at ${attendanceData[0].time || 'today'}</p>
+                        <p class="font-bold text-slate-900">${todayRecord.status === 'Present' ? 'Marked Present' : 'Rejected'}</p>
+                        <p class="text-xs font-semibold text-slate-400">at ${todayRecord.time || 'today'}</p>
                     </div>
                 `;
+
+                // Update Distance and Presence Badge
+                document.getElementById('current-distance').textContent = todayRecord.distanceFromCenter || '0';
+                const presenceBadge = document.getElementById('presence-badge');
+                if (todayRecord.status === 'Present') {
+                    presenceBadge.className = "inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700";
+                    presenceBadge.textContent = "Inside Campus";
+                } else {
+                    presenceBadge.className = "inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700";
+                    presenceBadge.textContent = "Outside Campus";
+                }
                 lucide.createIcons();
             }
 
@@ -415,7 +407,7 @@
                                 'Content-Type': 'application/json',
                                 'Authorization': `Bearer ${token}`
                             },
-                            body: JSON.stringify({ lat: latitude, lng: longitude, sessionName: 'Main Session' })
+                            body: JSON.stringify({ lat: latitude, lng: longitude, sessionName: 'Campus Check-in' })
                         });
 
                         const data = await res.json();
@@ -443,7 +435,7 @@
         }
 
         function switchTab(tabId) {
-            ['overview', 'subjects', 'analytics'].forEach(id => {
+            ['overview'].forEach(id => {
                 document.getElementById(`tab-${id}`).className = 'tab-btn inactive shrink-0 md:w-full';
                 document.getElementById(`content-${id}`).classList.remove('active');
             });
