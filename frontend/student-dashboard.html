@@ -414,6 +414,9 @@
 
                         if (res.ok) {
                             showAlert(data.message + (data.distance ? ` (Distance: ${data.distance}m)` : ''), true);
+                            if (data.distance !== undefined) {
+                                document.getElementById('current-distance').textContent = data.distance;
+                            }
                             fetchDashboardData();
                         } else {
                             showAlert(data.message || 'Error marking attendance', false);
