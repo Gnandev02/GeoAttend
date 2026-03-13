@@ -401,13 +401,13 @@
                     try {
                         const { latitude, longitude } = position.coords;
 
-                        const res = await fetch('/api/attendance', {
+                        const res = await fetch('/api/attendance?action=markAttendance', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
                                 'Authorization': `Bearer ${token}`
                             },
-                            body: JSON.stringify({ lat: latitude, lng: longitude, sessionName: 'Campus Check-in' })
+                            body: JSON.stringify({ latitude, longitude, sessionName: 'Campus Check-in' })
                         });
 
                         const data = await res.json();

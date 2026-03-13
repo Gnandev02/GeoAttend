@@ -16,8 +16,11 @@ module.exports = async (req, res) => {
             const student = await protectStudent(req);
             if (!student) return res.status(401).json({ message: 'Not authorized as a student' });
 
-            const { lat, lng, sessionName } = req.body;
-            if (!lat || !lng || !sessionName) {
+            const { latitude, longitude, lat, lng, sessionName } = req.body;
+            const finalLat = latitude || lat;
+            const finalLng = longitude || lng;
+
+            if (!finalLat || !finalLng || !sessionName) {
                 return res.status(400).json({ message: 'Location coordinates and session name are required' });
             }
 
@@ -39,7 +42,7 @@ module.exports = async (req, res) => {
             }
 
             const geofence = geofenceQuery.rows[0];
-            const distanceToCampus = calculateDistance(lat, lng, geofence.latitude, geofence.longitude);
+            const distanceToCampus = calculateDistance(finalLat, finalLng, geofence.latitude, geofence.longitude);
             const isInsideRadius = distanceToCampus <= geofence.radius;
             const status = isInsideRadius ? 'Present' : 'Outside Zone';
             const time = new Date().toLocaleTimeString('en-US', { hour12: false });
@@ -47,7 +50,7 @@ module.exports = async (req, res) => {
             const attendanceResult = await query(
                 `INSERT INTO attendance (student_id, college_code, date, time, latitude, longitude, status, distance_from_center, session_name)
                  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-                [student.id, collegeCode, today, time, lat, lng, status, Math.round(distanceToCampus), sessionName]
+                [student.id, collegeCode, today, time, finalLat, finalLng, status, Math.round(distanceToCampus), sessionName]
             );
 
             const attendance = attendanceResult.rows[0];
