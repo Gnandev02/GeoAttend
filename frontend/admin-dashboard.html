@@ -276,9 +276,11 @@
                     <table class="w-full text-left border-collapse">
                         <thead class="bg-slate-50 sticky top-0 border-b border-slate-100">
                             <tr>
-                                <th class="py-4 px-6 text-xs font-bold text-slate-500 uppercase">Timestamp</th>
+                                <th class="py-4 px-6 text-xs font-bold text-slate-500 uppercase">Date</th>
                                 <th class="py-4 px-6 text-xs font-bold text-slate-500 uppercase">Student</th>
-                                <th class="py-4 px-6 text-xs font-bold text-slate-500 uppercase">Coordinates</th>
+                                <th class="py-4 px-6 text-xs font-bold text-slate-500 uppercase">In</th>
+                                <th class="py-4 px-6 text-xs font-bold text-slate-500 uppercase">Out</th>
+                                <th class="py-4 px-6 text-xs font-bold text-slate-500 uppercase">Hours</th>
                                 <th class="py-4 px-6 text-xs font-bold text-slate-500 uppercase">Status</th>
                             </tr>
                         </thead>
@@ -498,9 +500,10 @@
         function downloadLogsCSV() {
             if (allLogs.length === 0) return alert("No logs to download");
             
-            const headers = "Date,Time,Student Name,Roll Number,Latitude,Longitude,Status\n";
+            const headers = "Date,Student Name,Roll Number,Check-In,Check-Out,Hours,Status\n";
             const rows = allLogs.map(log => {
-                return `${log.date},${log.time},"${log.studentId?.name || ''}","${log.studentId?.rollNumber || ''}",${log.locationCoordinates?.lat},${log.locationCoordinates?.lng},${log.status}`;
+                const hours = calculateHours(log.checkinTime, log.checkoutTime);
+                return `${log.date},"${log.studentId?.name || ''}","${log.studentId?.rollNumber || ''}",${log.checkinTime || ''},${log.checkoutTime || ''},${hours},${log.status}`;
             }).join("\n");
             
             const blob = new Blob([headers + rows], { type: 'text/csv' });
@@ -514,20 +517,36 @@
             document.body.removeChild(a);
         }
 
+        function calculateHours(start, end) {
+            if (!start || !end) return '--';
+            const s = start.split(':');
+            const e = end.split(':');
+            const startDate = new Date(0, 0, 0, s[0], s[1], s[2] || 0);
+            const endDate = new Date(0, 0, 0, e[0], e[1], e[2] || 0);
+            let diff = endDate.getTime() - startDate.getTime();
+            if (diff < 0) return '0.0h';
+            return (diff / 3600000).toFixed(1) + 'h';
+        }
+
         function renderLogs(l) {
-            document.getElementById('table-logs-body').innerHTML = (l || []).map(log => `
-                <tr class="hover:bg-slate-50">
-                    <td class="py-4 px-6 text-sm">
-                        <div class="font-bold text-slate-900">${log.date || ''}</div>
-                        <div class="text-xs text-slate-500">${log.time || ''}</div>
-                    </td>
-                    <td class="py-4 px-6 text-sm font-bold text-slate-700">${log.studentId?.name || 'Unknown'}</td>
-                    <td class="py-4 px-6 text-xs font-mono text-slate-500">${log.locationCoordinates?.lat?.toFixed(5) || 'N/A'}, ${log.locationCoordinates?.lng?.toFixed(5) || 'N/A'}</td>
-                    <td class="py-4 px-6 text-sm">
-                        <span class="${log.status === 'Present' ? 'badge-success' : 'badge-danger'}">${log.status}</span>
-                    </td>
-                </tr>
-            `).join('');
+            document.getElementById('table-logs-body').innerHTML = (l || []).map(log => {
+                const hours = calculateHours(log.checkinTime, log.checkoutTime);
+                return `
+                    <tr class="hover:bg-slate-50">
+                        <td class="py-4 px-6 text-sm font-bold text-slate-900">${log.date || ''}</td>
+                        <td class="py-4 px-6 text-sm">
+                            <div class="font-bold text-slate-700">${log.studentId?.name || 'Unknown'}</div>
+                            <div class="text-xs text-slate-500">${log.studentId?.rollNumber || ''}</div>
+                        </td>
+                        <td class="py-4 px-6 text-sm font-mono text-slate-600">${log.checkinTime ? log.checkinTime.substring(0, 5) : '--:--'}</td>
+                        <td class="py-4 px-6 text-sm font-mono text-slate-600">${log.checkoutTime ? log.checkoutTime.substring(0, 5) : '--:--'}</td>
+                        <td class="py-4 px-6 text-sm font-bold text-[#0284c7]">${hours}</td>
+                        <td class="py-4 px-6 text-sm">
+                            <span class="${log.status === 'Present' ? 'badge-success' : 'badge-danger'}">${log.status}</span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
         }
 
         function renderGeofence(c) {

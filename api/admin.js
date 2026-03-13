@@ -98,7 +98,7 @@ export default async function handler(req, res) {
             const totalCampusesQuery = await query('SELECT COUNT(*) FROM campus_setup WHERE college_code = $1', [collegeCode]);
             const totalCampuses = parseInt(totalCampusesQuery.rows[0].count);
 
-            const statsQuery = await query('SELECT status, COUNT(*) as count FROM attendance WHERE college_code = $1 GROUP BY status', [collegeCode]);
+            const statsQuery = await query('SELECT status, COUNT(*) as count FROM attendance WHERE college_code = $1 AND attendance_date = CURRENT_DATE GROUP BY status', [collegeCode]);
 
             const formattedStats = {
                 Present: 0, Rejected: 0, Manual: 0, "Outside Zone": 0

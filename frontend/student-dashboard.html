@@ -161,15 +161,16 @@
                         </div>
                     </div>
 
-                    <!-- Quick Status -->
+                    <!-- Arrival Status -->
                     <div class="saas-card p-6 flex flex-col justify-center">
-                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Today's Status</p>
-                        <div id="today-status" class="flex items-center gap-3">
-                            <div
-                                class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
-                                <i data-lucide="clock" class="w-5 h-5"></i>
-                            </div>
-                            <p class="font-bold text-slate-500">Pending</p>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Check-In / Out</p>
+                        <div id="check-times" class="space-y-1">
+                            <p class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                                <i data-lucide="log-in" class="w-4 h-4 text-green-500"></i> In: <span id="display-checkin">--:--</span>
+                            </p>
+                            <p class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                                <i data-lucide="log-out" class="w-4 h-4 text-red-500"></i> Out: <span id="display-checkout">--:--</span>
+                            </p>
                         </div>
                     </div>
 
@@ -180,12 +181,11 @@
                             class="absolute -right-6 -top-6 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:scale-125 transition-transform duration-500">
                         </div>
                         <div class="relative z-10 w-full">
-                            <h3 class="font-bold mb-1">Verify Attendance</h3>
-                            <p class="text-xs text-blue-100 mb-4 opacity-90 font-medium tracking-wide">Secure live GPS
-                                check-in</p>
-                            <button onclick="markAttendance()" id="markBtn"
+                            <h3 class="font-bold mb-1">Campus Tracker</h3>
+                            <p id="tracking-status" class="text-xs text-blue-100 mb-4 opacity-90 font-medium tracking-wide">Automatic Arrival Detection</p>
+                            <button onclick="toggleTracking()" id="markBtn"
                                 class="w-full bg-white text-[#0f172a] hover:bg-slate-50 hover:-translate-y-0.5 font-bold py-2.5 px-4 rounded-xl text-sm transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-80">
-                                <i data-lucide="map-pin" class="w-4 h-4"></i> <span id="markText">Mark Now</span>
+                                <i data-lucide="navigation" class="w-4 h-4"></i> <span id="markText">Start Tracking</span>
                             </button>
                         </div>
                     </div>
@@ -250,6 +250,19 @@
 
         const user = JSON.parse(userStr);
         let attendanceData = [];
+        let campusConfig = null;
+        let watchId = null;
+        let lastDistance = null;
+        let isProcessing = false;
+
+        async function fetchCampusConfig() {
+            try {
+                const res = await fetch('/api/attendance?action=getCampus', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) campusConfig = await res.json();
+            } catch (e) { console.error("Campus config error:", e); }
+        }
 
         async function fetchDashboardData() {
             try {
@@ -312,31 +325,27 @@
 
             // Check today status
             const today = new Date().toISOString().split('T')[0];
-            const todayRecord = attendanceData.find(r => r.date === today || new Date(r.date).toISOString().split('T')[0] === today);
+            const recordsToday = attendanceData.filter(r => r.date === today);
+            const todayRecord = recordsToday[0];
             
             if (todayRecord) {
-                document.getElementById('today-status').innerHTML = `
-                    <div class="w-10 h-10 rounded-full ${todayRecord.status === 'Present' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'} flex items-center justify-center">
-                        <i data-lucide="${todayRecord.status === 'Present' ? 'check-circle-2' : 'x-circle'}" class="w-5 h-5"></i>
-                    </div>
-                    <div>
-                        <p class="font-bold text-slate-900">${todayRecord.status === 'Present' ? 'Marked Present' : 'Rejected'}</p>
-                        <p class="text-xs font-semibold text-slate-400">at ${todayRecord.time || 'today'}</p>
-                    </div>
-                `;
+                document.getElementById('display-checkin').textContent = todayRecord.checkinTime ? todayRecord.checkinTime.substring(0, 5) : '--:--';
+                document.getElementById('display-checkout').textContent = todayRecord.checkoutTime ? todayRecord.checkoutTime.substring(0, 5) : '--:--';
 
-                // Update Distance and Presence Badge
-                document.getElementById('current-distance').textContent = todayRecord.distanceFromCenter || '0';
+                // Update Presence Badge
                 const presenceBadge = document.getElementById('presence-badge');
                 if (todayRecord.status === 'Present') {
                     presenceBadge.className = "inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700";
                     presenceBadge.textContent = "Inside Campus";
                 } else {
                     presenceBadge.className = "inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700";
-                    presenceBadge.textContent = "Outside Campus";
+                    presenceBadge.textContent = (todayRecord.checkoutTime) ? "Checked Out" : "Outside Campus";
                 }
-                lucide.createIcons();
+            } else {
+                document.getElementById('display-checkin').textContent = '--:--';
+                document.getElementById('display-checkout').textContent = '--:--';
             }
+            lucide.createIcons();
 
             // Populate logs
             const logsContainer = document.getElementById('logs-container');
@@ -381,60 +390,102 @@
             box.classList.remove('hidden');
         }
 
-        function markAttendance() {
-            document.getElementById('alert-box').classList.add('hidden');
-            const markBtn = document.getElementById('markBtn');
-            const markText = document.getElementById('markText');
-
-            markBtn.disabled = true;
-            markText.textContent = "Verifying...";
-
-            if (!navigator.geolocation) {
-                showAlert('Geolocation is not supported by your browser', false);
-                markBtn.disabled = false;
-                markText.textContent = "Mark Now";
+        function toggleTracking() {
+            if (watchId) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+                document.getElementById('markText').textContent = "Start Tracking";
+                document.getElementById('tracking-status').textContent = "Automatic Arrival Detection";
+                document.getElementById('markBtn').classList.replace('bg-green-500', 'bg-white');
+                document.getElementById('markBtn').classList.replace('text-white', 'text-[#0f172a]');
                 return;
             }
 
-            navigator.geolocation.getCurrentPosition(
+            if (!navigator.geolocation) {
+                showAlert('Geolocation is not supported', false);
+                return;
+            }
+
+            document.getElementById('markText').textContent = "Tracking...";
+            document.getElementById('tracking-status').textContent = "Live Geofence Monitoring Active";
+            document.getElementById('markBtn').classList.replace('bg-white', 'bg-green-500');
+            document.getElementById('markBtn').classList.add('text-white');
+
+            watchId = navigator.geolocation.watchPosition(
                 async (position) => {
-                    try {
-                        const { latitude, longitude } = position.coords;
+                    const { latitude, longitude } = position.coords;
+                    if (!campusConfig) await fetchCampusConfig();
+                    if (!campusConfig) return;
 
-                        const res = await fetch('/api/attendance?action=markAttendance', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${token}`
-                            },
-                            body: JSON.stringify({ latitude, longitude, sessionName: 'Campus Check-in' })
-                        });
+                    const dist = calculateDistanceLocal(latitude, longitude, campusConfig.latitude, campusConfig.longitude);
+                    lastDistance = Math.round(dist);
+                    document.getElementById('current-distance').textContent = lastDistance;
 
-                        const data = await res.json();
-
-                        if (res.ok) {
-                            showAlert(data.message + (data.distance ? ` (Distance: ${data.distance}m)` : ''), true);
-                            if (data.distance !== undefined) {
-                                document.getElementById('current-distance').textContent = data.distance;
-                            }
-                            fetchDashboardData();
-                        } else {
-                            showAlert(data.message || 'Error marking attendance', false);
-                        }
-                    } catch (error) {
-                        showAlert('Connection error. Could not mark attendance.', false);
-                    } finally {
-                        markBtn.disabled = false;
-                        markText.textContent = "Mark Now";
-                    }
+                    handleAutoCheck(latitude, longitude, dist);
                 },
-                (error) => {
-                    markBtn.disabled = false;
-                    markText.textContent = "Mark Now";
-                    showAlert('Location error: Please allow location access.', false);
+                (err) => {
+                    showAlert('Tracking failed: ' + err.message, false);
+                    toggleTracking();
                 },
-                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                { enableHighAccuracy: true, maximumAge: 0 }
             );
+        }
+
+        async function handleAutoCheck(lat, lng, dist) {
+            if (isProcessing) return;
+            const today = new Date().toISOString().split('T')[0];
+            const todayRecord = attendanceData.find(r => r.date === today);
+
+            // Auto Check-In
+            if (dist <= campusConfig.radius && !todayRecord) {
+                isProcessing = true;
+                try {
+                    const res = await fetch('/api/attendance?action=checkIn', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify({ latitude: lat, longitude: lng })
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                        showAlert('Automatic Arrival Detected: Checked In!', true);
+                        fetchDashboardData();
+                    } else if (data.message.includes('unavailable after 9:00 AM')) {
+                        document.getElementById('tracking-status').textContent = "Waiting for 9:00 AM Check-In...";
+                    }
+                } catch (e) { console.error(e); }
+                finally { isProcessing = false; }
+            }
+
+            // Auto Check-Out
+            if (dist > campusConfig.radius && todayRecord && todayRecord.checkinTime && !todayRecord.checkoutTime) {
+                isProcessing = true;
+                try {
+                    const res = await fetch('/api/attendance?action=checkOut', {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (res.ok) {
+                        showAlert('Automatic Departure Detected: Checked Out!', true);
+                        fetchDashboardData();
+                        // Optional: Stop tracking after check-out
+                        // toggleTracking();
+                    }
+                } catch (e) { console.error(e); }
+                finally { isProcessing = false; }
+            }
+        }
+
+        function calculateDistanceLocal(lat1, lon1, lat2, lon2) {
+            const R = 6371e3; // metres
+            const φ1 = lat1 * Math.PI/180;
+            const φ2 = lat2 * Math.PI/180;
+            const Δφ = (lat2-lat1) * Math.PI/180;
+            const Δλ = (lon2-lon1) * Math.PI/180;
+            const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                      Math.cos(φ1) * Math.cos(φ2) *
+                      Math.sin(Δλ/2) * Math.sin(Δλ/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
         }
 
         function switchTab(tabId) {
@@ -452,6 +503,7 @@
         }
 
         // Init
+        fetchCampusConfig();
         fetchDashboardData();
     </script>
 </body>
