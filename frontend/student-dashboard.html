@@ -449,6 +449,7 @@
         }
 
         function toggleTracking() {
+            // --- STOP TRACKING ---
             if (watchId) {
                 navigator.geolocation.clearWatch(watchId);
                 watchId = null;
@@ -459,54 +460,97 @@
                 return;
             }
 
+            // --- BROWSER SUPPORT CHECK ---
             if (!navigator.geolocation) {
-                showAlert('Geolocation is not supported', false);
+                showAlert('Geolocation is not supported by this browser.', false);
                 return;
             }
 
-            document.getElementById('markText').textContent = "Tracking...";
-            document.getElementById('tracking-status').textContent = "Live Geofence Monitoring Active";
-            document.getElementById('markBtn').classList.replace('bg-white', 'bg-green-500');
-            document.getElementById('markBtn').classList.add('text-white');
+            // --- SHOW LOADING STATE ---
+            document.getElementById('markText').textContent = "Requesting...";
+            document.getElementById('tracking-status').textContent = "Waiting for location permission...";
+            document.getElementById('markBtn').disabled = true;
 
-            // Force initial permission prompt (Required for some mobile browsers)
+            // --- STEP 1: REQUEST PERMISSION via getCurrentPosition ---
+            // This MUST be the first call to ensure mobile browsers show the permission popup.
+            // We use a generous 15s timeout to allow the user to respond to the popup.
             navigator.geolocation.getCurrentPosition(
-                () => { /* Initial success, start watching */ },
-                (err) => { console.warn("Initial check failed", err); },
-                { enableHighAccuracy: true }
-            );
+                function(initialPosition) {
+                    // --- PERMISSION GRANTED: Activate tracking UI ---
+                    document.getElementById('markBtn').disabled = false;
+                    document.getElementById('markText').textContent = "Tracking...";
+                    document.getElementById('tracking-status').textContent = "Live Geofence Monitoring Active";
+                    document.getElementById('markBtn').classList.replace('bg-white', 'bg-green-500');
+                    document.getElementById('markBtn').classList.add('text-white');
 
-            watchId = navigator.geolocation.watchPosition(
-                async (position) => {
-                    const { latitude, longitude } = position.coords;
-                    if (!campusConfig) await fetchCampusConfig();
-                    if (!campusConfig) return;
+                    // Process the initial position immediately
+                    (async function() {
+                        const { latitude, longitude } = initialPosition.coords;
+                        if (!campusConfig) await fetchCampusConfig();
+                        if (!campusConfig) return;
+                        const dist = calculateDistanceLocal(latitude, longitude, campusConfig.latitude, campusConfig.longitude);
+                        lastDistance = Math.round(dist);
+                        document.getElementById('current-distance').textContent = lastDistance;
+                        handleAutoCheck(latitude, longitude, dist);
+                    })();
 
-                    const dist = calculateDistanceLocal(latitude, longitude, campusConfig.latitude, campusConfig.longitude);
-                    lastDistance = Math.round(dist);
-                    document.getElementById('current-distance').textContent = lastDistance;
-
-                    handleAutoCheck(latitude, longitude, dist);
+                    // --- STEP 2: START CONTINUOUS WATCHING ---
+                    watchId = navigator.geolocation.watchPosition(
+                        async function(position) {
+                            const { latitude, longitude } = position.coords;
+                            if (!campusConfig) await fetchCampusConfig();
+                            if (!campusConfig) return;
+                            const dist = calculateDistanceLocal(latitude, longitude, campusConfig.latitude, campusConfig.longitude);
+                            lastDistance = Math.round(dist);
+                            document.getElementById('current-distance').textContent = lastDistance;
+                            handleAutoCheck(latitude, longitude, dist);
+                        },
+                        function(err) {
+                            let msg = '';
+                            if (err.code === err.PERMISSION_DENIED) {
+                                msg = "Location permission was revoked. Please re-enable GPS access.";
+                            } else if (err.code === err.POSITION_UNAVAILABLE) {
+                                msg = "GPS signal lost. Please move to an open area.";
+                            } else if (err.code === err.TIMEOUT) {
+                                // Timeout during watch is non-fatal, just log it
+                                console.warn("Location update timed out, retrying...");
+                                return;
+                            } else {
+                                msg = "Location error: " + err.message;
+                            }
+                            showAlert(msg, false);
+                            // Stop tracking on fatal errors
+                            if (err.code !== err.TIMEOUT) {
+                                navigator.geolocation.clearWatch(watchId);
+                                watchId = null;
+                                document.getElementById('markText').textContent = "Start Tracking";
+                                document.getElementById('tracking-status').textContent = "Automatic Arrival Detection";
+                                document.getElementById('markBtn').classList.replace('bg-green-500', 'bg-white');
+                                document.getElementById('markBtn').classList.replace('text-white', 'text-[#0f172a]');
+                            }
+                        },
+                        { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+                    );
                 },
-                (err) => {
-                    let msg = 'Tracking failed: ';
-                    switch(err.code) {
-                        case err.PERMISSION_DENIED:
-                            msg += "Location permission denied. Please enable GPS.";
-                            break;
-                        case err.POSITION_UNAVAILABLE:
-                            msg += "Location information is unavailable.";
-                            break;
-                        case err.TIMEOUT:
-                            msg += "Location request timed out. Retrying...";
-                            break;
-                        default:
-                            msg += err.message;
+                function(err) {
+                    // --- PERMISSION DENIED or ERROR: Reset button state ---
+                    document.getElementById('markBtn').disabled = false;
+                    document.getElementById('markText').textContent = "Start Tracking";
+                    document.getElementById('tracking-status').textContent = "Automatic Arrival Detection";
+
+                    let msg = '';
+                    if (err.code === err.PERMISSION_DENIED) {
+                        msg = "📍 Location permission is required to mark attendance. Please allow location access in your browser settings and try again.";
+                    } else if (err.code === err.POSITION_UNAVAILABLE) {
+                        msg = "📡 GPS signal unavailable. Please enable Location Services on your device and try again.";
+                    } else if (err.code === err.TIMEOUT) {
+                        msg = "⏱️ Location request timed out. Please ensure GPS is enabled and try again.";
+                    } else {
+                        msg = "Location error: " + err.message;
                     }
                     showAlert(msg, false);
-                    if (err.code !== err.TIMEOUT) toggleTracking();
                 },
-                { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
+                { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
             );
         }
 
