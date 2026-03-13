@@ -102,8 +102,8 @@
             <!-- Desktop Navigation Group -->
             <div class="hidden md:flex items-center gap-10">
                 <div class="flex items-center gap-8 text-sm font-semibold text-slate-500">
-                    <a href="javascript:void(0)" onclick="showSection('how-it-works')" class="hover:text-slate-900 transition-colors">How it Works</a>
-                    <a href="javascript:void(0)" onclick="showSection('features')" class="hover:text-slate-900 transition-colors">Features</a>
+                    <a href="how-it-works.html" class="hover:text-slate-900 transition-colors">How it Works</a>
+                    <a href="features.html" class="hover:text-slate-900 transition-colors">Features</a>
                     <a href="admin-signup.html" class="hover:text-slate-900 transition-colors">Sign Up</a>
                 </div>
 
@@ -174,14 +174,14 @@
         <div id="mobile-menu"
             class="hidden md:hidden bg-white border-t border-slate-100 shadow-xl overflow-hidden transform transition-all duration-300 origin-top h-0">
             <div class="px-6 py-4 space-y-4">
-                <a href="javascript:void(0)" onclick="showSection('how-it-works')"
+                <a href="how-it-works.html"
                     class="block text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors pl-2">How
                     it Works</a>
-                <a href="javascript:void(0)" onclick="showSection('features')"
+                <a href="features.html"
                     class="block text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors pl-2">Features</a>
                 <a href="admin-signup.html"
                     class="block text-sm font-semibold text-slate-900 transition-colors pl-2">Sign Up</a>
-                <a href="javascript:void(0)" onclick="showSection('comparison')"
+                <a href="compare.html"
                     class="block text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors pl-2">Compare</a>
 
                 <div class="h-px bg-slate-100 my-4"></div>
@@ -411,214 +411,7 @@
         </div>
     </section>
 
-    <!-- How It Works Section -->
-    <section id="how-it-works" class="py-24 bg-slate-50 transition-all duration-700 opacity-0 h-0 overflow-hidden pointer-events-none">
-        <div class="max-w-7xl mx-auto px-6">
-            <div class="text-center mb-16">
-                <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-4 tracking-tight">How GeoAttend Works</h2>
-                <p class="text-slate-500 max-w-2xl mx-auto text-lg">Four simple steps to absolute attendance integrity.
-                </p>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
-                <!-- Step 1 -->
-                <div class="relative pl-6 md:pl-0">
-                    <div class="md:hidden absolute left-0 top-0 bottom-0 w-0.5 bg-brand-100"></div>
-                    <div
-                        class="absolute left-[-24px] md:relative md:left-auto w-12 h-12 bg-white border border-slate-200 rounded-xl shadow-sm flex items-center justify-center text-brand-600 font-bold text-lg mb-6 z-10">
-                        1</div>
-                    <h3 class="text-lg font-semibold text-slate-900 mb-2">Secure Login</h3>
-                    <p class="text-slate-500 text-sm leading-relaxed">Students authenticate using secure JWT credentials
-                        via their portal.</p>
-                </div>
-                <!-- Step 2 -->
-                <div class="relative pl-6 md:pl-0">
-                    <div class="md:hidden absolute left-0 top-0 bottom-0 w-0.5 bg-brand-100"></div>
-                    <div
-                        class="absolute left-[-24px] md:relative md:left-auto w-12 h-12 bg-white border border-slate-200 rounded-xl shadow-sm flex items-center justify-center text-brand-600 font-bold text-lg mb-6 z-10">
-                        2</div>
-                    <h3 class="text-lg font-semibold text-slate-900 mb-2">Location Request</h3>
-                    <p class="text-slate-500 text-sm leading-relaxed">Browser prompts for rigorous GPS coordinate access
-                        at marking time.</p>
-                </div>
-                <!-- Step 3 -->
-                <div class="relative pl-6 md:pl-0">
-                    <div class="md:hidden absolute left-0 top-0 bottom-0 w-0.5 bg-brand-100"></div>
-                    <div
-                        class="absolute left-[-24px] md:relative md:left-auto w-12 h-12 bg-white border border-slate-200 rounded-xl shadow-sm flex items-center justify-center text-brand-600 font-bold text-lg mb-6 z-10">
-                        3</div>
-                    <h3 class="text-lg font-semibold text-slate-900 mb-2">Geofence Validation</h3>
-                    <p class="text-slate-500 text-sm leading-relaxed">Server calculates Haversine distance against
-                        admin-defined boundaries.</p>
-                </div>
-                <!-- Step 4 -->
-                <div class="relative pl-6 md:pl-0">
-                    <div
-                        class="absolute left-[-24px] md:relative md:left-auto w-12 h-12 bg-brand-600 rounded-xl shadow-md shadow-brand-500/20 flex items-center justify-center text-white font-bold text-lg mb-6 z-10">
-                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7">
-                            </path>
-                        </svg>
-                    </div>
-                    <h3 class="text-lg font-semibold text-slate-900 mb-2">Attendance Marked</h3>
-                    <p class="text-slate-500 text-sm leading-relaxed">If within radius, attendance is permanently
-                        recorded in MongoDB.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Features Section -->
-    <section id="features" class="py-24 bg-white border-t border-slate-100 transition-all duration-700 opacity-0 h-0 overflow-hidden pointer-events-none">
-        <div class="max-w-7xl mx-auto px-6">
-            <div class="mb-16">
-                <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-4 tracking-tight">Enterprise-Grade Features
-                </h2>
-                <p class="text-slate-500 max-w-2xl text-lg">Built with exactly what administrators need, and nothing
-                    they don't.</p>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
-                <!-- Feature 1 -->
-                <div class="group">
-                    <div
-                        class="w-12 h-12 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center text-brand-600 mb-6 group-hover:border-brand-200 group-hover:bg-brand-50 transition-colors">
-                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
-                            </path>
-                        </svg>
-                    </div>
-                    <h3 class="text-lg font-semibold text-slate-900 mb-2">Dynamic Geofencing</h3>
-                    <p class="text-slate-500 text-sm leading-relaxed">Define precise latitude, longitude, and radius for
-                        distinct campus boundaries globally.</p>
-                </div>
-
-                <!-- Feature 2 -->
-                <div class="group">
-                    <div
-                        class="w-12 h-12 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center text-brand-600 mb-6 group-hover:border-brand-200 group-hover:bg-brand-50 transition-colors">
-                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8V7a4 4 0 00-8 0v4h8z">
-                            </path>
-                        </svg>
-                    </div>
-                    <h3 class="text-lg font-semibold text-slate-900 mb-2">Anti-Proxy Security</h3>
-                    <p class="text-slate-500 text-sm leading-relaxed">Physical presence validation guarantees zero proxy
-                        submissions during lecture hours.</p>
-                </div>
-
-                <!-- Feature 3 -->
-                <div class="group">
-                    <div
-                        class="w-12 h-12 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center text-brand-600 mb-6 group-hover:border-brand-200 group-hover:bg-brand-50 transition-colors">
-                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
-                            </path>
-                        </svg>
-                    </div>
-                    <h3 class="text-lg font-semibold text-slate-900 mb-2">Admin Analytics</h3>
-                    <p class="text-slate-500 text-sm leading-relaxed">Comprehensive dashboard to track, filter, and
-                        export detailed attendance reports.</p>
-                </div>
-
-                <!-- Feature 4 -->
-                <div class="group">
-                    <div
-                        class="w-12 h-12 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center text-brand-600 mb-6 group-hover:border-brand-200 group-hover:bg-brand-50 transition-colors">
-                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                    </div>
-                    <h3 class="text-lg font-semibold text-slate-900 mb-2">Real-Time GPS Validation</h3>
-                    <p class="text-slate-500 text-sm leading-relaxed">Leverages modern HTML5 Geolocation API for sub-15
-                        second verification times.</p>
-                </div>
-
-                <!-- Feature 5 -->
-                <div class="group">
-                    <div
-                        class="w-12 h-12 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center text-brand-600 mb-6 group-hover:border-brand-200 group-hover:bg-brand-50 transition-colors">
-                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4">
-                            </path>
-                        </svg>
-                    </div>
-                    <h3 class="text-lg font-semibold text-slate-900 mb-2">Multi-Campus Support</h3>
-                    <p class="text-slate-500 text-sm leading-relaxed">Scale seamlessly across multiple geographical
-                        locations using a unified interface.</p>
-                </div>
-
-                <!-- Feature 6 -->
-                <div class="group">
-                    <div
-                        class="w-12 h-12 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center text-brand-600 mb-6 group-hover:border-brand-200 group-hover:bg-brand-50 transition-colors">
-                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z">
-                            </path>
-                        </svg>
-                    </div>
-                    <h3 class="text-lg font-semibold text-slate-900 mb-2">Secure Authentication</h3>
-                    <p class="text-slate-500 text-sm leading-relaxed">Industry standard JWT token architecture with
-                        bcrypt password hashing.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Comparison Section -->
-    <section id="comparison" class="py-24 bg-slate-50 border-t border-slate-100 transition-all duration-700 opacity-0 h-0 overflow-hidden pointer-events-none">
-        <div class="max-w-4xl mx-auto px-6 text-center">
-            <h2 class="text-3xl font-bold text-slate-900 mb-12 tracking-tight">GeoAttend vs Traditional</h2>
-
-            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden text-left">
-                <table class="w-full text-sm">
-                    <thead>
-                        <tr class="bg-slate-50 border-b border-slate-200">
-                            <th class="py-4 px-6 text-slate-500 font-medium w-1/3">Feature</th>
-                            <th class="py-4 px-6 text-slate-900 font-semibold w-1/3">Traditional Register</th>
-                            <th
-                                class="py-4 px-6 text-brand-600 font-semibold w-1/3 border-l border-brand-100 bg-brand-50/30">
-                                GeoAttend System</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100 text-slate-600">
-                        <tr>
-                            <td class="py-4 px-6 font-medium text-slate-900">Proxy Attendance</td>
-                            <td class="py-4 px-6">Commonly exploited</td>
-                            <td class="py-4 px-6 border-l border-brand-100 bg-brand-50/10 font-medium text-slate-900">
-                                Mathematically Impossible</td>
-                        </tr>
-                        <tr>
-                            <td class="py-4 px-6 font-medium text-slate-900">Time to Process</td>
-                            <td class="py-4 px-6">10-15 minutes / class</td>
-                            <td class="py-4 px-6 border-l border-brand-100 bg-brand-50/10 font-medium text-slate-900">
-                                &lt; 15 seconds</td>
-                        </tr>
-                        <tr>
-                            <td class="py-4 px-6 font-medium text-slate-900">Reporting</td>
-                            <td class="py-4 px-6">Manual calculation</td>
-                            <td class="py-4 px-6 border-l border-brand-100 bg-brand-50/10 font-medium text-slate-900">
-                                Real-time Analytics</td>
-                        </tr>
-                        <tr>
-                            <td class="py-4 px-6 font-medium text-slate-900">Accuracy</td>
-                            <td class="py-4 px-6">Prone to human error</td>
-                            <td class="py-4 px-6 border-l border-brand-100 bg-brand-50/10 font-medium text-slate-900">
-                                100% System Verified</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </section>
+    <!-- Sections removed as they are now separate pages -->
 
     <!-- Dashboard Preview Section -->
     <section id="dashboard-preview" class="py-24 bg-white border-t border-slate-100 overflow-hidden">
@@ -726,8 +519,8 @@
                 <div>
                     <h4 class="font-semibold text-slate-900 mb-4 text-sm">Product</h4>
                     <ul class="space-y-2 text-sm text-slate-500">
-                        <li><a href="#features" class="hover:text-slate-900 transition-colors">Features</a></li>
-                        <li><a href="#comparison" class="hover:text-slate-900 transition-colors">Comparison</a></li>
+                        <li><a href="features.html" class="hover:text-slate-900 transition-colors">Features</a></li>
+                        <li><a href="compare.html" class="hover:text-slate-900 transition-colors">Comparison</a></li>
                         <li><a href="#" class="hover:text-slate-900 transition-colors">Pricing</a></li>
                     </ul>
                 </div>
@@ -799,24 +592,6 @@
             iconBars.classList.remove('hidden');
         }
     });
-
-    function showSection(id) {
-        const section = document.getElementById(id);
-        if (section) {
-            section.classList.remove('opacity-0', 'h-0', 'overflow-hidden', 'pointer-events-none');
-            section.classList.add('opacity-100', 'h-auto', 'pointer-events-auto');
-            
-            // Wait for DOM to update height before scrolling
-            setTimeout(() => {
-                section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }, 50);
-
-            // Close mobile menu if open
-            if (!mobileMenu.classList.contains('hidden')) {
-                mobileMenuBtn.click();
-            }
-        }
-    }
 </script>
 
 </html>

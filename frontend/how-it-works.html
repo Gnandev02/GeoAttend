@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How It Works | GeoAttend</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        brand: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass-panel { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(226, 232, 240, 0.8); }
+    </style>
+</head>
+
+<body class="bg-white antialiased">
+    <!-- Navbar (Simplified from index.html) -->
+    <nav class="fixed w-full top-0 z-50 glass-panel h-20">
+        <div class="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
+            <a href="index.html" class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg bg-brand-500 text-white flex items-center justify-center">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    </svg>
+                </div>
+                <span class="font-extrabold text-xl tracking-tight text-slate-900">GeoAttend</span>
+            </a>
+            <div class="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-500">
+                <a href="how-it-works.html" class="text-brand-600">How it Works</a>
+                <a href="features.html" class="hover:text-slate-900 transition-colors">Features</a>
+                <a href="compare.html" class="hover:text-slate-900 transition-colors">Compare</a>
+                <a href="admin-login.html" class="px-5 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-all shadow-sm">Login</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="pt-32 pb-20">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 mb-4 tracking-tight">How GeoAttend Works</h1>
+                <p class="text-slate-500 max-w-2xl mx-auto text-lg">Four simple steps to absolute attendance integrity.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <!-- Step 1 -->
+                <div class="saas-card p-8 border border-slate-100 rounded-2xl bg-slate-50/50">
+                    <div class="w-12 h-12 bg-white border border-slate-200 rounded-xl shadow-sm flex items-center justify-center text-brand-600 font-bold text-lg mb-6">1</div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Secure Login</h3>
+                    <p class="text-slate-500 text-sm leading-relaxed">Students authenticate using secure JWT credentials via their portal.</p>
+                </div>
+                <!-- Step 2 -->
+                <div class="saas-card p-8 border border-slate-100 rounded-2xl bg-slate-50/50">
+                    <div class="w-12 h-12 bg-white border border-slate-200 rounded-xl shadow-sm flex items-center justify-center text-brand-600 font-bold text-lg mb-6">2</div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Location Request</h3>
+                    <p class="text-slate-500 text-sm leading-relaxed">Browser prompts for rigorous GPS coordinate access at marking time.</p>
+                </div>
+                <!-- Step 3 -->
+                <div class="saas-card p-8 border border-slate-100 rounded-2xl bg-slate-50/50">
+                    <div class="w-12 h-12 bg-white border border-slate-200 rounded-xl shadow-sm flex items-center justify-center text-brand-600 font-bold text-lg mb-6">3</div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Geofence Validation</h3>
+                    <p class="text-slate-500 text-sm leading-relaxed">Server calculates Haversine distance against admin-defined boundaries.</p>
+                </div>
+                <!-- Step 4 -->
+                <div class="saas-card p-8 border border-brand-100 rounded-2xl bg-brand-50/30">
+                    <div class="w-12 h-12 bg-brand-600 rounded-xl shadow-md flex items-center justify-center text-white font-bold text-lg mb-6">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Attendance Marked</h3>
+                    <p class="text-slate-500 text-sm leading-relaxed">If within radius, attendance is permanently recorded in the system.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-12">
+        <div class="max-w-7xl mx-auto px-6 text-center">
+            <p class="text-sm text-slate-400">© 2026 GeoAttend. Built for accuracy.</p>
+        </div>
+    </footer>
+</body>
+</html>

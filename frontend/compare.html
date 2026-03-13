@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compare | GeoAttend</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        brand: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass-panel { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(226, 232, 240, 0.8); }
+    </style>
+</head>
+
+<body class="bg-white antialiased">
+    <!-- Navbar -->
+    <nav class="fixed w-full top-0 z-50 glass-panel h-20">
+        <div class="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
+            <a href="index.html" class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg bg-brand-500 text-white flex items-center justify-center">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    </svg>
+                </div>
+                <span class="font-extrabold text-xl tracking-tight text-slate-900">GeoAttend</span>
+            </a>
+            <div class="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-500">
+                <a href="how-it-works.html" class="hover:text-slate-900 transition-colors">How it Works</a>
+                <a href="features.html" class="hover:text-slate-900 transition-colors">Features</a>
+                <a href="compare.html" class="text-brand-600">Compare</a>
+                <a href="admin-login.html" class="px-5 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-all shadow-sm">Login</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="pt-32 pb-20">
+        <div class="max-w-4xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 mb-4 tracking-tight">GeoAttend vs Traditional</h1>
+                <p class="text-slate-500 max-w-2xl mx-auto text-lg">Why institutions are switching to automated GPS verification.</p>
+            </div>
+
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden">
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="bg-slate-50/50 border-b border-slate-100">
+                            <th class="py-6 px-8 text-slate-500 font-bold uppercase text-xs tracking-wider">Feature</th>
+                            <th class="py-6 px-8 text-slate-900 font-bold text-lg">Paper Register</th>
+                            <th class="py-6 px-8 text-brand-600 font-bold text-lg bg-brand-50/20 shadow-inner">GeoAttend</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-50">
+                        <tr class="hover:bg-slate-50/30 transition-colors">
+                            <td class="py-6 px-8 font-bold text-slate-900">Proxy Attendance</td>
+                            <td class="py-6 px-8 text-slate-500">Very Easy</td>
+                            <td class="py-6 px-8 bg-brand-50/10 font-bold text-slate-900">Impossible</td>
+                        </tr>
+                        <tr class="hover:bg-slate-50/30 transition-colors">
+                            <td class="py-6 px-8 font-bold text-slate-900">Processing Time</td>
+                            <td class="py-6 px-8 text-slate-500">10-15 Minutes</td>
+                            <td class="py-6 px-8 bg-brand-50/10 font-bold text-slate-900">&lt; 15 Seconds</td>
+                        </tr>
+                        <tr class="hover:bg-slate-50/30 transition-colors">
+                            <td class="py-6 px-8 font-bold text-slate-900">Data Integrity</td>
+                            <td class="py-6 px-8 text-slate-500">Low (Manual)</td>
+                            <td class="py-6 px-8 bg-brand-50/10 font-bold text-slate-900">100% Crypto-Secure</td>
+                        </tr>
+                        <tr class="hover:bg-slate-50/30 transition-colors">
+                            <td class="py-6 px-8 font-bold text-slate-900">Staff Workload</td>
+                            <td class="py-6 px-8 text-slate-500">High (Admin heavy)</td>
+                            <td class="py-6 px-8 bg-brand-50/10 font-bold text-slate-900">Zero (Automated)</td>
+                        </tr>
+                        <tr class="hover:bg-slate-50/30 transition-colors">
+                            <td class="py-6 px-8 font-bold text-slate-900">Analytics</td>
+                            <td class="py-6 px-8 text-slate-500">None (Static)</td>
+                            <td class="py-6 px-8 bg-brand-50/10 font-bold text-slate-900">Real-time Dashboard</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-12">
+        <div class="max-w-7xl mx-auto px-6 text-center">
+            <p class="text-sm text-slate-400">© 2026 GeoAttend. The standard for integrity.</p>
+        </div>
+    </footer>
+</body>
+</html>
