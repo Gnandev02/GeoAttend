@@ -124,7 +124,7 @@
                             <label
                                 class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-2 flex justify-between">
                                 <span>Password</span>
-                                <a href="#"
+                                <a href="javascript:void(0)" onclick="openResetModal()"
                                     class="text-[#0284c7] hover:text-[#0369a1] capitalize tracking-normal font-semibold">Forgot?</a>
                             </label>
                             <input type="password" id="password" required class="saas-input" placeholder="••••••••"
@@ -142,6 +142,45 @@
                         <span id="btn-text">Sign in securely</span>
                     </button>
                 </form>
+            </div>
+
+            <!-- Forgot Password Modal -->
+            <div id="reset-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm">
+                <div class="w-full max-w-sm saas-card p-8 relative">
+                    <button onclick="closeResetModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                    
+                    <div id="reset-step-1">
+                        <h3 class="text-xl font-bold text-slate-900 mb-2">Reset Password</h3>
+                        <p class="text-sm text-slate-500 mb-6">Enter your email and we'll send you an OTP code.</p>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Email Address</label>
+                                <input type="email" id="reset-email" class="saas-input" placeholder="student@geo.edu">
+                            </div>
+                            <button onclick="sendResetOTP()" id="reset-otp-btn" class="btn-primary">Send OTP</button>
+                        </div>
+                    </div>
+
+                    <div id="reset-step-2" class="hidden">
+                        <h3 class="text-xl font-bold text-slate-900 mb-2">Verify OTP</h3>
+                        <p class="text-sm text-slate-500 mb-6">Enter the 6-digit code sent to your email.</p>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">OTP Code</label>
+                                <input type="text" id="reset-otp" class="saas-input text-center text-xl tracking-widest font-bold" placeholder="000000" maxlength="6">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-2">New Password</label>
+                                <input type="password" id="reset-new-password" class="saas-input" placeholder="••••••••">
+                            </div>
+                            <button onclick="performReset()" id="reset-final-btn" class="btn-primary">Update Password</button>
+                        </div>
+                    </div>
+
+                    <div id="reset-msg" class="mt-4 hidden text-sm font-medium p-3 rounded-lg"></div>
+                </div>
             </div>
 
             <!-- Back Link -->
@@ -177,7 +216,7 @@
             errorMsg.classList.add('hidden');
 
             try {
-                const response = await fetch('/api/studentLogin', {
+                const response = await fetch('/api/auth?action=studentLogin', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
@@ -217,6 +256,97 @@
                 btnText.textContent = 'Sign in securely';
             }
         });
+
+        // Forgot Password Logic
+        function openResetModal() {
+            document.getElementById('reset-modal').classList.remove('hidden');
+        }
+
+        function closeResetModal() {
+            document.getElementById('reset-modal').classList.add('hidden');
+            // Reset states
+            document.getElementById('reset-step-1').classList.remove('hidden');
+            document.getElementById('reset-step-2').classList.add('hidden');
+            document.getElementById('reset-msg').classList.add('hidden');
+        }
+
+        async function sendResetOTP() {
+            const email = document.getElementById('reset-email').value;
+            const btn = document.getElementById('reset-otp-btn');
+            const msg = document.getElementById('reset-msg');
+
+            if (!email) return alert('Please enter your email');
+
+            btn.disabled = true;
+            btn.textContent = 'Sending...';
+            msg.classList.add('hidden');
+
+            try {
+                const res = await fetch('/api/auth?action=forgotPassword', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    document.getElementById('reset-step-1').classList.add('hidden');
+                    document.getElementById('reset-step-2').classList.remove('hidden');
+                    msg.className = 'mt-4 text-sm font-medium p-3 rounded-lg bg-blue-50 text-blue-600';
+                    msg.textContent = 'OTP sent to your email';
+                    msg.classList.remove('hidden');
+                } else {
+                    msg.className = 'mt-4 text-sm font-medium p-3 rounded-lg bg-red-50 text-red-600';
+                    msg.textContent = data.message;
+                    msg.classList.remove('hidden');
+                }
+            } catch (err) {
+                alert('Connection error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Send OTP';
+            }
+        }
+
+        async function performReset() {
+            const email = document.getElementById('reset-email').value;
+            const otp = document.getElementById('reset-otp').value;
+            const newPassword = document.getElementById('reset-new-password').value;
+            const btn = document.getElementById('reset-final-btn');
+            const msg = document.getElementById('reset-msg');
+
+            if (!otp || !newPassword) return alert('Please fill all fields');
+
+            btn.disabled = true;
+            btn.textContent = 'Updating...';
+
+            try {
+                const res = await fetch('/api/auth?action=resetPassword', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, otp, newPassword })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    msg.className = 'mt-4 text-sm font-medium p-3 rounded-lg bg-green-50 text-green-600';
+                    msg.textContent = 'Password updated! Closing...';
+                    msg.classList.remove('hidden');
+                    setTimeout(() => {
+                        closeResetModal();
+                    }, 2000);
+                } else {
+                    msg.className = 'mt-4 text-sm font-medium p-3 rounded-lg bg-red-50 text-red-600';
+                    msg.textContent = data.message;
+                    msg.classList.remove('hidden');
+                }
+            } catch (err) {
+                alert('Connection error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Update Password';
+            }
+        }
     </script>
 </body>
 

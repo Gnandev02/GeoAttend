@@ -102,8 +102,8 @@
             <!-- Desktop Navigation Group -->
             <div class="hidden md:flex items-center gap-10">
                 <div class="flex items-center gap-8 text-sm font-semibold text-slate-500">
-                    <a href="#how-it-works" class="hover:text-slate-900 transition-colors">How it Works</a>
-                    <a href="#features" class="hover:text-slate-900 transition-colors">Features</a>
+                    <a href="javascript:void(0)" onclick="showSection('how-it-works')" class="hover:text-slate-900 transition-colors">How it Works</a>
+                    <a href="javascript:void(0)" onclick="showSection('features')" class="hover:text-slate-900 transition-colors">Features</a>
                     <a href="admin-signup.html" class="hover:text-slate-900 transition-colors">Sign Up</a>
                 </div>
 
@@ -174,14 +174,14 @@
         <div id="mobile-menu"
             class="hidden md:hidden bg-white border-t border-slate-100 shadow-xl overflow-hidden transform transition-all duration-300 origin-top h-0">
             <div class="px-6 py-4 space-y-4">
-                <a href="#how-it-works"
+                <a href="javascript:void(0)" onclick="showSection('how-it-works')"
                     class="block text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors pl-2">How
                     it Works</a>
-                <a href="#features"
+                <a href="javascript:void(0)" onclick="showSection('features')"
                     class="block text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors pl-2">Features</a>
                 <a href="admin-signup.html"
                     class="block text-sm font-semibold text-slate-900 transition-colors pl-2">Sign Up</a>
-                <a href="#comparison"
+                <a href="javascript:void(0)" onclick="showSection('comparison')"
                     class="block text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors pl-2">Compare</a>
 
                 <div class="h-px bg-slate-100 my-4"></div>
@@ -412,7 +412,7 @@
     </section>
 
     <!-- How It Works Section -->
-    <section id="how-it-works" class="py-24 bg-slate-50">
+    <section id="how-it-works" class="py-24 bg-slate-50 transition-all duration-700 opacity-0 h-0 overflow-hidden pointer-events-none">
         <div class="max-w-7xl mx-auto px-6">
             <div class="text-center mb-16">
                 <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-4 tracking-tight">How GeoAttend Works</h2>
@@ -469,7 +469,7 @@
     </section>
 
     <!-- Features Section -->
-    <section id="features" class="py-24 bg-white border-t border-slate-100">
+    <section id="features" class="py-24 bg-white border-t border-slate-100 transition-all duration-700 opacity-0 h-0 overflow-hidden pointer-events-none">
         <div class="max-w-7xl mx-auto px-6">
             <div class="mb-16">
                 <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-4 tracking-tight">Enterprise-Grade Features
@@ -574,7 +574,7 @@
     </section>
 
     <!-- Comparison Section -->
-    <section id="comparison" class="py-24 bg-slate-50 border-t border-slate-100">
+    <section id="comparison" class="py-24 bg-slate-50 border-t border-slate-100 transition-all duration-700 opacity-0 h-0 overflow-hidden pointer-events-none">
         <div class="max-w-4xl mx-auto px-6 text-center">
             <h2 class="text-3xl font-bold text-slate-900 mb-12 tracking-tight">GeoAttend vs Traditional</h2>
 
@@ -799,6 +799,24 @@
             iconBars.classList.remove('hidden');
         }
     });
+
+    function showSection(id) {
+        const section = document.getElementById(id);
+        if (section) {
+            section.classList.remove('opacity-0', 'h-0', 'overflow-hidden', 'pointer-events-none');
+            section.classList.add('opacity-100', 'h-auto', 'pointer-events-auto');
+            
+            // Wait for DOM to update height before scrolling
+            setTimeout(() => {
+                section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 50);
+
+            // Close mobile menu if open
+            if (!mobileMenu.classList.contains('hidden')) {
+                mobileMenuBtn.click();
+            }
+        }
+    }
 </script>
 
 </html>

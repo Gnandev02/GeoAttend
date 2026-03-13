@@ -1,6 +1,6 @@
 const { query } = require('./utils/db');
 const { comparePassword, hashPassword, generateToken } = require('./utils/auth');
-const { sendVerificationEmail } = require('./utils/email');
+const { sendVerificationEmail, sendResetEmail } = require('./utils/email');
 
 export default async function handler(req, res) {
     // Explicit CORS Headers for Vercel Serverless
@@ -100,6 +100,68 @@ export default async function handler(req, res) {
             } else {
                 return res.status(401).json({ message: 'Invalid credentials' });
             }
+        }
+
+        if (action === 'forgotPassword') {
+            const { email } = req.body;
+            if (!email) return res.status(400).json({ message: 'Email is required' });
+
+            // Check if user exists in either table
+            const adminCheck = await query('SELECT email FROM admins WHERE email = $1', [email]);
+            const studentCheck = await query('SELECT email FROM students WHERE email = $1', [email]);
+
+            if (adminCheck.rows.length === 0 && studentCheck.rows.length === 0) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+
+            const otp = Math.floor(100000 + Math.random() * 900000).toString();
+            await query(`INSERT INTO otps (email, otp, created_at) VALUES ($1, $2, CURRENT_TIMESTAMP) ON CONFLICT (email) DO UPDATE SET otp = EXCLUDED.otp, created_at = CURRENT_TIMESTAMP`, [email, otp]);
+
+            await sendResetEmail(email, otp);
+            return res.status(200).json({ message: 'Reset OTP sent to your email' });
+        }
+
+        if (action === 'verifyResetOTP') {
+            const { email, otp } = req.body;
+            if (!email || !otp) return res.status(400).json({ message: 'Email and OTP are required' });
+
+            const otpRecord = await query('SELECT * FROM otps WHERE email = $1', [email]);
+            if (otpRecord.rows.length === 0) return res.status(400).json({ message: 'Invalid OTP or session expired' });
+
+            const dbOtp = otpRecord.rows[0];
+            const otpTime = new Date(dbOtp.created_at).getTime();
+            const currentTime = new Date().getTime();
+
+            if (currentTime - otpTime > 10 * 60 * 1000) {
+                await query('DELETE FROM otps WHERE email = $1', [email]);
+                return res.status(400).json({ message: 'OTP has expired' });
+            }
+
+            if (dbOtp.otp !== otp) return res.status(400).json({ message: 'Invalid OTP' });
+
+            return res.status(200).json({ message: 'OTP verified successfully' });
+        }
+
+        if (action === 'resetPassword') {
+            const { email, otp, newPassword } = req.body;
+            if (!email || !otp || !newPassword) return res.status(400).json({ message: 'All fields are required' });
+
+            // Verify OTP one last time
+            const otpRecord = await query('SELECT * FROM otps WHERE email = $1', [email]);
+            if (otpRecord.rows.length === 0 || otpRecord.rows[0].otp !== otp) {
+                return res.status(400).json({ message: 'Invalid session' });
+            }
+
+            const hashedPassword = await hashPassword(newPassword);
+
+            // Update in admins or students
+            const adminUpdate = await query('UPDATE admins SET password = $1 WHERE email = $2', [hashedPassword, email]);
+            if (adminUpdate.rowCount === 0) {
+                await query('UPDATE students SET password = $1 WHERE email = $2', [hashedPassword, email]);
+            }
+
+            await query('DELETE FROM otps WHERE email = $1', [email]);
+            return res.status(200).json({ message: 'Password reset successful. Please login.' });
         }
 
         return res.status(404).json({ message: 'API Action Not Found in auth.js' });

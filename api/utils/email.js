@@ -59,4 +59,44 @@ const sendVerificationEmail = async (toEmail, otp) => {
     }
 };
 
-module.exports = { sendVerificationEmail };
+const sendResetEmail = async (toEmail, otp) => {
+    try {
+        const transporter = nodemailer.createTransport({
+            host: 'smtp.gmail.com',
+            port: 465,
+            secure: true,
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS,
+            },
+        });
+
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: toEmail,
+            subject: 'GeoAttend - Password Reset Verification',
+            html: `
+                <div style="font-family: Arial, sans-serif; padding: 20px; color: #1e293b;">
+                    <h2 style="color: #0284c7;">GeoAttend Password Reset</h2>
+                    <p>We received a request to reset your password.</p>
+                    <p>Your OTP code is: <strong style="font-size: 24px;">${otp}</strong></p>
+                    <p>This code will expire in 10 minutes. If you did not request this, please ignore this email.</p>
+                </div>
+            `,
+        };
+
+        await new Promise((resolve, reject) => {
+            transporter.sendMail(mailOptions, (err, info) => {
+                if (err) reject(err);
+                else resolve(info);
+            });
+        });
+
+        return true;
+    } catch (error) {
+        console.error('Error sending reset email:', error);
+        throw error;
+    }
+};
+
+module.exports = { sendVerificationEmail, sendResetEmail };
