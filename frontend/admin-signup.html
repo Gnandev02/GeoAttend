@@ -162,6 +162,14 @@
                                 maxlength="6">
                             <p id="otp-error" class="text-xs text-red-500 mt-1 hidden"></p>
                             <p class="text-xs text-slate-500 mt-2">Enter the 6-digit code sent to your email.</p>
+                            <!-- Resend OTP Timer -->
+                            <div class="mt-3 text-center">
+                                <span id="resend-timer" class="text-xs text-slate-400 font-medium">Resend OTP in <span id="resend-countdown">30</span>s</span>
+                                <button type="button" id="resend-btn" onclick="resendOtp()"
+                                    class="hidden text-xs font-bold text-[#0284c7] hover:text-[#0369a1] transition-colors underline-offset-2 underline">
+                                    Resend OTP
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -382,6 +390,9 @@
                 submitBtn.disabled = false;
                 btnText.textContent = 'Verify & Sign Up';
 
+                // Start resend timer
+                startResendTimer();
+
                 // Set focus to OTP field
                 setTimeout(() => otpInput.focus(), 100);
 
@@ -393,6 +404,70 @@
                 btnText.textContent = 'Sign Up';
             }
         });
+
+        // --- Resend OTP Logic ---
+        let resendTimerInterval = null;
+
+        function startResendTimer(seconds = 30) {
+            clearInterval(resendTimerInterval);
+            const countdownEl = document.getElementById('resend-countdown');
+            const timerEl = document.getElementById('resend-timer');
+            const resendBtn = document.getElementById('resend-btn');
+
+            timerEl.classList.remove('hidden');
+            resendBtn.classList.add('hidden');
+            let remaining = seconds;
+            countdownEl.textContent = remaining;
+
+            resendTimerInterval = setInterval(() => {
+                remaining--;
+                countdownEl.textContent = remaining;
+                if (remaining <= 0) {
+                    clearInterval(resendTimerInterval);
+                    timerEl.classList.add('hidden');
+                    resendBtn.classList.remove('hidden');
+                }
+            }, 1000);
+        }
+
+        async function resendOtp() {
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const resendBtn = document.getElementById('resend-btn');
+            const successMsg = document.getElementById('success-msg');
+            const errorMsg = document.getElementById('error-msg');
+            const errorText = document.getElementById('error-text');
+
+            resendBtn.disabled = true;
+            resendBtn.textContent = 'Sending...';
+
+            try {
+                const response = await fetch('/api/auth?action=sendAdminOtp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, password })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    successMsg.classList.remove('hidden');
+                    document.getElementById('success-text').textContent = 'New OTP sent to your email!';
+                    document.getElementById('otp').value = '';
+                    document.getElementById('otp').focus();
+                    startResendTimer();
+                } else {
+                    errorText.textContent = data.message || 'Failed to resend OTP.';
+                    errorMsg.classList.remove('hidden');
+                    startResendTimer(10);
+                }
+            } catch (err) {
+                errorText.textContent = 'Network error. Please try again.';
+                errorMsg.classList.remove('hidden');
+                startResendTimer(10);
+            }
+            resendBtn.disabled = false;
+            resendBtn.textContent = 'Resend OTP';
+        }
     </script>
 </body>
 
