@@ -180,15 +180,14 @@
                 <a href="#features"
                     class="block text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors pl-2">Features</a>
                 <a href="admin-signup.html"
-                    class="block text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors pl-2">Sign
-                    Up</a>
+                    class="block text-sm font-semibold text-slate-900 transition-colors pl-2">Sign Up</a>
                 <a href="#comparison"
                     class="block text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors pl-2">Compare</a>
 
                 <div class="h-px bg-slate-100 my-4"></div>
 
                 <div class="space-y-3 pl-2">
-                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Access Portal</p>
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Sign In</p>
                     <a href="student-login.html"
                         class="flex items-center gap-3 text-sm font-semibold text-slate-700 hover:text-brand-600 transition-colors">
                         <div
@@ -778,16 +777,26 @@
     const iconClose = document.getElementById('menu-icon-close');
 
     mobileMenuBtn.addEventListener('click', () => {
-        const isExpanded = !mobileMenu.classList.contains('hidden');
+        const isHidden = mobileMenu.classList.contains('hidden');
 
-        if (isExpanded) {
-            mobileMenu.classList.add('hidden');
-            iconClose.classList.add('hidden');
-            iconBars.classList.remove('hidden');
-        } else {
+        if (isHidden) {
             mobileMenu.classList.remove('hidden');
+            setTimeout(() => {
+                mobileMenu.style.height = 'auto';
+                const height = mobileMenu.scrollHeight + 'px';
+                mobileMenu.style.height = '0px';
+                mobileMenu.offsetHeight; // force reflow
+                mobileMenu.style.height = height;
+            }, 10);
             iconBars.classList.add('hidden');
             iconClose.classList.remove('hidden');
+        } else {
+            mobileMenu.style.height = '0px';
+            setTimeout(() => {
+                mobileMenu.classList.add('hidden');
+            }, 300);
+            iconClose.classList.add('hidden');
+            iconBars.classList.remove('hidden');
         }
     });
 </script>

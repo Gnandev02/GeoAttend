@@ -39,9 +39,14 @@ module.exports = async (req, res) => {
                 
                 const geofence = geofenceQuery.rows[0];
                 const distance = calculateDistance(latitude, longitude, geofence.latitude, geofence.longitude);
+                console.log(`[CheckIn] Student ${student.id} at (${latitude}, ${longitude}), Campus (${geofence.latitude}, ${geofence.longitude}), Distance: ${distance}m, Radius: ${geofence.radius}m`);
                 
                 if (distance > geofence.radius) {
-                    return res.status(400).json({ message: 'You must be inside the campus to check in', distance: Math.round(distance) });
+                    return res.status(400).json({ 
+                        message: 'You must be inside the campus to check in', 
+                        distance: Math.round(distance),
+                        requiredRadius: geofence.radius 
+                    });
                 }
 
                 try {

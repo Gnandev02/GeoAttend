@@ -424,10 +424,24 @@
                     handleAutoCheck(latitude, longitude, dist);
                 },
                 (err) => {
-                    showAlert('Tracking failed: ' + err.message, false);
-                    toggleTracking();
+                    let msg = 'Tracking failed: ';
+                    switch(err.code) {
+                        case err.PERMISSION_DENIED:
+                            msg += "Location permission denied. Please enable GPS.";
+                            break;
+                        case err.POSITION_UNAVAILABLE:
+                            msg += "Location information is unavailable.";
+                            break;
+                        case err.TIMEOUT:
+                            msg += "Location request timed out. Retrying...";
+                            break;
+                        default:
+                            msg += err.message;
+                    }
+                    showAlert(msg, false);
+                    if (err.code !== err.TIMEOUT) toggleTracking();
                 },
-                { enableHighAccuracy: true, maximumAge: 0 }
+                { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
             );
         }
 
