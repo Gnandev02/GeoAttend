@@ -11,67 +11,74 @@ module.exports = async (req, res) => {
     try {
         const { action } = req.query;
 
-        if (req.method === 'POST' && action === 'markAttendance') {
-            // Mark Attendance (Student Only)
+        if (req.method === 'POST') {
             const student = await protectStudent(req);
             if (!student) return res.status(401).json({ message: 'Not authorized as a student' });
 
-            const { latitude, longitude, lat, lng, sessionName } = req.body;
-            const finalLat = latitude || lat;
-            const finalLng = longitude || lng;
-
-            if (!finalLat || !finalLng || !sessionName) {
-                return res.status(400).json({ message: 'Location coordinates and session name are required' });
-            }
-
-            const collegeCode = student.college_code;
+            const { latitude, longitude, sessionName } = req.body;
             const today = new Date().toISOString().split('T')[0];
+            const now = new Date();
+            const currentTime = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
-            const existingAttendance = await query(
-                'SELECT * FROM attendance WHERE student_id = $1 AND date = $2 AND session_name = $3 AND status = $4',
-                [student.id, today, sessionName, 'Present']
-            );
+            if (action === 'checkIn') {
+                if (!latitude || !longitude) return res.status(400).json({ message: 'Location required' });
 
-            if (existingAttendance.rows.length > 0) {
-                return res.status(400).json({ message: `Attendance already marked for ${sessionName} today` });
-            }
+                // Check time window (9 AM - 5 PM)
+                const currentHour = now.getHours();
+                let status = 'Present';
 
-            const geofenceQuery = await query('SELECT * FROM campus_setup WHERE college_code = $1', [collegeCode]);
-            if (geofenceQuery.rows.length === 0) {
-                return res.status(500).json({ message: 'College geofence not found' });
-            }
-
-            const geofence = geofenceQuery.rows[0];
-            const distanceToCampus = calculateDistance(finalLat, finalLng, geofence.latitude, geofence.longitude);
-            const isInsideRadius = distanceToCampus <= geofence.radius;
-            const status = isInsideRadius ? 'Present' : 'Outside Zone';
-            const time = new Date().toLocaleTimeString('en-US', { hour12: false });
-
-            const attendanceResult = await query(
-                `INSERT INTO attendance (student_id, college_code, date, time, latitude, longitude, status, distance_from_center, session_name)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-                [student.id, collegeCode, today, time, finalLat, finalLng, status, Math.round(distanceToCampus), sessionName]
-            );
-
-            const attendance = attendanceResult.rows[0];
-
-            return res.status(201).json({
-                message: isInsideRadius ? 'Attendance marked successfully' : 'Attendance rejected: Outside campus radius',
-                distance: Math.round(distanceToCampus),
-                attendance: {
-                    _id: attendance.id,
-                    studentId: attendance.student_id,
-                    collegeCode: attendance.college_code,
-                    date: attendance.date,
-                    time: attendance.time,
-                    locationCoordinates: { lat: attendance.latitude, lng: attendance.longitude },
-                    status: attendance.status,
-                    distanceFromCenter: attendance.distance_from_center,
-                    sessionName: attendance.session_name,
-                    createdAt: attendance.timestamp
+                if (currentHour < 9) {
+                    return res.status(400).json({ message: 'Check-in only available after 9:00 AM' });
+                } else if (currentHour >= 17) {
+                    status = 'Absent'; // Too late
                 }
-            });
 
+                // Check geofence
+                const geofenceQuery = await query('SELECT * FROM campus_setup WHERE college_code = $1', [student.college_code]);
+                if (geofenceQuery.rows.length === 0) return res.status(500).json({ message: 'Campus geofence not configured' });
+                
+                const geofence = geofenceQuery.rows[0];
+                const distance = calculateDistance(latitude, longitude, geofence.latitude, geofence.longitude);
+                
+                if (distance > geofence.radius) {
+                    return res.status(400).json({ message: 'You must be inside the campus to check in', distance: Math.round(distance) });
+                }
+
+                try {
+                    const result = await query(
+                        `INSERT INTO attendance (student_id, college_code, attendance_date, check_in_time, status, distance_at_checkin, latitude, longitude, session_name)
+                         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+                        [student.id, student.college_code, today, currentTime, status, Math.round(distance), latitude, longitude, sessionName || 'Campus Check-in']
+                    );
+                    return res.status(201).json({ message: status === 'Present' ? 'Checked in successfully' : 'Checked in (Late/Absent)', attendance: result.rows[0], distance: Math.round(distance) });
+                } catch (e) {
+                    if (e.code === '23505') return res.status(400).json({ message: 'Already checked in for today' });
+                    throw e;
+                }
+
+            } else if (action === 'checkOut') {
+                const result = await query(
+                    'UPDATE attendance SET check_out_time = $1 WHERE student_id = $2 AND attendance_date = $3 RETURNING *',
+                    [currentTime, student.id, today]
+                );
+
+                if (result.rows.length === 0) return res.status(400).json({ message: 'No check-in record found for today' });
+                return res.status(200).json({ message: 'Checked out successfully', attendance: result.rows[0] });
+
+            } else if (action === 'markAttendance') {
+                // Legacy support for single marking
+                const geofenceQuery = await query('SELECT * FROM campus_setup WHERE college_code = $1', [student.college_code]);
+                const geofence = geofenceQuery.rows[0];
+                const distance = calculateDistance(latitude, longitude, geofence.latitude, geofence.longitude);
+                const status = distance <= geofence.radius ? 'Present' : 'Outside Zone';
+
+                const result = await query(
+                    `INSERT INTO attendance (student_id, college_code, attendance_date, check_in_time, status, distance_at_checkin, latitude, longitude, session_name)
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) ON CONFLICT (student_id, attendance_date) DO UPDATE SET check_in_time = $4, status = $5 RETURNING *`,
+                    [student.id, student.college_code, today, currentTime, status, Math.round(distance), latitude, longitude, sessionName || 'Manual Mark']
+                );
+                return res.status(201).json({ message: 'Attendance processed', attendance: result.rows[0], distance: Math.round(distance) });
+            }
         } else if (req.method === 'GET' && action === 'getAttendanceLogs') {
             // View Attendance (Admin or Student)
             const admin = await protectAdmin(req);
@@ -106,11 +113,12 @@ module.exports = async (req, res) => {
                         rollNumber: a.roll_number
                     },
                     locationCoordinates: { lat: a.latitude, lng: a.longitude },
-                    distanceFromCenter: a.distance_from_center,
+                    distanceFromCenter: a.distance_at_checkin,
                     status: a.status,
                     createdAt: a.timestamp,
-                    date: a.date,
-                    time: a.time,
+                    date: a.attendance_date,
+                    checkinTime: a.check_in_time,
+                    checkoutTime: a.check_out_time,
                     sessionName: a.session_name,
                     collegeCode: collegeCode
                 }));
@@ -118,10 +126,9 @@ module.exports = async (req, res) => {
                 return res.status(200).json(mappedAttendance);
             }
 
-            const student = await protectStudent(req);
             if (student) {
                 // Return Single Student Attendance
-                let queryText = 'SELECT * FROM attendance WHERE student_id = $1 AND college_code = $2 ORDER BY timestamp DESC';
+                let queryText = 'SELECT * FROM attendance WHERE student_id = $1 AND college_code = $2 ORDER BY attendance_date DESC, check_in_time DESC';
 
                 const attendanceQuery = await query(queryText, [student.id, student.college_code]);
 
@@ -129,11 +136,13 @@ module.exports = async (req, res) => {
                     _id: a.id,
                     studentId: a.student_id,
                     collegeCode: a.college_code,
-                    date: a.date,
-                    time: a.time,
+                    date: a.attendance_date,
+                    time: a.check_in_time,
+                    checkinTime: a.check_in_time,
+                    checkoutTime: a.check_out_time,
                     locationCoordinates: { lat: a.latitude, lng: a.longitude },
                     status: a.status,
-                    distanceFromCenter: a.distance_from_center,
+                    distanceFromCenter: a.distance_at_checkin,
                     sessionName: a.session_name,
                     createdAt: a.timestamp
                 }));
@@ -142,6 +151,14 @@ module.exports = async (req, res) => {
             }
 
             return res.status(401).json({ message: 'Not authorized' });
+        } else if (req.method === 'GET' && action === 'getCampus') {
+            const student = await protectStudent(req);
+            if (!student) return res.status(401).json({ message: 'Not authorized' });
+
+            const geofenceQuery = await query('SELECT latitude, longitude, radius FROM campus_setup WHERE college_code = $1', [student.college_code]);
+            if (geofenceQuery.rows.length === 0) return res.status(404).json({ message: 'Geofence not configured' });
+
+            return res.status(200).json(geofenceQuery.rows[0]);
         } else {
             return res.status(405).json({ message: 'Method Not Allowed' });
         }
