@@ -62,7 +62,25 @@ module.exports = async (req, res) => {
                          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
                         [student.id, student.college_code, today, currentTime, status, Math.round(distance), latitude, longitude, sessionName || 'Campus Check-in']
                     );
-                    return res.status(201).json({ message: status === 'Present' ? 'Checked in successfully' : 'Checked in (Late/Absent)', attendance: result.rows[0], distance: Math.round(distance) });
+                    const row = result.rows[0];
+                    const dateStr = row.attendance_date instanceof Date
+                        ? row.attendance_date.toISOString().split('T')[0]
+                        : String(row.attendance_date).substring(0, 10);
+                    return res.status(201).json({
+                        message: status === 'Present' ? 'Checked in successfully' : 'Checked in (Late/Absent)',
+                        attendance: {
+                            _id: row.id,
+                            studentId: row.student_id,
+                            date: dateStr,
+                            checkinTime: row.check_in_time,
+                            checkoutTime: row.check_out_time || null,
+                            status: row.status,
+                            distanceFromCenter: row.distance_at_checkin,
+                            latitude: row.latitude,
+                            longitude: row.longitude
+                        },
+                        distance: Math.round(distance)
+                    });
                 } catch (e) {
                     if (e.code === '23505') return res.status(400).json({ message: 'Already checked in for today' });
                     throw e;
@@ -75,7 +93,24 @@ module.exports = async (req, res) => {
                 );
 
                 if (result.rows.length === 0) return res.status(400).json({ message: 'No check-in record found for today' });
-                return res.status(200).json({ message: 'Checked out successfully', attendance: result.rows[0] });
+                const outRow = result.rows[0];
+                const outDateStr = outRow.attendance_date instanceof Date
+                    ? outRow.attendance_date.toISOString().split('T')[0]
+                    : String(outRow.attendance_date).substring(0, 10);
+                return res.status(200).json({
+                    message: 'Checked out successfully',
+                    attendance: {
+                        _id: outRow.id,
+                        studentId: outRow.student_id,
+                        date: outDateStr,
+                        checkinTime: outRow.check_in_time,
+                        checkoutTime: outRow.check_out_time,
+                        status: outRow.status,
+                        distanceFromCenter: outRow.distance_at_checkin,
+                        latitude: outRow.latitude,
+                        longitude: outRow.longitude
+                    }
+                });
 
             } else if (action === 'markAttendance') {
                 // Legacy support for single marking
@@ -149,20 +184,28 @@ module.exports = async (req, res) => {
 
                 const attendanceQuery = await query(queryText, [student.id, student.college_code]);
 
-                const mappedAttendance = attendanceQuery.rows.map(a => ({
-                    _id: a.id,
-                    studentId: a.student_id,
-                    collegeCode: a.college_code,
-                    date: a.attendance_date,
-                    time: a.check_in_time,
-                    checkinTime: a.check_in_time,
-                    checkoutTime: a.check_out_time,
-                    locationCoordinates: { lat: a.latitude, lng: a.longitude },
-                    status: a.status,
-                    distanceFromCenter: a.distance_at_checkin,
-                    sessionName: a.session_name,
-                    createdAt: a.timestamp
-                }));
+                const mappedAttendance = attendanceQuery.rows.map(a => {
+                    // Normalize attendance_date — pg driver returns a JS Date object for DATE columns.
+                    // Force it to a plain YYYY-MM-DD string so the frontend === comparison works.
+                    const dateStr = a.attendance_date instanceof Date
+                        ? a.attendance_date.toISOString().split('T')[0]
+                        : (typeof a.attendance_date === 'string' ? a.attendance_date.substring(0, 10) : String(a.attendance_date));
+
+                    return {
+                        _id: a.id,
+                        studentId: a.student_id,
+                        collegeCode: a.college_code,
+                        date: dateStr,
+                        time: a.check_in_time || null,
+                        checkinTime: a.check_in_time || null,
+                        checkoutTime: a.check_out_time || null,
+                        locationCoordinates: { lat: a.latitude, lng: a.longitude },
+                        status: a.status,
+                        distanceFromCenter: a.distance_at_checkin,
+                        sessionName: a.session_name,
+                        createdAt: a.timestamp
+                    };
+                });
 
                 return res.status(200).json(mappedAttendance);
             }

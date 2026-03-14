@@ -370,27 +370,21 @@
                 document.getElementById('attendance-circle').classList.replace('stroke-[#0284c7]', 'stroke-orange-500');
             }
 
-            // Check today status
-            const today = new Date().toISOString().split('T')[0];
-            const recordsToday = attendanceData.filter(r => r.date === today);
-            const todayRecord = recordsToday[0];
-            
-            if (todayRecord) {
-                document.getElementById('display-checkin').textContent = todayRecord.checkinTime ? todayRecord.checkinTime.substring(0, 5) : '--:--';
-                document.getElementById('display-checkout').textContent = todayRecord.checkoutTime ? todayRecord.checkoutTime.substring(0, 5) : '--:--';
+            // Use local date (not UTC) to avoid off-by-one in IST (UTC+5:30)
+            const today = new Date().toLocaleDateString('en-CA'); // gives YYYY-MM-DD in local time
+            console.log(`[UI] Today (local): ${today}`);
 
-                // Update Presence Badge
-                const presenceBadge = document.getElementById('presence-badge');
-                if (todayRecord.status === 'Present') {
-                    presenceBadge.className = "inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700";
-                    presenceBadge.textContent = "Inside Campus";
-                } else {
-                    presenceBadge.className = "inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700";
-                    presenceBadge.textContent = (todayRecord.checkoutTime) ? "Checked Out" : "Outside Campus";
-                }
+            // Find today's record — compare only first 10 chars in case date has extra info
+            const todayRecord = attendanceData.find(r => r.date && r.date.substring(0, 10) === today);
+            console.log(`[UI] Today record:`, todayRecord || 'NONE');
+
+            if (todayRecord) {
+                updateCheckInOutUI(todayRecord);
             } else {
                 document.getElementById('display-checkin').textContent = '--:--';
                 document.getElementById('display-checkout').textContent = '--:--';
+                document.getElementById('presence-badge').className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-500';
+                document.getElementById('presence-badge').textContent = 'Not Checked In';
             }
             lucide.createIcons();
 
@@ -404,10 +398,13 @@
             } else {
                 let html = '<div class="divide-y divide-slate-100">';
                 attendanceData.slice(0, 10).forEach(record => {
-                    const dateObj = new Date(record.date);
+                    // Parse date safely — append T00:00 in local time to avoid UTC shift
+                    const dateStr = record.date ? record.date.substring(0, 10) : '';
+                    const dateObj = dateStr ? new Date(dateStr + 'T00:00:00') : new Date();
                     const month = dateObj.toLocaleString('default', { month: 'short' }).toUpperCase();
-                    const day = ("0" + dateObj.getDate()).slice(-2);
+                    const day = ('0' + dateObj.getDate()).slice(-2);
                     const statusClass = record.status === 'Present' ? 'badge-success' : 'badge-danger';
+                    const timeDisplay = record.checkinTime ? record.checkinTime.substring(0, 8) : (record.time || 'N/A');
 
                     html += `
                         <div class="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
@@ -417,8 +414,8 @@
                                     <span class="text-sm font-extrabold text-slate-900 leading-none mt-1">${day}</span>
                                 </div>
                                 <div>
-                                    <p class="text-sm font-bold text-slate-900">${record.time || 'N/A'}</p>
-                                    <p class="text-xs font-semibold text-slate-400 mt-0.5">Campus Geo-zone</p>
+                                    <p class="text-sm font-bold text-slate-900">In: ${timeDisplay}</p>
+                                    <p class="text-xs font-semibold text-slate-400 mt-0.5">Campus Geo-zone • ${record.status}</p>
                                 </div>
                             </div>
                             <span class="${statusClass}">${record.status}</span>
@@ -427,6 +424,29 @@
                 });
                 html += '</div>';
                 logsContainer.innerHTML = html;
+            }
+        }
+
+        // Instantly update the check-in / check-out time display from an attendance record object
+        // (works with both API direct response and re-fetched records)
+        function updateCheckInOutUI(record) {
+            const checkin = record.checkinTime || record.check_in_time || null;
+            const checkout = record.checkoutTime || record.check_out_time || null;
+            const status = record.status;
+
+            document.getElementById('display-checkin').textContent = checkin ? checkin.substring(0, 8) : '--:--';
+            document.getElementById('display-checkout').textContent = checkout ? checkout.substring(0, 8) : '--:--';
+
+            const presenceBadge = document.getElementById('presence-badge');
+            if (status === 'Present' && !checkout) {
+                presenceBadge.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700';
+                presenceBadge.textContent = '✅ Inside Campus';
+            } else if (checkout) {
+                presenceBadge.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600';
+                presenceBadge.textContent = '🚪 Checked Out';
+            } else {
+                presenceBadge.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700';
+                presenceBadge.textContent = 'Outside Campus';
             }
         }
 
@@ -581,7 +601,9 @@
                     const data = await res.json();
                     console.log(`[AutoCheck] Check-in response: ${res.status}`, data);
                     if (res.ok) {
-                        showAlert('✅ Automatic Arrival Detected: You have been Checked In!', true);
+                        // Instantly update the UI from the API response before re-fetch
+                        if (data.attendance) updateCheckInOutUI(data.attendance);
+                        showAlert(`✅ Automatic Arrival Detected: Checked In at ${data.attendance?.checkinTime ? data.attendance.checkinTime.substring(0,8) : 'N/A'}!`, true);
                         await fetchDashboardData();
                     } else {
                         // If server rejected, reset the flag so user can try moving and retrying
@@ -617,7 +639,9 @@
                     });
                     const data = await res.json();
                     if (res.ok) {
-                        showAlert('🚪 Automatic Departure Detected: Checked Out!', true);
+                        // Instantly update checkout time in UI before re-fetch
+                        if (data.attendance) updateCheckInOutUI(data.attendance);
+                        showAlert(`🚪 Automatic Departure Detected: Checked Out at ${data.attendance?.checkoutTime ? data.attendance.checkoutTime.substring(0,8) : 'N/A'}!`, true);
                         await fetchDashboardData();
                     } else {
                         console.warn('[AutoCheck] Check-out failed:', data.message);
