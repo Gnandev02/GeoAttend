@@ -140,8 +140,11 @@ module.exports = async (req, res) => {
                 const collegeCode = admin.college_code;
                 if (!collegeCode) return res.status(200).json([]);
                 let queryText = `
-                    SELECT a.id, a.student_id, a.latitude, a.longitude, a.distance_from_center, a.status, a.timestamp, a.date, a.time, a.session_name,
-                           s.name as student_name, s.email as student_email, s.roll_number
+                    SELECT a.id, a.student_id, a.college_code,
+                           a.attendance_date, a.check_in_time, a.check_out_time,
+                           a.latitude, a.longitude, a.distance_at_checkin,
+                           a.status, a.session_name,
+                           s.name AS student_name, s.email AS student_email, s.roll_number
                     FROM attendance a
                     JOIN students s ON a.student_id = s.id
                     WHERE a.college_code = $1
@@ -149,32 +152,39 @@ module.exports = async (req, res) => {
                 const queryParams = [collegeCode];
 
                 if (req.query.date) {
-                    queryText += ` AND a.date = $2`;
+                    queryText += ` AND a.attendance_date = $2`;
                     queryParams.push(req.query.date);
                 }
 
-                queryText += ` ORDER BY a.timestamp DESC`;
+                queryText += ` ORDER BY a.id DESC`;
 
                 const attendanceQuery = await query(queryText, queryParams);
+                console.log(`[GetLogs Admin] Found ${attendanceQuery.rows.length} records for college ${collegeCode}`);
 
-                const mappedAttendance = attendanceQuery.rows.map(a => ({
-                    _id: a.id,
-                    studentId: {
-                        _id: a.student_id,
-                        name: a.student_name,
-                        email: a.student_email,
-                        rollNumber: a.roll_number
-                    },
-                    locationCoordinates: { lat: a.latitude, lng: a.longitude },
-                    distanceFromCenter: a.distance_at_checkin,
-                    status: a.status,
-                    createdAt: a.timestamp,
-                    date: a.attendance_date,
-                    checkinTime: a.check_in_time,
-                    checkoutTime: a.check_out_time,
-                    sessionName: a.session_name,
-                    collegeCode: collegeCode
-                }));
+                const mappedAttendance = attendanceQuery.rows.map(a => {
+                    // Normalize attendance_date — pg driver returns JS Date for DATE columns
+                    const dateStr = a.attendance_date instanceof Date
+                        ? a.attendance_date.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' })
+                        : (typeof a.attendance_date === 'string' ? a.attendance_date.substring(0, 10) : String(a.attendance_date));
+
+                    return {
+                        _id: a.id,
+                        studentId: {
+                            _id: a.student_id,
+                            name: a.student_name,
+                            email: a.student_email,
+                            rollNumber: a.roll_number
+                        },
+                        locationCoordinates: { lat: a.latitude, lng: a.longitude },
+                        distanceFromCenter: a.distance_at_checkin,
+                        status: a.status,
+                        date: dateStr,
+                        checkinTime: a.check_in_time || null,
+                        checkoutTime: a.check_out_time || null,
+                        sessionName: a.session_name,
+                        collegeCode: a.college_code
+                    };
+                });
 
                 return res.status(200).json(mappedAttendance);
             }
