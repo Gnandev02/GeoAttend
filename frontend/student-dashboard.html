@@ -309,6 +309,7 @@
         let watchId = null;
         let lastDistance = null;
         let isProcessing = false;
+        let checkInAttempted = false; // Prevents duplicate check-in submissions
 
         async function fetchCampusConfig() {
             try {
@@ -321,49 +322,37 @@
 
         async function fetchDashboardData() {
             try {
-                // Determine correct user ID endpoint based on user instruction: GET /api/attendance/student/:id
-                const attendanceRes = await fetch(`/api/attendance`, {
+                // FIX: Include required action param so backend correctly routes this GET request
+                const attendanceRes = await fetch(`/api/attendance?action=getAttendanceLogs`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
-                // Also fetch profile if available, otherwise just use token data
-                const profileRes = await fetch('/api/studentProfile', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                }).catch(() => ({ null: true }));
-
                 if (attendanceRes.ok) {
                     attendanceData = await attendanceRes.json();
+                    console.log(`[Dashboard] Loaded ${attendanceData.length} attendance records.`);
                 } else {
-                    // Fallback to older route if backend hasn't updated to :id yet
-                    const fallback = await fetch('/api/attendance', {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
-                    if (fallback.ok) attendanceData = await fallback.json();
+                    const errData = await attendanceRes.json().catch(() => ({}));
+                    console.error('[Dashboard] Attendance fetch failed:', attendanceRes.status, errData.message);
                 }
 
-                let profileData = {};
-                if (profileRes && profileRes.ok) profileData = await profileRes.json();
-
-                // Update UI User
-                const name = profileData?.userId?.name || user.name || 'Student';
+                // Update UI User info from localStorage (profile endpoint not needed)
+                const name = user.name || 'Student';
                 document.getElementById('user-name').textContent = name;
                 document.getElementById('user-initial').textContent = name.charAt(0).toUpperCase();
                 if (document.getElementById('user-initial-mobile')) {
                     document.getElementById('user-initial-mobile').textContent = name.charAt(0).toUpperCase();
                 }
+                document.getElementById('user-info').textContent = user.rollNumber ? `${user.rollNumber} • ${user.email}` : user.email;
 
-                if (profileData.rollNumber) {
-                    document.getElementById('user-info').textContent = `${profileData.rollNumber} • ${profileData.department}`;
-                } else {
-                    document.getElementById('user-info').textContent = user.email;
-                }
+                // Reset duplicate guard after fetching fresh data
+                const today = new Date().toISOString().split('T')[0];
+                const todayRecord = attendanceData.find(r => r.date === today);
+                if (todayRecord) checkInAttempted = true; // Already checked in today
 
                 updateAttendanceUI();
 
             } catch (e) {
-                console.error(e);
-            } finally {
-                document.getElementById('loadingScreen').classList.add('hidden');
+                console.error('[Dashboard] Error loading dashboard data:', e);
             }
         }
 
@@ -486,8 +475,12 @@
                     // Process the initial position immediately
                     (async function() {
                         const { latitude, longitude } = initialPosition.coords;
+                        console.log(`[Tracking] Initial position obtained: (${latitude.toFixed(6)}, ${longitude.toFixed(6)})`);
                         if (!campusConfig) await fetchCampusConfig();
-                        if (!campusConfig) return;
+                        if (!campusConfig) {
+                            showAlert('⚠️ Campus geofence not configured. Please contact your administrator.', false);
+                            return;
+                        }
                         const dist = calculateDistanceLocal(latitude, longitude, campusConfig.latitude, campusConfig.longitude);
                         lastDistance = Math.round(dist);
                         document.getElementById('current-distance').textContent = lastDistance;
@@ -499,7 +492,10 @@
                         async function(position) {
                             const { latitude, longitude } = position.coords;
                             if (!campusConfig) await fetchCampusConfig();
-                            if (!campusConfig) return;
+                            if (!campusConfig) {
+                                showAlert('⚠️ Campus geofence not configured. Contact your administrator.', false);
+                                return;
+                            }
                             const dist = calculateDistanceLocal(latitude, longitude, campusConfig.latitude, campusConfig.longitude);
                             lastDistance = Math.round(dist);
                             document.getElementById('current-distance').textContent = lastDistance;
@@ -508,39 +504,44 @@
                         function(err) {
                             let msg = '';
                             if (err.code === err.PERMISSION_DENIED) {
-                                msg = "Location permission was revoked. Please re-enable GPS access.";
+                                msg = "📍 Location permission was revoked. Please re-enable GPS access in your browser settings.";
                             } else if (err.code === err.POSITION_UNAVAILABLE) {
-                                msg = "GPS signal lost. Please move to an open area.";
+                                msg = "📡 GPS signal lost. Please move to an open area.";
                             } else if (err.code === err.TIMEOUT) {
                                 // Timeout during watch is non-fatal, just log it
-                                console.warn("Location update timed out, retrying...");
+                                console.warn('[Tracking] Location update timed out, retrying...');
                                 return;
                             } else {
                                 msg = "Location error: " + err.message;
                             }
                             showAlert(msg, false);
+                            console.warn('[Tracking] Watch error:', err.code, err.message);
                             // Stop tracking on fatal errors
                             if (err.code !== err.TIMEOUT) {
                                 navigator.geolocation.clearWatch(watchId);
                                 watchId = null;
                                 document.getElementById('markText').textContent = "Start Tracking";
                                 document.getElementById('tracking-status').textContent = "Automatic Arrival Detection";
+                                document.getElementById('markBtn').disabled = false;
                                 document.getElementById('markBtn').classList.replace('bg-green-500', 'bg-white');
-                                document.getElementById('markBtn').classList.replace('text-white', 'text-[#0f172a]');
+                                document.getElementById('markBtn').classList.remove('text-white');
                             }
                         },
                         { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
                     );
                 },
                 function(err) {
-                    // --- PERMISSION DENIED or ERROR: Reset button state ---
+                    // --- PERMISSION DENIED or ERROR: Always re-enable the button so user can try again ---
                     document.getElementById('markBtn').disabled = false;
                     document.getElementById('markText').textContent = "Start Tracking";
                     document.getElementById('tracking-status').textContent = "Automatic Arrival Detection";
+                    // Ensure button styling is reset
+                    document.getElementById('markBtn').classList.replace('bg-green-500', 'bg-white');
+                    document.getElementById('markBtn').classList.remove('text-white');
 
                     let msg = '';
                     if (err.code === err.PERMISSION_DENIED) {
-                        msg = "📍 Location permission is required to mark attendance. Please allow location access in your browser settings and try again.";
+                        msg = "📍 Location permission denied.\n\nTo enable:\n• Chrome/Edge: Click the 🔒 lock icon → Site settings → Location → Allow\n• Firefox: Click the shield icon → Permissions → Access Your Location → Allow\n• Safari: Settings → Privacy → Location Services → Allow\n\nAfter enabling, click 'Start Tracking' again.";
                     } else if (err.code === err.POSITION_UNAVAILABLE) {
                         msg = "📡 GPS signal unavailable. Please enable Location Services on your device and try again.";
                     } else if (err.code === err.TIMEOUT) {
@@ -549,6 +550,7 @@
                         msg = "Location error: " + err.message;
                     }
                     showAlert(msg, false);
+                    console.warn('[Tracking] Permission/location error:', err.code, err.message);
                 },
                 { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
             );
@@ -556,12 +558,20 @@
 
         async function handleAutoCheck(lat, lng, dist) {
             if (isProcessing) return;
+
             const today = new Date().toISOString().split('T')[0];
             const todayRecord = attendanceData.find(r => r.date === today);
 
+            // --- DEBUG LOGS ---
+            console.log(`[AutoCheck] Student coords: (${lat.toFixed(6)}, ${lng.toFixed(6)})`);
+            console.log(`[AutoCheck] Campus center: (${campusConfig.latitude}, ${campusConfig.longitude}), Radius: ${campusConfig.radius}m`);
+            console.log(`[AutoCheck] Distance: ${Math.round(dist)}m | Inside radius: ${dist <= campusConfig.radius} | Today record: ${todayRecord ? 'YES ('+todayRecord.status+')' : 'NONE'} | checkInAttempted: ${checkInAttempted}`);
+
             // Auto Check-In
-            if (dist <= campusConfig.radius && !todayRecord) {
+            if (dist <= campusConfig.radius && !todayRecord && !checkInAttempted) {
                 isProcessing = true;
+                checkInAttempted = true; // Set flag before API call to prevent duplicate fires
+                console.log(`[AutoCheck] Attempting check-in...`);
                 try {
                     const res = await fetch('/api/attendance?action=checkIn', {
                         method: 'POST',
@@ -569,31 +579,50 @@
                         body: JSON.stringify({ latitude: lat, longitude: lng })
                     });
                     const data = await res.json();
+                    console.log(`[AutoCheck] Check-in response: ${res.status}`, data);
                     if (res.ok) {
-                        showAlert('Automatic Arrival Detected: Checked In!', true);
-                        fetchDashboardData();
-                    } else if (data.message.includes('unavailable after 9:00 AM')) {
-                        document.getElementById('tracking-status').textContent = "Waiting for 9:00 AM Check-In...";
+                        showAlert('✅ Automatic Arrival Detected: You have been Checked In!', true);
+                        await fetchDashboardData();
+                    } else {
+                        // If server rejected, reset the flag so user can try moving and retrying
+                        checkInAttempted = false;
+                        if (data.message && data.message.toLowerCase().includes('9')) {
+                            document.getElementById('tracking-status').textContent = 'Waiting for 9:00 AM Check-In window...';
+                            showAlert('⏰ ' + data.message, false);
+                        } else if (data.message && data.message.toLowerCase().includes('already')) {
+                            checkInAttempted = true; // Already checked in — set flag back
+                            showAlert('ℹ️ ' + data.message, true);
+                            await fetchDashboardData();
+                        } else {
+                            showAlert('⚠️ Check-in failed: ' + (data.message || 'Unknown error'), false);
+                        }
                     }
-                } catch (e) { console.error(e); }
-                finally { isProcessing = false; }
+                } catch (e) {
+                    console.error('[AutoCheck] Check-in error:', e);
+                    checkInAttempted = false;
+                } finally { isProcessing = false; }
+
+            } else if (dist <= campusConfig.radius && (todayRecord || checkInAttempted)) {
+                console.log('[AutoCheck] Inside campus but check-in already done today — skipping.');
             }
 
             // Auto Check-Out
             if (dist > campusConfig.radius && todayRecord && todayRecord.checkinTime && !todayRecord.checkoutTime) {
                 isProcessing = true;
+                console.log(`[AutoCheck] Attempting check-out (outside campus)...`);
                 try {
                     const res = await fetch('/api/attendance?action=checkOut', {
                         method: 'POST',
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
+                    const data = await res.json();
                     if (res.ok) {
-                        showAlert('Automatic Departure Detected: Checked Out!', true);
-                        fetchDashboardData();
-                        // Optional: Stop tracking after check-out
-                        // toggleTracking();
+                        showAlert('🚪 Automatic Departure Detected: Checked Out!', true);
+                        await fetchDashboardData();
+                    } else {
+                        console.warn('[AutoCheck] Check-out failed:', data.message);
                     }
-                } catch (e) { console.error(e); }
+                } catch (e) { console.error('[AutoCheck] Check-out error:', e); }
                 finally { isProcessing = false; }
             }
         }

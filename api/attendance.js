@@ -15,13 +15,16 @@ module.exports = async (req, res) => {
             const student = await protectStudent(req);
             if (!student) return res.status(401).json({ message: 'Not authorized as a student' });
 
-            const { latitude, longitude, sessionName } = req.body;
+            const { sessionName } = req.body;
+            // Parse coordinates as floats — JSON may send them as strings
+            const latitude = parseFloat(req.body.latitude);
+            const longitude = parseFloat(req.body.longitude);
             const today = new Date().toISOString().split('T')[0];
             const now = new Date();
             const currentTime = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
             if (action === 'checkIn') {
-                if (!latitude || !longitude) return res.status(400).json({ message: 'Location required' });
+                if (isNaN(latitude) || isNaN(longitude)) return res.status(400).json({ message: 'Invalid location coordinates. Please try again.' });
 
                 // Check time window (9 AM - 5 PM)
                 const currentHour = now.getHours();
@@ -35,17 +38,21 @@ module.exports = async (req, res) => {
 
                 // Check geofence
                 const geofenceQuery = await query('SELECT * FROM campus_setup WHERE college_code = $1', [student.college_code]);
-                if (geofenceQuery.rows.length === 0) return res.status(500).json({ message: 'Campus geofence not configured' });
+                if (geofenceQuery.rows.length === 0) return res.status(500).json({ message: 'Campus geofence not configured. Ask your administrator to set it up.' });
                 
                 const geofence = geofenceQuery.rows[0];
-                const distance = calculateDistance(latitude, longitude, geofence.latitude, geofence.longitude);
-                console.log(`[CheckIn] Student ${student.id} at (${latitude}, ${longitude}), Campus (${geofence.latitude}, ${geofence.longitude}), Distance: ${distance}m, Radius: ${geofence.radius}m`);
+                const campusLat = parseFloat(geofence.latitude);
+                const campusLng = parseFloat(geofence.longitude);
+                const campusRadius = parseFloat(geofence.radius);
+                const distance = calculateDistance(latitude, longitude, campusLat, campusLng);
+                console.log(`[CheckIn] Student: ${student.id} | Coords: (${latitude}, ${longitude}) | Campus: (${campusLat}, ${campusLng}) | Distance: ${Math.round(distance)}m | Radius: ${campusRadius}m | Inside: ${distance <= campusRadius}`);
                 
-                if (distance > geofence.radius) {
+                if (distance > campusRadius) {
+                    console.log(`[CheckIn] REJECTED - Outside radius. Distance: ${Math.round(distance)}m, Radius: ${campusRadius}m`);
                     return res.status(400).json({ 
-                        message: 'You must be inside the campus to check in', 
+                        message: `You are ${Math.round(distance)}m from campus. You must be within ${campusRadius}m to check in.`, 
                         distance: Math.round(distance),
-                        requiredRadius: geofence.radius 
+                        requiredRadius: campusRadius
                     });
                 }
 
@@ -86,7 +93,11 @@ module.exports = async (req, res) => {
             }
         } else if (req.method === 'GET' && action === 'getAttendanceLogs') {
             // View Attendance (Admin or Student)
+            // Declare student HERE so it is accessible in both the admin and student branches
+            const student = await protectStudent(req);
             const admin = await protectAdmin(req);
+            console.log(`[GetLogs] admin=${admin ? admin.id : 'none'}, student=${student ? student.id : 'none'}`);
+
             if (admin) {
                 // Return All Attendance for Admin
                 const collegeCode = admin.college_code;
@@ -133,6 +144,7 @@ module.exports = async (req, res) => {
 
             if (student) {
                 // Return Single Student Attendance
+                console.log(`[GetLogs] Fetching attendance for student ${student.id} (college: ${student.college_code})`);
                 let queryText = 'SELECT * FROM attendance WHERE student_id = $1 AND college_code = $2 ORDER BY attendance_date DESC, check_in_time DESC';
 
                 const attendanceQuery = await query(queryText, [student.id, student.college_code]);
@@ -157,13 +169,19 @@ module.exports = async (req, res) => {
 
             return res.status(401).json({ message: 'Not authorized' });
         } else if (req.method === 'GET' && action === 'getCampus') {
-            const student = await protectStudent(req);
-            if (!student) return res.status(401).json({ message: 'Not authorized' });
+            const campusStudent = await protectStudent(req);
+            if (!campusStudent) return res.status(401).json({ message: 'Not authorized' });
 
-            const geofenceQuery = await query('SELECT latitude, longitude, radius FROM campus_setup WHERE college_code = $1', [student.college_code]);
-            if (geofenceQuery.rows.length === 0) return res.status(404).json({ message: 'Geofence not configured' });
+            const geofenceQuery = await query('SELECT latitude, longitude, radius FROM campus_setup WHERE college_code = $1', [campusStudent.college_code]);
+            console.log(`[GetCampus] college_code=${campusStudent.college_code}, found=${geofenceQuery.rows.length > 0}`);
+            if (geofenceQuery.rows.length === 0) return res.status(404).json({ message: 'Campus geofence not configured. Ask your administrator to set it up.' });
 
-            return res.status(200).json(geofenceQuery.rows[0]);
+            const cfg = geofenceQuery.rows[0];
+            return res.status(200).json({
+                latitude: parseFloat(cfg.latitude),
+                longitude: parseFloat(cfg.longitude),
+                radius: parseFloat(cfg.radius)
+            });
         } else {
             return res.status(405).json({ message: 'Method Not Allowed' });
         }

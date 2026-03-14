@@ -176,6 +176,15 @@
                                 <input type="password" id="reset-new-password" class="saas-input" placeholder="••••••••">
                             </div>
                             <button onclick="performReset()" id="reset-final-btn" class="btn-primary">Update Password</button>
+                            <!-- Resend OTP button with cooldown -->
+                            <div class="text-center">
+                                <button onclick="resendResetOTP()" id="resend-otp-btn"
+                                    class="text-sm font-semibold text-[#0284c7] hover:text-[#0369a1] transition-colors disabled:text-slate-400 disabled:cursor-not-allowed"
+                                    style="background:none;border:none;cursor:pointer;">
+                                    Resend OTP
+                                </button>
+                                <span id="resend-countdown" class="text-xs text-slate-400 ml-1 hidden"></span>
+                            </div>
                         </div>
                     </div>
 
@@ -258,6 +267,9 @@
         });
 
         // Forgot Password Logic
+        let resendCooldownTimer = null;
+        const RESEND_COOLDOWN = 30; // seconds
+
         function openResetModal() {
             document.getElementById('reset-modal').classList.remove('hidden');
         }
@@ -268,6 +280,32 @@
             document.getElementById('reset-step-1').classList.remove('hidden');
             document.getElementById('reset-step-2').classList.add('hidden');
             document.getElementById('reset-msg').classList.add('hidden');
+            // Clear cooldown if modal is closed
+            if (resendCooldownTimer) { clearInterval(resendCooldownTimer); resendCooldownTimer = null; }
+        }
+
+        function startResendCooldown() {
+            const btn = document.getElementById('resend-otp-btn');
+            const countdown = document.getElementById('resend-countdown');
+            let remaining = RESEND_COOLDOWN;
+
+            btn.disabled = true;
+            countdown.textContent = `(${remaining}s)`;
+            countdown.classList.remove('hidden');
+
+            if (resendCooldownTimer) clearInterval(resendCooldownTimer);
+            resendCooldownTimer = setInterval(() => {
+                remaining--;
+                if (remaining <= 0) {
+                    clearInterval(resendCooldownTimer);
+                    resendCooldownTimer = null;
+                    btn.disabled = false;
+                    countdown.classList.add('hidden');
+                    countdown.textContent = '';
+                } else {
+                    countdown.textContent = `(${remaining}s)`;
+                }
+            }, 1000);
         }
 
         async function sendResetOTP() {
@@ -295,6 +333,7 @@
                     msg.className = 'mt-4 text-sm font-medium p-3 rounded-lg bg-blue-50 text-blue-600';
                     msg.textContent = 'OTP sent to your email';
                     msg.classList.remove('hidden');
+                    startResendCooldown(); // Start cooldown after initial send
                 } else {
                     msg.className = 'mt-4 text-sm font-medium p-3 rounded-lg bg-red-50 text-red-600';
                     msg.textContent = data.message;
@@ -305,6 +344,50 @@
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Send OTP';
+            }
+        }
+
+        async function resendResetOTP() {
+            const email = document.getElementById('reset-email').value;
+            const btn = document.getElementById('resend-otp-btn');
+            const msg = document.getElementById('reset-msg');
+
+            if (!email) {
+                msg.className = 'mt-4 text-sm font-medium p-3 rounded-lg bg-red-50 text-red-600';
+                msg.textContent = 'Could not find your email. Please close and try again.';
+                msg.classList.remove('hidden');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Sending...';
+
+            try {
+                const res = await fetch('/api/auth?action=forgotPassword', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    msg.className = 'mt-4 text-sm font-medium p-3 rounded-lg bg-green-50 text-green-600';
+                    msg.textContent = 'OTP resent successfully! Check your inbox.';
+                    msg.classList.remove('hidden');
+                    startResendCooldown();
+                } else {
+                    msg.className = 'mt-4 text-sm font-medium p-3 rounded-lg bg-red-50 text-red-600';
+                    msg.textContent = data.message || 'Failed to resend OTP.';
+                    msg.classList.remove('hidden');
+                    btn.disabled = false; // Re-enable on failure
+                }
+            } catch (err) {
+                msg.className = 'mt-4 text-sm font-medium p-3 rounded-lg bg-red-50 text-red-600';
+                msg.textContent = 'Connection error. Please try again.';
+                msg.classList.remove('hidden');
+                btn.disabled = false;
+            } finally {
+                btn.textContent = 'Resend OTP';
             }
         }
 
