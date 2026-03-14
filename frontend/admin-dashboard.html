@@ -473,8 +473,6 @@
 
             } catch (e) {
                 console.error("Fetch DB Error", e);
-            } finally {
-                document.getElementById('loadingScreen').classList.add('hidden');
             }
         }
 
@@ -538,13 +536,15 @@
         }
         
         function filterLogs() {
-            const dateStr = document.getElementById('filter-date').value;
+            const dateStr = document.getElementById('filter-date').value; // YYYY-MM-DD
             const searchStr = document.getElementById('filter-student').value.toLowerCase();
-            
+
             const filtered = allLogs.filter(log => {
-                const dateMatch = !dateStr || log.date === dateStr;
-                const nameMatch = !searchStr || 
-                                  (log.studentId?.name || '').toLowerCase().includes(searchStr) || 
+                // Normalise both sides to first 10 chars (YYYY-MM-DD) for comparison
+                const logDate = (log.date || '').substring(0, 10);
+                const dateMatch = !dateStr || logDate === dateStr;
+                const nameMatch = !searchStr ||
+                                  (log.studentId?.name || '').toLowerCase().includes(searchStr) ||
                                   (log.studentId?.rollNumber || '').toLowerCase().includes(searchStr);
                 return dateMatch && nameMatch;
             });
@@ -571,33 +571,70 @@
             document.body.removeChild(a);
         }
 
+        // Format a stored time string to 12-hour AM/PM
+        // Handles both "10:00:49 AM" (already formatted) and "09:15:30" (24h)
+        function fmtTime(t) {
+            if (!t) return '--:--';
+            if (/am|pm/i.test(t)) return t.trim();
+            const p = t.split(':');
+            if (p.length < 2) return t;
+            let h = parseInt(p[0], 10);
+            const m = p[1].padStart(2, '0');
+            const s = p[2] ? p[2].substring(0, 2).padStart(2, '0') : null;
+            const ampm = h >= 12 ? 'PM' : 'AM';
+            h = h % 12 || 12;
+            return s ? `${h}:${m}:${s} ${ampm}` : `${h}:${m} ${ampm}`;
+        }
+
+        // Format a YYYY-MM-DD date string to '14 Mar 2026'
+        function fmtDate(d) {
+            if (!d) return '--';
+            return new Date(d.substring(0, 10) + 'T00:00:00')
+                .toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+        }
+
+        // Calculate hours between two time strings; handles HH:MM, HH:MM:SS, and H:MM:SS AM/PM
         function calculateHours(start, end) {
             if (!start || !end) return '--';
-            const s = start.split(':');
-            const e = end.split(':');
-            const startDate = new Date(0, 0, 0, s[0], s[1], s[2] || 0);
-            const endDate = new Date(0, 0, 0, e[0], e[1], e[2] || 0);
-            let diff = endDate.getTime() - startDate.getTime();
-            if (diff < 0) return '0.0h';
-            return (diff / 3600000).toFixed(1) + 'h';
+            try {
+                // Normalise to 24h for arithmetic
+                const toMs = (t) => {
+                    // Handle AM/PM
+                    const ampm = t.match(/am|pm/i);
+                    let clean = t.replace(/am|pm/gi, '').trim();
+                    let [h, min, sec] = clean.split(':').map(Number);
+                    if (ampm) {
+                        if (ampm[0].toLowerCase() === 'pm' && h !== 12) h += 12;
+                        if (ampm[0].toLowerCase() === 'am' && h === 12) h = 0;
+                    }
+                    return (h * 3600 + min * 60 + (sec || 0)) * 1000;
+                };
+                const diff = toMs(end) - toMs(start);
+                if (diff < 0) return '0.0h';
+                return (diff / 3600000).toFixed(1) + 'h';
+            } catch (_) { return '--'; }
         }
 
         function renderLogs(l) {
             document.getElementById('table-logs-body').innerHTML = (l || []).map(log => {
                 const hours = calculateHours(log.checkinTime, log.checkoutTime);
+                const dateDisplay = fmtDate(log.date);
+                const checkinDisplay = fmtTime(log.checkinTime);
+                const checkoutDisplay = log.checkoutTime ? fmtTime(log.checkoutTime) : '--:--';
+                const statusBadge = log.status === 'Present'
+                    ? '<span class="badge-success">Present</span>'
+                    : `<span class="badge-danger">${log.status || 'Absent'}</span>`;
                 return `
                     <tr class="hover:bg-slate-50">
-                        <td class="py-4 px-6 text-sm font-bold text-slate-900">${log.date || ''}</td>
+                        <td class="py-4 px-6 text-sm font-bold text-slate-900">${dateDisplay}</td>
                         <td class="py-4 px-6 text-sm">
                             <div class="font-bold text-slate-700">${log.studentId?.name || 'Unknown'}</div>
                             <div class="text-xs text-slate-500">${log.studentId?.rollNumber || ''}</div>
                         </td>
-                        <td class="py-4 px-6 text-sm font-mono text-slate-600">${log.checkinTime ? log.checkinTime.substring(0, 5) : '--:--'}</td>
-                        <td class="py-4 px-6 text-sm font-mono text-slate-600">${log.checkoutTime ? log.checkoutTime.substring(0, 5) : '--:--'}</td>
+                        <td class="py-4 px-6 text-sm font-semibold text-green-700">${checkinDisplay}</td>
+                        <td class="py-4 px-6 text-sm font-semibold text-slate-600">${checkoutDisplay}</td>
                         <td class="py-4 px-6 text-sm font-bold text-[#0284c7]">${hours}</td>
-                        <td class="py-4 px-6 text-sm">
-                            <span class="${log.status === 'Present' ? 'badge-success' : 'badge-danger'}">${log.status}</span>
-                        </td>
+                        <td class="py-4 px-6 text-sm">${statusBadge}</td>
                     </tr>
                 `;
             }).join('');

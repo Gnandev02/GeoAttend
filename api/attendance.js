@@ -21,11 +21,12 @@ module.exports = async (req, res) => {
             const longitude = parseFloat(req.body.longitude);
             const now = new Date();
 
-            // Use LOCAL timezone for all date/time operations (avoids UTC off-by-one in IST UTC+5:30)
-            const today = now.toLocaleDateString('en-CA');  // gives YYYY-MM-DD in local time
-            // Store time in 12-hour AM/PM format: "10:00:49 AM"
-            const currentTime = now.toLocaleTimeString('en-IN', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            const currentHour = now.getHours();
+            // CRITICAL: Vercel serverless runs in UTC. Must specify timeZone explicitly.
+            const IST = { timeZone: 'Asia/Kolkata' };
+            const today = now.toLocaleDateString('en-CA', IST);  // YYYY-MM-DD in IST
+            // Store exact IST time in 12-hour AM/PM format: "10:00:49 AM"
+            const currentTime = now.toLocaleTimeString('en-IN', { ...IST, hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const currentHour = parseInt(now.toLocaleTimeString('en-IN', { ...IST, hour12: false, hour: '2-digit' }), 10);
 
             if (action === 'checkIn') {
                 if (isNaN(latitude) || isNaN(longitude)) return res.status(400).json({ message: 'Invalid location coordinates. Please try again.' });
