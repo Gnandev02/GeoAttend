@@ -19,21 +19,22 @@ module.exports = async (req, res) => {
             // Parse coordinates as floats — JSON may send them as strings
             const latitude = parseFloat(req.body.latitude);
             const longitude = parseFloat(req.body.longitude);
-            const today = new Date().toISOString().split('T')[0];
             const now = new Date();
-            const currentTime = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+            // Use LOCAL timezone for all date/time operations (avoids UTC off-by-one in IST UTC+5:30)
+            const today = now.toLocaleDateString('en-CA');  // gives YYYY-MM-DD in local time
+            // Store time in 12-hour AM/PM format: "10:00:49 AM"
+            const currentTime = now.toLocaleTimeString('en-IN', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const currentHour = now.getHours();
 
             if (action === 'checkIn') {
                 if (isNaN(latitude) || isNaN(longitude)) return res.status(400).json({ message: 'Invalid location coordinates. Please try again.' });
 
-                // Check time window (9 AM - 5 PM)
-                const currentHour = now.getHours();
                 let status = 'Present';
-
                 if (currentHour < 9) {
                     return res.status(400).json({ message: 'Check-in only available after 9:00 AM' });
                 } else if (currentHour >= 17) {
-                    status = 'Absent'; // Too late
+                    status = 'Late'; // After 5 PM
                 }
 
                 // Check geofence

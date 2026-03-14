@@ -218,13 +218,22 @@
 
                     <!-- Arrival Status -->
                     <div class="saas-card p-6 flex flex-col justify-center">
-                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Check-In / Out</p>
-                        <div id="check-times" class="space-y-1">
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Check-In / Out</p>
+                        <div id="check-times" class="space-y-2">
                             <p class="text-sm font-bold text-slate-800 flex items-center gap-2">
-                                <i data-lucide="log-in" class="w-4 h-4 text-green-500"></i> In: <span id="display-checkin">--:--</span>
+                                <i data-lucide="calendar" class="w-4 h-4 text-blue-400"></i>
+                                <span class="text-slate-400 font-semibold">Date:</span>
+                                <span id="display-date" class="text-slate-700">--</span>
                             </p>
                             <p class="text-sm font-bold text-slate-800 flex items-center gap-2">
-                                <i data-lucide="log-out" class="w-4 h-4 text-red-500"></i> Out: <span id="display-checkout">--:--</span>
+                                <i data-lucide="log-in" class="w-4 h-4 text-green-500"></i>
+                                <span class="text-slate-400 font-semibold">In:</span>
+                                <span id="display-checkin" class="text-green-700">--:--</span>
+                            </p>
+                            <p class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                                <i data-lucide="log-out" class="w-4 h-4 text-red-400"></i>
+                                <span class="text-slate-400 font-semibold">Out:</span>
+                                <span id="display-checkout" class="text-slate-600">--:--</span>
                             </p>
                         </div>
                     </div>
@@ -381,6 +390,8 @@
             if (todayRecord) {
                 updateCheckInOutUI(todayRecord);
             } else {
+                const dateEl = document.getElementById('display-date');
+                if (dateEl) dateEl.textContent = '--';
                 document.getElementById('display-checkin').textContent = '--:--';
                 document.getElementById('display-checkout').textContent = '--:--';
                 document.getElementById('presence-badge').className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-500';
@@ -398,13 +409,12 @@
             } else {
                 let html = '<div class="divide-y divide-slate-100">';
                 attendanceData.slice(0, 10).forEach(record => {
-                    // Parse date safely — append T00:00 in local time to avoid UTC shift
                     const dateStr = record.date ? record.date.substring(0, 10) : '';
                     const dateObj = dateStr ? new Date(dateStr + 'T00:00:00') : new Date();
                     const month = dateObj.toLocaleString('default', { month: 'short' }).toUpperCase();
                     const day = ('0' + dateObj.getDate()).slice(-2);
                     const statusClass = record.status === 'Present' ? 'badge-success' : 'badge-danger';
-                    const timeDisplay = record.checkinTime ? record.checkinTime.substring(0, 8) : (record.time || 'N/A');
+                    const timeDisplay = formatTime(record.checkinTime || record.time);
 
                     html += `
                         <div class="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
@@ -427,16 +437,49 @@
             }
         }
 
+        // --- Time/Date Formatting Helpers ---
+
+        // Accepts "10:00:49 AM", "10:00:49", "09:15:30" — always returns 12-hour AM/PM string
+        function formatTime(timeStr) {
+            if (!timeStr) return '--:--';
+            // Already has AM/PM (new format from updated backend)
+            if (/am|pm/i.test(timeStr)) return timeStr.trim();
+            // Parse 24h HH:MM:SS or HH:MM
+            const parts = timeStr.split(':');
+            if (parts.length < 2) return timeStr;
+            let hours = parseInt(parts[0], 10);
+            const minutes = parts[1].padStart(2, '0');
+            const seconds = parts[2] ? parts[2].substring(0, 2).padStart(2, '0') : null;
+            const period = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12 || 12;
+            return seconds
+                ? `${hours}:${minutes}:${seconds} ${period}`
+                : `${hours}:${minutes} ${period}`;
+        }
+
+        // Accepts "2026-03-14" — returns "14 Mar 2026"
+        function formatDate(dateStr) {
+            if (!dateStr) return '--';
+            const d = new Date(dateStr.substring(0, 10) + 'T00:00:00'); // local parse
+            return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+        }
+
         // Instantly update the check-in / check-out time display from an attendance record object
-        // (works with both API direct response and re-fetched records)
         function updateCheckInOutUI(record) {
-            const checkin = record.checkinTime || record.check_in_time || null;
+            const checkin  = record.checkinTime  || record.check_in_time  || null;
             const checkout = record.checkoutTime || record.check_out_time || null;
-            const status = record.status;
+            const date     = record.date || null;
+            const status   = record.status;
 
-            document.getElementById('display-checkin').textContent = checkin ? checkin.substring(0, 8) : '--:--';
-            document.getElementById('display-checkout').textContent = checkout ? checkout.substring(0, 8) : '--:--';
+            // Update date display
+            const dateEl = document.getElementById('display-date');
+            if (dateEl) dateEl.textContent = date ? formatDate(date) : '--';
 
+            // Update times in AM/PM format
+            document.getElementById('display-checkin').textContent  = formatTime(checkin);
+            document.getElementById('display-checkout').textContent = checkout ? formatTime(checkout) : '--:--';
+
+            // Update presence badge
             const presenceBadge = document.getElementById('presence-badge');
             if (status === 'Present' && !checkout) {
                 presenceBadge.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700';
