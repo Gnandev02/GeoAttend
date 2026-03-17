@@ -147,13 +147,3 @@ We utilize structured branch flows to avoid conflict overheads on logical bounda
    ```
    Open a Pull Request on GitHub aiming at the `dev` or `main` branch. Peer review is mandatory prior to a merge.
 
-## 👥 Project Team
-
-- **[Member 1 Name]** - [Role / Responsibility]
-- **[Member 2 Name]** - [Role / Responsibility]
-- **[Member 3 Name]** - [Role / Responsibility]
-- **[Member 4 Name]** - [Role / Responsibility]
-
----
-
-*This project was developed collectively for software engineering assessment.*
