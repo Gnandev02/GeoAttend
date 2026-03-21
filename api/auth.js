@@ -32,7 +32,7 @@ export default async function handler(req, res) {
             const admin = adminResult.rows[0];
             if (await comparePassword(password, admin.password)) {
                 return res.status(200).json({
-                    _id: admin.id, name: admin.name, email: admin.email, role: 'admin', token: generateToken(admin.id, admin.college_code),
+                    _id: admin.id, name: admin.name, email: admin.email, role: 'admin', collegeName: admin.college_name, collegeCode: admin.college_code, token: generateToken(admin.id, admin.college_code),
                 });
             } else {
                 return res.status(401).json({ message: 'Invalid credentials' });
@@ -40,11 +40,16 @@ export default async function handler(req, res) {
         }
 
         if (action === 'adminSignup') {
-            const { name, email, password, otp } = req.body;
-            if (!name || !email || !password || !otp) return res.status(400).json({ message: 'Please add all fields, including OTP' });
+            const { name, email, password, otp, collegeName, collegeCode } = req.body;
+            if (!name || !email || !password || !otp || !collegeName || !collegeCode) {
+                return res.status(400).json({ message: 'Please provide all fields, including college details and OTP' });
+            }
 
             const adminExists = await query('SELECT * FROM admins WHERE email = $1', [email]);
             if (adminExists.rows.length > 0) return res.status(400).json({ message: 'Email already exists' });
+
+            const collegeCodeExists = await query('SELECT * FROM admins WHERE college_code = $1', [collegeCode]);
+            if (collegeCodeExists.rows.length > 0) return res.status(400).json({ message: 'College Code is already in use' });
 
             const otpRecord = await query('SELECT * FROM otps WHERE email = $1', [email]);
             if (otpRecord.rows.length === 0) return res.status(400).json({ message: 'No OTP found for this email. Please request a new one.' });
@@ -63,21 +68,26 @@ export default async function handler(req, res) {
             const hashedPassword = await hashPassword(password);
             const newAdmin = await query(
                 'INSERT INTO admins (name, email, password, college_name, college_code) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-                [name, email, hashedPassword, null, null]
+                [name, email, hashedPassword, collegeName, collegeCode]
             );
 
             const admin = newAdmin.rows[0];
             return res.status(201).json({
-                _id: admin.id, name: admin.name, email: admin.email, role: 'admin', collegeCode: admin.college_code, token: generateToken(admin.id, admin.college_code),
+                _id: admin.id, name: admin.name, email: admin.email, role: 'admin', collegeName: admin.college_name, collegeCode: admin.college_code, token: generateToken(admin.id, admin.college_code),
             });
         }
 
         if (action === 'sendAdminOtp') {
-            const { name, email, password } = req.body;
-            if (!name || !email || !password) return res.status(400).json({ message: 'Please provide all required fields' });
+            const { name, email, password, collegeName, collegeCode } = req.body;
+            if (!name || !email || !password || !collegeName || !collegeCode) {
+                return res.status(400).json({ message: 'Please provide all required fields, including college details' });
+            }
 
             const adminExists = await query('SELECT * FROM admins WHERE email = $1', [email]);
             if (adminExists.rows.length > 0) return res.status(400).json({ message: 'Email already exists' });
+
+            const codeCheck = await query('SELECT * FROM admins WHERE college_code = $1', [collegeCode]);
+            if (codeCheck.rows.length > 0) return res.status(400).json({ message: 'College Code is already in use' });
 
             const otp = Math.floor(100000 + Math.random() * 900000).toString();
             await query(`CREATE TABLE IF NOT EXISTS otps (email VARCHAR(255) PRIMARY KEY, otp VARCHAR(10) NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);

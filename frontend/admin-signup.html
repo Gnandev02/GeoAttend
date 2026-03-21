@@ -149,6 +149,16 @@
                                 placeholder="••••••••">
                             <p id="confirm-password-error" class="text-xs text-red-500 mt-1 hidden"></p>
                         </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">College Name</label>
+                                <input type="text" id="collegeName" required class="saas-input" placeholder="UC Berkeley">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">College Code</label>
+                                <input type="text" id="collegeCode" required class="saas-input font-mono" placeholder="UCB01">
+                            </div>
+                        </div>
                     </div>
 
                     <!-- OTP Section (Hidden initially) -->
@@ -219,6 +229,8 @@
             const name = document.getElementById('name').value;
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
+            const collegeName = document.getElementById('collegeName').value;
+            const collegeCode = document.getElementById('collegeCode').value;
 
             const submitBtn = document.getElementById('submit-btn');
             const btnText = document.getElementById('btn-text');
@@ -306,7 +318,7 @@
                     const response = await fetch('/api/auth?action=adminSignup', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ name, email, password, otp: otpValue })
+                        body: JSON.stringify({ name, email, password, otp: otpValue, collegeName, collegeCode })
                     });
 
                     const data = await response.json();
@@ -355,7 +367,7 @@
                 const response = await fetch('/api/auth?action=sendAdminOtp', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, email, password })
+                    body: JSON.stringify({ name, email, password, collegeName, collegeCode })
                 });
 
                 const data = await response.json();
@@ -434,6 +446,8 @@
             const name = document.getElementById('name').value;
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
+            const collegeName = document.getElementById('collegeName').value;
+            const collegeCode = document.getElementById('collegeCode').value;
             const resendBtn = document.getElementById('resend-btn');
             const successMsg = document.getElementById('success-msg');
             const errorMsg = document.getElementById('error-msg');
@@ -446,7 +460,7 @@
                 const response = await fetch('/api/auth?action=sendAdminOtp', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, email, password })
+                    body: JSON.stringify({ name, email, password, collegeName, collegeCode })
                 });
                 const data = await response.json();
                 if (response.ok) {

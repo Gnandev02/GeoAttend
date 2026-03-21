@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -24,7 +23,6 @@
         .glass-panel { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(226, 232, 240, 0.8); }
     </style>
 </head>
-
 <body class="bg-white antialiased">
     <!-- Navbar (Simplified from index.html) -->
     <nav class="fixed w-full top-0 z-50 glass-panel h-20">
@@ -83,11 +81,59 @@
             </div>
         </div>
     </main>
-
     <!-- Footer -->
-    <footer class="bg-white border-t border-slate-200 py-12">
-        <div class="max-w-7xl mx-auto px-6 text-center">
-            <p class="text-sm text-slate-400">© 2026 GeoAttend. Built for accuracy.</p>
+    <footer id="contact" class="bg-white border-t border-slate-200 pt-16 pb-8">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="grid grid-cols-2 lg:grid-cols-5 md:grid-cols-3 gap-8 mb-12">
+                <div class="col-span-2 lg:col-span-1 md:col-span-3">
+                    <div class="flex items-center gap-2 mb-4">
+                        <svg class="w-5 h-5 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <span class="font-bold text-slate-900">GeoAttend</span>
+                    </div>
+                    <p class="text-slate-500 text-sm">Automated attendance software for modern institutions.</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-slate-900 mb-4 text-sm">Product</h4>
+                    <ul class="space-y-2 text-sm text-slate-500">
+                        <li><a href="features.html" class="hover:text-slate-900 transition-colors">Features</a></li>
+                        <li><a href="compare.html" class="hover:text-slate-900 transition-colors">Comparison</a></li>
+                        <li><a href="pricing.html" class="hover:text-slate-900 transition-colors">Pricing</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-slate-900 mb-4 text-sm">Company</h4>
+                    <ul class="space-y-2 text-sm text-slate-500">
+                        <li><a href="about.html" class="hover:text-slate-900 transition-colors">About</a></li>
+                        <li><a href="#contact" class="hover:text-slate-900 transition-colors">Contact</a></li>
+                        <li><a href="https://github.com/Gnandev12" target="_blank"
+                                class="hover:text-slate-900 transition-colors">GitHub</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-slate-900 mb-4 text-sm">Legal</h4>
+                    <ul class="space-y-2 text-sm text-slate-500">
+                        <li><a href="privacy-policy.html" class="hover:text-slate-900 transition-colors">Privacy Policy</a></li>
+                        <li><a href="terms-of-service.html" class="hover:text-slate-900 transition-colors">Terms of Service</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-slate-900 mb-4 text-sm">Contact</h4>
+                    <ul class="space-y-2 text-sm text-slate-500">
+                        <li><span class="block text-slate-900 font-medium">Mobile:</span> +91 9121247185</li>
+                        <li><span class="block text-slate-900 font-medium">Email:</span> <a href="mailto:gnandevbonthu12@gmail.com" class="hover:text-brand-600 transition-colors break-all">gnandevbonthu12@gmail.com</a></li>
+                        <li><span class="block text-slate-900 font-medium">GitHub:</span> <a href="https://github.com/Gnandev12" target="_blank" class="hover:text-brand-600 transition-colors break-all">github.com/Gnandev12</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="pt-8 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
+                <p class="text-sm text-slate-400">© 2026 GeoAttend. All rights reserved.</p>
+                <div class="text-sm text-slate-400">Built on the MERN Stack</div>
+            </div>
         </div>
     </footer>
 </body>

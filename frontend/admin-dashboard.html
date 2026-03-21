@@ -18,165 +18,165 @@
         }
     </script>
     <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --secondary: #64748b;
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --sidebar-width: 280px;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --radius-md: 0.75rem;
+            --radius-lg: 1rem;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f8fafc;
-            color: #1e293b;
+            background-color: var(--bg-main);
+            color: var(--text-main);
             margin: 0;
-            padding: 20px;
-            box-sizing: border-box;
+            overflow-x: hidden;
         }
 
-        .saas-card {
-            background-color: #ffffff;
-            border: 1px solid #f1f5f9;
-            border-radius: 0.75rem;
-            box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.05);
+        .premium-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .saas-input {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            border-radius: 0.5rem;
-            border: 1px solid #e2e8f0;
-            font-size: 0.875rem;
-            transition: all 0.2s;
+        .premium-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
         }
 
-        .saas-input:focus {
-            outline: none;
-            border-color: #0284c7;
-            box-shadow: 0 0 0 1px #0284c7;
-        }
-
-        .btn-primary {
-            padding: 0.75rem 1.25rem;
-            background-color: #0284c7;
-            color: white;
-            border-radius: 0.5rem;
-            font-weight: 600;
-            transition: all 0.2s;
-            font-size: 0.875rem;
-            border: none;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-        }
-
-        .btn-primary:hover {
-            background-color: #0369a1;
-            transform: translateY(-1px);
-        }
-
-        .scrollbar-hide::-webkit-scrollbar {
-            display: none;
-        }
-
-        .scrollbar-hide {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-
-        .badge-success {
-            background-color: #f0fdf4;
-            color: #15803d;
-            border: 1px solid #bbf7d0;
-            padding: 0.125rem 0.625rem;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 700;
-        }
-
-        .badge-danger {
-            background-color: #fef2f2;
-            color: #b91c1c;
-            border: 1px solid #fecaca;
-            padding: 0.125rem 0.625rem;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 700;
-        }
-
-        .tab-btn {
+        .sidebar-item {
             display: flex;
             align-items: center;
-            gap: 1rem;
-            padding: 0.875rem 1.25rem;
-            border-radius: 0.875rem;
-            font-size: 0.9375rem;
-            font-weight: 600;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            border-radius: var(--radius-md);
+            color: var(--secondary);
+            font-weight: 500;
             transition: all 0.2s;
-            width: 100%;
-            text-align: left;
+            text-decoration: none;
+            cursor: pointer;
+            border: 1px solid transparent;
         }
 
-        .tab-btn.active {
-            background-color: #e0f2fe;
-            color: #0369a1;
+        .sidebar-item:hover {
+            background: #f1f5f9;
+            color: var(--text-main);
         }
 
-        .tab-btn.inactive {
-            color: #64748b;
+        .sidebar-item.active {
+            background: #eef2ff;
+            color: var(--primary);
+            border-color: #e0e7ff;
         }
 
-        .tab-btn.inactive:hover {
-            background-color: #f8fafc;
-            color: #1e293b;
+        .sidebar-item svg {
+            width: 1.25rem;
+            height: 1.25rem;
         }
 
-        /* Robust Mobile Drawer Styles */
+        .btn-indigo {
+            background: var(--primary);
+            color: white;
+            padding: 0.625rem 1.25rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
+        }
+
+        .btn-indigo:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(79, 70, 229, 0.3);
+        }
+
+        .stat-icon {
+            width: 3rem;
+            height: 3rem;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .glass-header {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+        }
+
         @media (max-width: 767px) {
             #sidebar {
-                position: fixed !important;
-                top: 0 !important;
-                left: 0 !important;
-                height: 100vh !important;
-                width: 80% !important;
-                max-width: 300px;
-                z-index: 1001 !important;
-                transform: translateX(-100%);
-                transition: transform 0.3s ease;
-                margin: 0 !important;
-                border-radius: 0 !important;
-                box-shadow: 10px 0 30px rgba(0,0,0,0.1);
-                background: white !important;
-                display: flex !important;
-            }
-
-            #sidebar.open {
-                transform: translateX(0);
-            }
-
-            #sidebar-backdrop {
-                display: none;
                 position: fixed;
                 top: 0;
                 left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0, 0, 0, 0.4);
-                z-index: 1000;
-                backdrop-filter: blur(2px);
+                height: 100vh;
+                width: 280px;
+                z-index: 1001;
+                transform: translateX(-100%);
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                background: white;
+                box-shadow: 20px 0 50px rgba(0,0,0,0.1);
             }
 
-            #sidebar-backdrop.active {
-                display: block;
+            #sidebar.open { transform: translateX(0); }
+            #sidebar-backdrop {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(15, 23, 42, 0.4);
+                backdrop-filter: blur(4px);
+                z-index: 1000;
+                opacity: 0;
+                transition: opacity 0.3s;
             }
+            #sidebar-backdrop.active { display: block; opacity: 1; }
         }
+
+        .nav-indicator {
+            position: absolute;
+            left: 0;
+            width: 4px;
+            height: 24px;
+            background: var(--primary);
+            border-radius: 0 4px 4px 0;
+            display: none;
+        }
+        .sidebar-item.active .nav-indicator { display: block; }
     </style>
 </head>
 
+<body>
     <!-- Mobile Header -->
-    <header class="md:hidden flex items-center justify-between p-4 bg-white border-b border-slate-200 sticky top-0 z-40 mb-4 rounded-xl saas-card">
+    <header class="md:hidden glass-header flex items-center justify-between p-4 sticky top-0 z-40 mb-2">
         <div class="flex items-center gap-3">
-            <button onclick="toggleSidebar(true)" class="p-2 text-slate-600 hover:bg-slate-50 rounded-lg">
+            <button onclick="toggleSidebar(true)" class="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
                 <i data-lucide="menu" class="w-6 h-6"></i>
             </button>
-            <h1 class="font-bold text-slate-900 tracking-tight">Admin Portal</h1>
+            <span class="font-bold text-slate-900 tracking-tight">GeoAttend</span>
         </div>
-        <div class="w-10 h-10 rounded-full bg-[#0ea5e9]/10 text-[#0284c7] flex items-center justify-center text-sm font-bold">
+        <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold ring-2 ring-white">
             A
         </div>
     </header>
@@ -184,103 +184,155 @@
     <!-- Sidebar Backdrop -->
     <div id="sidebar-backdrop" onclick="toggleSidebar(false)"></div>
 
-    <div class="max-w-7xl mx-auto flex flex-col md:flex-row gap-6 md:h-[calc(100vh-40px)]">
+    <div class="flex min-h-screen">
         <!-- Sidebar Navigation -->
-        <div id="sidebar" class="w-full md:w-64 saas-card flex flex-col overflow-hidden flex-shrink-0 mb-6 md:mb-0 h-full">
-            <div class="p-10 border-b border-slate-50 flex flex-col items-center md:items-start text-center md:text-left relative">
+        <aside id="sidebar" class="w-full md:w-[280px] bg-white border-r border-slate-200 flex flex-col flex-shrink-0 z-50">
+            <div class="p-6 border-b border-slate-50 flex flex-col relative bg-slate-50/30">
                 <!-- Mobile Close Btn -->
-                <button onclick="toggleSidebar(false)" class="md:hidden absolute top-6 right-6 text-slate-300 hover:text-slate-500">
-                    <i data-lucide="x" class="w-7 h-7"></i>
+                <button onclick="toggleSidebar(false)" class="md:hidden absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-6 h-6"></i>
                 </button>
-                <div
-                    class="w-20 h-20 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-3xl font-bold mb-5 shadow-sm border border-blue-100/50">
-                    A
+                
+                <div class="flex items-center gap-3 mb-8">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-100">
+                        <i data-lucide="shield-check" class="w-6 h-6"></i>
+                    </div>
+                    <h2 class="font-extrabold text-slate-900 tracking-tight text-xl">GeoAttend</h2>
                 </div>
-                <h2 class="font-bold text-slate-900 tracking-tight text-2xl">Admin Portal</h2>
-                <p class="text-sm text-slate-400 font-medium mt-1">System Master Controls</p>
-                <button onclick="logout()"
-                    class="mt-6 text-base text-red-500 font-bold flex items-center gap-2 hover:text-red-700 transition-all">
-                    <i data-lucide="log-out" class="w-4 h-4 text-red-500"></i> Logout
+
+                <div class="p-4 rounded-2xl bg-white border border-slate-100 shadow-sm mb-4">
+                    <h3 id="brand-college-name" class="font-bold text-slate-900 text-sm leading-tight truncate">Admin Portal</h3>
+                    <p id="brand-college-code" class="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-widest">Master Panel</p>
+                </div>
+
+                <button onclick="logout()" class="flex items-center gap-2 text-slate-500 hover:text-red-600 text-sm font-semibold transition-colors group">
+                    <div class="p-1.5 rounded-lg group-hover:bg-red-50">
+                        <i data-lucide="log-out" class="w-4 h-4"></i>
+                    </div>
+                    Logout
                 </button>
             </div>
 
-            <div
-                class="p-4 flex-1 space-y-1.5 flex flex-col overflow-y-auto scrollbar-hide">
-                <button onclick="switchTab('overview')" id="tab-overview" class="tab-btn active w-full">
-                    <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Overview
+            <nav class="p-4 flex-1 space-y-2 overflow-y-auto scrollbar-hide">
+                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-4 mb-3">Main Menu</div>
+                <button onclick="switchTab('overview')" id="tab-overview" class="sidebar-item active w-full">
+                    <div class="nav-indicator"></div>
+                    <i data-lucide="layout-dashboard"></i> Overview
                 </button>
-                <button onclick="switchTab('students')" id="tab-students" class="tab-btn inactive w-full">
-                    <i data-lucide="users" class="w-4 h-4"></i> Manage Students
+                <button onclick="switchTab('students')" id="tab-students" class="sidebar-item w-full">
+                    <div class="nav-indicator"></div>
+                    <i data-lucide="users"></i> Manage Students
                 </button>
-                <button onclick="switchTab('logs')" id="tab-logs" class="tab-btn inactive w-full">
-                    <i data-lucide="file-text" class="w-4 h-4"></i> Attendance Logs
+                <button onclick="switchTab('logs')" id="tab-logs" class="sidebar-item w-full">
+                    <div class="nav-indicator"></div>
+                    <i data-lucide="file-text"></i> Attendance Logs
                 </button>
-                <button onclick="switchTab('geofence')" id="tab-geofence" class="tab-btn inactive w-full">
-                    <i data-lucide="map" class="w-4 h-4"></i> Campus Setup
+                <button onclick="switchTab('geofence')" id="tab-geofence" class="sidebar-item w-full">
+                    <div class="nav-indicator"></div>
+                    <i data-lucide="settings-2"></i> Campus Setup
                 </button>
+            </nav>
+
+            <div class="p-6 border-t border-slate-50 bg-slate-50/30">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-slate-200 animate-pulse"></div>
+                    <div class="flex-1">
+                        <div class="h-3 w-20 bg-slate-200 rounded animate-pulse mb-1"></div>
+                        <div class="h-2 w-12 bg-slate-100 rounded animate-pulse"></div>
+                    </div>
+                </div>
             </div>
-        </div>
+        </aside>
 
         <!-- Main Content Area -->
-        <div class="flex-1 overflow-y-auto pr-2 pb-6 space-y-6 scrollbar-hide">
+        <main class="flex-1 min-w-0 bg-[#f8fafc] overflow-y-auto">
+            <div class="p-6 md:p-10 max-w-6xl mx-auto space-y-8">
 
             <!-- OVERVIEW TAB -->
-            <div id="content-overview">
+            <div id="content-overview" class="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="saas-card p-6 flex flex-col justify-center relative overflow-hidden">
-                        <i data-lucide="users"
-                            class="absolute -right-4 -bottom-4 w-24 h-24 text-slate-50 opacity-50"></i>
-                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Registered</p>
-                        <h3 id="dash-students-count" class="text-3xl font-extrabold text-slate-900 mt-2">0</h3>
+                    <div class="premium-card p-6 relative overflow-hidden group">
+                        <div class="stat-icon bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300">
+                            <i data-lucide="users" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-slate-500 uppercase tracking-tight">Total Students</p>
+                            <h3 id="dash-students-count" class="text-3xl font-extrabold text-slate-900 mt-1">0</h3>
+                        </div>
+                        <div class="absolute -right-6 -bottom-6 opacity-[0.03] group-hover:scale-110 transition-transform duration-500">
+                            <i data-lucide="users" class="w-32 h-32"></i>
+                        </div>
                     </div>
 
-                    <div class="saas-card p-6 flex flex-col justify-center relative overflow-hidden">
-                        <i data-lucide="check-circle"
-                            class="absolute -right-4 -bottom-4 w-24 h-24 text-slate-50 opacity-50"></i>
-                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Verified Logs</p>
-                        <h3 id="dash-logs-count" class="text-3xl font-extrabold text-slate-900 mt-2">0</h3>
+                    <div class="premium-card p-6 relative overflow-hidden group">
+                        <div class="stat-icon bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-300">
+                            <i data-lucide="check-circle-2" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-slate-500 uppercase tracking-tight">Verified Logs</p>
+                            <h3 id="dash-logs-count" class="text-3xl font-extrabold text-slate-900 mt-1">0</h3>
+                        </div>
+                        <div class="absolute -right-6 -bottom-6 opacity-[0.03] group-hover:scale-110 transition-transform duration-500">
+                            <i data-lucide="check-circle-2" class="w-32 h-32"></i>
+                        </div>
                     </div>
 
-                    <div
-                        class="saas-card p-6 bg-gradient-to-br from-[#0f172a] to-[#0284c7] text-white flex flex-col justify-center relative overflow-hidden">
-                        <i data-lucide="map-pin"
-                            class="absolute -right-4 -bottom-4 w-24 h-24 text-white opacity-10"></i>
-                        <p class="text-xs font-bold text-blue-200 uppercase tracking-wider">Active Geofence</p>
-                        <h3 id="dash-campus-name" class="text-xl font-extrabold text-white mt-1 leading-tight">
-                            Configuring</h3>
-                        <div class="mt-3 flex text-sm font-semibold text-blue-100">
-                            <span id="dash-campus-radius">Radius: 0m</span>
+                    <div class="premium-card p-6 bg-slate-900 text-white relative overflow-hidden group border-none shadow-indigo-100 shadow-xl">
+                        <div class="stat-icon bg-white/10 text-white backdrop-blur-md">
+                            <i data-lucide="map-pin" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-slate-400 uppercase tracking-tight">Active Geofence</p>
+                            <h3 id="dash-campus-name" class="text-xl font-bold text-white mt-1 leading-tight truncate">Configuring...</h3>
+                            <p id="dash-campus-radius" class="text-xs font-medium text-slate-400 mt-1">Radius: 0m</p>
+                        </div>
+                        <div class="absolute -right-6 -bottom-6 opacity-10 group-hover:scale-110 transition-transform duration-500 text-white">
+                            <i data-lucide="map-pin" class="w-32 h-32"></i>
                         </div>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-                    <!-- Students Snippet -->
-                    <div class="saas-card flex flex-col h-[400px]">
-                        <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                            <h3 class="font-bold text-slate-900">Recent Students</h3>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Recent Activity -->
+                    <div class="premium-card overflow-hidden flex flex-col h-[400px]">
+                        <div class="p-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/20">
+                            <h3 class="font-bold text-slate-900 flex items-center gap-2">
+                                <i data-lucide="clock" class="w-5 h-5 text-indigo-500"></i>
+                                Recent Enrollment
+                            </h3>
+                            <button onclick="switchTab('students')" class="text-xs font-bold text-indigo-600 hover:text-indigo-700">View All</button>
                         </div>
-                        <div id="dash-students-list" class="flex-1 overflow-y-auto p-2">
+                        <div id="dash-students-list" class="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-hide">
+                            <!-- JS populated -->
                         </div>
                     </div>
 
-                    <!-- Map Preview -->
-                    <div class="saas-card p-6 h-[400px] flex flex-col">
-                        <h3 class="font-bold text-slate-900 mb-4">Live Campus Activity</h3>
-                        <div
-                            class="flex-1 rounded-xl bg-slate-50 border border-slate-200 relative overflow-hidden flex items-center justify-center shadow-inner">
-                            <div
-                                class="absolute inset-0 opacity-40 bg-[radial-gradient(#94a3b8_1px,transparent_1px)] [background-size:16px_16px]">
+                    <!-- Live Visualization -->
+                    <div class="premium-card p-6 h-[400px] flex flex-col">
+                        <h3 class="font-bold text-slate-900 mb-6 flex items-center gap-2">
+                            <i data-lucide="activity" class="w-5 h-5 text-indigo-500"></i>
+                            Campus Pulse
+                        </h3>
+                        <div class="flex-1 rounded-2xl bg-slate-50/50 border border-slate-100 relative overflow-hidden flex items-center justify-center shadow-inner group">
+                            <div class="absolute inset-0 opacity-40 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:24px_24px]"></div>
+                            
+                            <div class="relative z-10 w-56 h-56 rounded-full border border-indigo-100 bg-white/50 backdrop-blur-sm flex items-center justify-center">
+                                <div class="w-4 h-4 bg-indigo-600 rounded-full shadow-[0_0_0_8px_rgba(79,70,229,0.1),0_0_40px_rgba(79,70,229,0.4)]"></div>
+                                
+                                <!-- Decorative rings -->
+                                <div class="absolute inset-4 rounded-full border border-indigo-50 animate-[ping_3s_linear_infinite]"></div>
+                                <div class="absolute inset-12 rounded-full border border-indigo-50 animate-[ping_4s_linear_infinite] delay-1000"></div>
+
+                                <!-- Pulsing dots -->
+                                <div class="absolute top-1/4 left-1/3 w-3 h-3 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.6)]"></div>
+                                <div class="absolute bottom-1/3 right-1/4 w-3 h-3 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.6)] delay-700"></div>
                             </div>
-                            <div
-                                class="relative z-10 w-48 h-48 rounded-full border-2 border-[#0284c7] bg-[#0284c7]/10 flex items-center justify-center">
-                                <div class="w-3 h-3 bg-[#0284c7] rounded-full shadow-[0_0_0_4px_rgba(2,132,199,0.2)]">
-                                </div>
-                                <div
-                                    class="absolute top-1/4 left-1/3 w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.8)]">
-                                </div>
-                                <div
-                                    class="absolute bottom-1/3 right-1/4 w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.8)] delay-150">
+
+                            <div class="absolute bottom-4 left-4 right-4 flex justify-between">
+                                <div class="px-3 py-1 transparent-badge bg-white/80 border border-slate-100 rounded-lg text-[10px] font-bold text-slate-500 uppercase tracking-widest shadow-sm">Real-time GPS</div>
+                                <div class="flex gap-2">
+                                    <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                                    <div class="w-2 h-2 rounded-full bg-slate-200"></div>
                                 </div>
                             </div>
                         </div>
@@ -289,144 +341,166 @@
             </div>
 
             <!-- STUDENTS TAB -->
-            <div id="content-students" class="saas-card overflow-hidden h-[calc(100vh-80px)] flex flex-col" style="display: none;">
-                <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+            <div id="content-students" class="premium-card overflow-hidden flex flex-col h-[calc(100vh-120px)] animate-in fade-in slide-in-from-bottom-4 duration-700" style="display: none;">
+                <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-white">
                     <div>
-                        <h2 class="text-lg font-bold text-slate-900">Student Directory</h2>
+                        <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">Student Directory</h2>
+                        <p class="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Manage institutional access</p>
                     </div>
-                    <button onclick="document.getElementById('addStudentModal').classList.remove('hidden')" class="btn-primary text-xs py-2">
+                    <button onclick="document.getElementById('addStudentModal').classList.remove('hidden')" class="btn-indigo">
                         <i data-lucide="plus" class="w-4 h-4"></i> Add Student
                     </button>
                 </div>
-                <!-- Adding student logic can be placed here, for now it just displays data fetched -->
-                <div class="overflow-auto flex-1">
+                
+                <div class="overflow-auto flex-1 scrollbar-hide">
                     <table class="w-full text-left border-collapse">
-                        <thead class="bg-slate-50 sticky top-0 border-b border-slate-100">
+                        <thead class="bg-slate-50/50 sticky top-0 border-b border-slate-100 backdrop-blur-md">
                             <tr>
-                                <th class="py-4 px-6 text-xs font-bold text-slate-500 uppercase">Name & Email</th>
-                                <th class="py-4 px-6 text-xs font-bold text-slate-500 uppercase">Roll No.</th>
-                                <th class="py-4 px-6 text-xs font-bold text-slate-500 uppercase">Department</th>
-                                <th class="py-4 px-6 text-xs font-bold text-slate-500 uppercase text-right">Actions</th>
+                                <th class="py-4 px-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Student Information</th>
+                                <th class="py-4 px-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Roll Number</th>
+                                <th class="py-4 px-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Department</th>
+                                <th class="py-4 px-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Settings</th>
                             </tr>
                         </thead>
-                        <tbody id="table-students-body" class="divide-y divide-slate-100"></tbody>
+                        <tbody id="table-students-body" class="divide-y divide-slate-100/50">
+                            <!-- JS populated -->
+                        </tbody>
                     </table>
                 </div>
             </div>
 
             <!-- LOGS TAB -->
-            <div id="content-logs" class="saas-card overflow-hidden h-[calc(100vh-80px)] flex flex-col" style="display: none;">
-                <div class="p-6 border-b border-slate-100 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center bg-slate-50/50">
-                    <h2 class="text-lg font-bold text-slate-900">Verification Logs</h2>
-                    <div class="flex gap-3 w-full md:w-auto">
-                        <input type="date" id="filter-date" class="saas-input py-1.5 w-auto" onchange="filterLogs()">
-                        <input type="text" id="filter-student" placeholder="Search student..." class="saas-input py-1.5 w-auto" onkeyup="filterLogs()">
-                        <button onclick="downloadLogsCSV()" class="btn-primary py-1.5 px-3 whitespace-nowrap bg-indigo-600 hover:bg-indigo-700">
-                            <i data-lucide="download" class="w-4 h-4"></i> CSV
+            <div id="content-logs" class="premium-card overflow-hidden flex flex-col h-[calc(100vh-120px)] animate-in fade-in slide-in-from-bottom-4 duration-700" style="display: none;">
+                <div class="p-6 border-b border-slate-100 flex flex-col lg:flex-row gap-6 justify-between items-start lg:items-center bg-white">
+                    <div>
+                        <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">Verification Logs</h2>
+                        <p class="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Audit attendance records</p>
+                    </div>
+                    <div class="flex flex-wrap gap-3 w-full lg:w-auto">
+                        <div class="relative flex-1 lg:flex-none">
+                            <i data-lucide="calendar" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                            <input type="date" id="filter-date" class="pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all w-full lg:w-auto" onchange="filterLogs()">
+                        </div>
+                        <div class="relative flex-1 lg:flex-none">
+                            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                            <input type="text" id="filter-student" placeholder="Search logs..." class="pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all w-full lg:w-auto" onkeyup="filterLogs()">
+                        </div>
+                        <button onclick="downloadLogsCSV()" class="btn-indigo bg-slate-900 shadow-none hover:bg-slate-800">
+                            <i data-lucide="download" class="w-4 h-4"></i> Export CSV
                         </button>
                     </div>
                 </div>
-                <div class="overflow-auto flex-1">
+                <div class="overflow-auto flex-1 scrollbar-hide">
                     <table class="w-full text-left border-collapse">
-                        <thead class="bg-slate-50 sticky top-0 border-b border-slate-100">
+                        <thead class="bg-slate-50/50 sticky top-0 border-b border-slate-100 backdrop-blur-md">
                             <tr>
-                                <th class="py-4 px-6 text-xs font-bold text-slate-500 uppercase">Date</th>
-                                <th class="py-4 px-6 text-xs font-bold text-slate-500 uppercase">Student</th>
-                                <th class="py-4 px-6 text-xs font-bold text-slate-500 uppercase">In</th>
-                                <th class="py-4 px-6 text-xs font-bold text-slate-500 uppercase">Out</th>
-                                <th class="py-4 px-6 text-xs font-bold text-slate-500 uppercase">Hours</th>
-                                <th class="py-4 px-6 text-xs font-bold text-slate-500 uppercase">Status</th>
+                                <th class="py-4 px-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Date</th>
+                                <th class="py-4 px-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Student</th>
+                                <th class="py-4 px-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Clock In</th>
+                                <th class="py-4 px-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Clock Out</th>
+                                <th class="py-4 px-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Duration</th>
+                                <th class="py-4 px-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</th>
                             </tr>
                         </thead>
-                        <tbody id="table-logs-body" class="divide-y divide-slate-100"></tbody>
+                        <tbody id="table-logs-body" class="divide-y divide-slate-100/50">
+                            <!-- JS populated -->
+                        </tbody>
                     </table>
                 </div>
             </div>
 
             <!-- GEOFENCE TAB -->
-            <div id="content-geofence" class="max-w-3xl" style="display: none;">
-                <div class="saas-card overflow-hidden">
-                    <div class="p-6 border-b border-slate-100 bg-slate-50/50">
-                        <h2 class="text-lg font-bold text-slate-900 flex items-center">
-                            <i data-lucide="map-pin" class="w-5 h-5 mr-3 text-[#0284c7]"></i> Geofence Config
+            <div id="content-geofence" class="max-w-3xl animate-in fade-in slide-in-from-bottom-4 duration-700" style="display: none;">
+                <div class="premium-card overflow-hidden">
+                    <div class="p-6 border-b border-slate-100 bg-white">
+                        <h2 class="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3">
+                            <div class="p-2 rounded-lg bg-indigo-50 text-indigo-600">
+                                <i data-lucide="map-pin" class="w-5 h-5"></i>
+                            </div>
+                            Campus Geofence
                         </h2>
                     </div>
 
-                    <form id="geofence-form" class="p-8 space-y-6">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                            <div class="space-y-1.5">
-                                <label class="text-xs font-bold text-slate-700 uppercase">College Name</label>
-                                <input id="geo-college-name" required class="saas-input" placeholder="University of Technology" />
+                    <form id="geofence-form" class="p-8 space-y-8">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">College Name</label>
+                                <input id="geo-college-name" readonly class="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold text-slate-500 cursor-not-allowed" />
                             </div>
-                            <div class="space-y-1.5">
-                                <label class="text-xs font-bold text-slate-700 uppercase">College Code</label>
-                                <input id="geo-college-code" required class="saas-input font-mono" placeholder="UOT123" />
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Branch Code</label>
+                                <input id="geo-college-code" readonly class="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold text-slate-500 font-mono tracking-widest cursor-not-allowed" />
                             </div>
-                        </div>
-                        <div class="space-y-1.5">
-                            <label class="text-xs font-bold text-slate-700 uppercase">Identifier</label>
-                            <input id="geo-name" required class="saas-input" placeholder="Main Campus" />
-                        </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                            <div class="space-y-1.5">
-                                <label class="text-xs font-bold text-slate-700 uppercase">Latitude</label>
-                                <input id="geo-lat" required type="number" step="any" class="saas-input font-mono" />
-                            </div>
-                            <div class="space-y-1.5">
-                                <label class="text-xs font-bold text-slate-700 uppercase">Longitude</label>
-                                <input id="geo-lng" required type="number" step="any" class="saas-input font-mono" />
-                            </div>
-                        </div>
-                        <div class="space-y-1.5">
-                            <label class="text-xs font-bold text-slate-700 uppercase">Radius (Meters)</label>
-                            <input id="geo-radius" required type="number" class="saas-input font-bold" />
                         </div>
 
-                        <div class="pt-6 border-t border-slate-100 flex justify-end">
-                            <button type="submit" class="btn-primary">Apply Settings</button>
+                        <div class="space-y-2">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Location Name</label>
+                            <input id="geo-name" required class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all" placeholder="e.g. Main High Tech Campus" />
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Latitude</label>
+                                <input id="geo-lat" required type="number" step="any" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-bold text-indigo-600 font-mono focus:ring-4 focus:ring-indigo-100 outline-none transition-all" />
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Longitude</label>
+                                <input id="geo-lng" required type="number" step="any" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-bold text-indigo-600 font-mono focus:ring-4 focus:ring-indigo-100 outline-none transition-all" />
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Radius (M)</label>
+                                <input id="geo-radius" required type="number" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-bold text-indigo-600 focus:ring-4 focus:ring-indigo-100 outline-none transition-all" />
+                            </div>
+                        </div>
+
+                        <div class="pt-6 border-t border-slate-50 flex justify-end">
+                            <button type="submit" class="btn-indigo px-10 py-4 rounded-xl shadow-lg shadow-indigo-100">Update Geofence</button>
                         </div>
                     </form>
                 </div>
             </div>
 
         </div>
-    </div>
+    </main>
 
     <!-- Add Student Modal -->
-    <div id="addStudentModal" class="fixed inset-0 bg-slate-900/50 z-50 hidden flex items-center justify-center p-4">
-        <div class="saas-card w-full max-w-md bg-white overflow-hidden">
-            <div class="p-5 border-b border-slate-100 flex justify-between items-center">
-                <h3 class="font-bold text-slate-900">Add New Student</h3>
-                <button onclick="document.getElementById('addStudentModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
+    <div id="addStudentModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 transition-all duration-300">
+        <div class="premium-card w-full max-w-md bg-white overflow-hidden shadow-2xl scale-in-center">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                <div>
+                    <h3 class="font-extrabold text-slate-900 tracking-tight">Register Student</h3>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Add to college directory</p>
+                </div>
+                <button onclick="document.getElementById('addStudentModal').classList.add('hidden')" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-white rounded-xl transition-all">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
-            <form id="add-student-form" class="p-6 space-y-4">
-                <div>
-                    <label class="text-xs font-bold text-slate-700 uppercase">Full Name</label>
-                    <input id="new-name" required class="saas-input mt-1" />
+            <form id="add-student-form" class="p-8 space-y-5">
+                <div class="space-y-1.5">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Full Name</label>
+                    <input id="new-name" required class="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all" placeholder="John Doe" />
                 </div>
-                <div>
-                    <label class="text-xs font-bold text-slate-700 uppercase">Email</label>
-                    <input id="new-email" type="email" required class="saas-input mt-1" />
+                <div class="space-y-1.5">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Email Address</label>
+                    <input id="new-email" type="email" required class="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all" placeholder="john@college.edu" />
                 </div>
-                <div>
-                    <label class="text-xs font-bold text-slate-700 uppercase">Password</label>
-                    <input id="new-password" type="password" required class="saas-input mt-1" />
+                <div class="space-y-1.5">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Access Password</label>
+                    <input id="new-password" type="password" required class="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all" placeholder="••••••••" />
                 </div>
                 <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="text-xs font-bold text-slate-700 uppercase">Roll Number</label>
-                        <input id="new-roll" required class="saas-input mt-1 font-mono" />
+                    <div class="space-y-1.5">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Roll Number</label>
+                        <input id="new-roll" required class="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm font-bold text-indigo-600 font-mono focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all" placeholder="BSE-2024-001" />
                     </div>
-                    <div>
-                        <label class="text-xs font-bold text-slate-700 uppercase">Department</label>
-                        <input id="new-dept" required class="saas-input mt-1" />
+                    <div class="space-y-1.5">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Department</label>
+                        <input id="new-dept" required class="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all" placeholder="Computer Science" />
                     </div>
                 </div>
-                <div class="pt-4 flex justify-end gap-3">
-                    <button type="button" onclick="document.getElementById('addStudentModal').classList.add('hidden')" class="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 rounded-lg">Cancel</button>
-                    <button type="submit" class="btn-primary py-2 px-4 shadow">Create Student</button>
+                <div class="pt-6 flex justify-end gap-3">
+                    <button type="button" onclick="document.getElementById('addStudentModal').classList.add('hidden')" class="px-5 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 rounded-lg transition-colors">Discard</button>
+                    <button type="submit" class="btn-indigo py-2.5 px-6">Submit Registration</button>
                 </div>
             </form>
         </div>
@@ -444,7 +518,14 @@
 
         const user = JSON.parse(userStr);
         if (user.role !== 'admin') {
-            window.location.href = 'student-dashboard.html';
+            window.location.href = 'admin-login.html';
+        }
+
+        if (user.collegeName) {
+            document.getElementById('brand-college-name').textContent = user.collegeName;
+        }
+        if (user.collegeCode) {
+            document.getElementById('brand-college-code').textContent = user.collegeCode;
         }
 
         let allLogs = [];
@@ -480,7 +561,7 @@
             document.getElementById('dash-students-count').textContent = stats.overall?.totalStudents || 0;
             document.getElementById('dash-logs-count').textContent = stats.overall?.Present || 0;
 
-            const mainCampus = Array.isArray(c) ? c[0] : c; // Handle both list array or direct single object return formats based on route iteration
+            const mainCampus = Array.isArray(c) ? c[0] : c;
 
             if (mainCampus && mainCampus.name) {
                 document.getElementById('dash-campus-name').textContent = mainCampus.name;
@@ -489,29 +570,40 @@
 
             const listDom = document.getElementById('dash-students-list');
             listDom.innerHTML = (s.slice(0, 6) || []).map(student => `
-                <div class="p-3 flex items-center gap-4 hover:bg-slate-50 rounded-xl transition-colors">
-                    <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-500">
+                <div class="px-4 py-3 flex items-center gap-4 bg-white border border-slate-50 rounded-2xl hover:border-indigo-100 hover:shadow-sm transition-all group">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm group-hover:bg-indigo-600 group-hover:text-white transition-colors">
                         ${student.userId?.name?.charAt(0) || 'U'}
                     </div>
-                    <div>
-                        <p class="text-sm font-bold text-slate-900">${student.userId?.name || 'Unknown'}</p>
-                        <p class="text-xs font-semibold text-slate-500">${student.rollNumber || ''}</p>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-bold text-slate-900 truncate">${student.userId?.name || 'Unknown'}</p>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate">${student.department || 'General'}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-[10px] font-mono font-bold text-indigo-500">${student.rollNumber || ''}</p>
                     </div>
                 </div>
             `).join('');
+            lucide.createIcons();
         }
 
         function renderStudents(s) {
             document.getElementById('table-students-body').innerHTML = (s || []).map(student => `
-                <tr class="hover:bg-slate-50">
-                    <td class="py-4 px-6 text-sm">
-                        <div class="font-bold text-slate-900">${student.userId?.name || 'Admin/Unknown'}</div>
-                        <div class="text-xs text-slate-500">${student.userId?.email || ''}</div>
+                <tr class="hover:bg-slate-50/50 transition-colors group">
+                    <td class="py-4 px-8">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 font-bold group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
+                                ${student.userId?.name?.charAt(0) || 'U'}
+                            </div>
+                            <div>
+                                <div class="font-bold text-slate-900">${student.userId?.name || 'Admin/Unknown'}</div>
+                                <div class="text-xs text-slate-400 font-medium">${student.userId?.email || ''}</div>
+                            </div>
+                        </div>
                     </td>
-                    <td class="py-4 px-6 text-sm text-slate-600">${student.rollNumber || 'N/A'}</td>
-                    <td class="py-4 px-6 text-sm text-slate-600">${student.department || 'N/A'}</td>
-                    <td class="py-4 px-6 text-right">
-                        <button onclick="deleteStudent(${student._id})" class="text-red-500 hover:text-red-700 bg-red-50 p-1.5 rounded" title="Delete Student">
+                    <td class="py-4 px-8 text-sm font-bold text-slate-600 font-mono">${student.rollNumber || 'N/A'}</td>
+                    <td class="py-4 px-8 text-sm font-semibold text-slate-600">${student.department || 'N/A'}</td>
+                    <td class="py-4 px-8 text-right">
+                        <button onclick="deleteStudent('${student._id}')" class="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Delete Student">
                             <i data-lucide="trash-2" class="w-4 h-4"></i>
                         </button>
                     </td>
@@ -536,11 +628,10 @@
         }
         
         function filterLogs() {
-            const dateStr = document.getElementById('filter-date').value; // YYYY-MM-DD
+            const dateStr = document.getElementById('filter-date').value;
             const searchStr = document.getElementById('filter-student').value.toLowerCase();
 
             const filtered = allLogs.filter(log => {
-                // Normalise both sides to first 10 chars (YYYY-MM-DD) for comparison
                 const logDate = (log.date || '').substring(0, 10);
                 const dateMatch = !dateStr || logDate === dateStr;
                 const nameMatch = !searchStr ||
@@ -571,8 +662,6 @@
             document.body.removeChild(a);
         }
 
-        // Format a stored time string to 12-hour AM/PM
-        // Handles both "10:00:49 AM" (already formatted) and "09:15:30" (24h)
         function fmtTime(t) {
             if (!t) return '--:--';
             if (/am|pm/i.test(t)) return t.trim();
@@ -586,20 +675,16 @@
             return s ? `${h}:${m}:${s} ${ampm}` : `${h}:${m} ${ampm}`;
         }
 
-        // Format a YYYY-MM-DD date string to '14 Mar 2026'
         function fmtDate(d) {
             if (!d) return '--';
             return new Date(d.substring(0, 10) + 'T00:00:00')
                 .toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
         }
 
-        // Calculate hours between two time strings; handles HH:MM, HH:MM:SS, and H:MM:SS AM/PM
         function calculateHours(start, end) {
             if (!start || !end) return '--';
             try {
-                // Normalise to 24h for arithmetic
                 const toMs = (t) => {
-                    // Handle AM/PM
                     const ampm = t.match(/am|pm/i);
                     let clean = t.replace(/am|pm/gi, '').trim();
                     let [h, min, sec] = clean.split(':').map(Number);
@@ -621,33 +706,39 @@
                 const dateDisplay = fmtDate(log.date);
                 const checkinDisplay = fmtTime(log.checkinTime);
                 const checkoutDisplay = log.checkoutTime ? fmtTime(log.checkoutTime) : '--:--';
-                const statusBadge = log.status === 'Present'
-                    ? '<span class="badge-success">Present</span>'
-                    : `<span class="badge-danger">${log.status || 'Absent'}</span>`;
+                
+                let badgeClass = "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ";
+                if(log.status === 'Present') badgeClass += "bg-emerald-50 text-emerald-600 border border-emerald-100";
+                else badgeClass += "bg-slate-50 text-slate-500 border border-slate-100";
+
                 return `
-                    <tr class="hover:bg-slate-50">
-                        <td class="py-4 px-6 text-sm font-bold text-slate-900">${dateDisplay}</td>
-                        <td class="py-4 px-6 text-sm">
-                            <div class="font-bold text-slate-700">${log.studentId?.name || 'Unknown'}</div>
-                            <div class="text-xs text-slate-500">${log.studentId?.rollNumber || ''}</div>
+                    <tr class="hover:bg-slate-50/50 transition-colors">
+                        <td class="py-4 px-8 text-sm font-bold text-slate-800">${dateDisplay}</td>
+                        <td class="py-4 px-8">
+                            <div class="font-bold text-slate-900 text-sm">${log.studentId?.name || 'Unknown'}</div>
+                            <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">${log.studentId?.rollNumber || ''}</div>
                         </td>
-                        <td class="py-4 px-6 text-sm font-semibold text-green-700">${checkinDisplay}</td>
-                        <td class="py-4 px-6 text-sm font-semibold text-slate-600">${checkoutDisplay}</td>
-                        <td class="py-4 px-6 text-sm font-bold text-[#0284c7]">${hours}</td>
-                        <td class="py-4 px-6 text-sm">${statusBadge}</td>
+                        <td class="py-4 px-8 text-sm font-bold text-emerald-600">${checkinDisplay}</td>
+                        <td class="py-4 px-8 text-sm font-bold text-slate-400">${checkoutDisplay}</td>
+                        <td class="py-4 px-8">
+                            <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md">${hours}</span>
+                        </td>
+                        <td class="py-4 px-8">
+                            <span class="${badgeClass}">${log.status || 'Student'}</span>
+                        </td>
                     </tr>
                 `;
             }).join('');
+            lucide.createIcons();
         }
 
         function renderGeofence(c) {
             const mainCampus = Array.isArray(c) ? c[0] : c;
             if (mainCampus && mainCampus.name) {
                 document.getElementById('geo-name').value = mainCampus.name || '';
-                document.getElementById('geo-college-name').value = document.getElementById('geo-college-name').value || ''; // Preserves input if admin types it
-                document.getElementById('geo-college-code').value = mainCampus.collegeCode || user.collegeCode || '';
-                if(mainCampus.collegeCode || user.collegeCode) document.getElementById('geo-college-code').readOnly = true;
-
+                document.getElementById('geo-college-name').value = user.collegeName || '';
+                document.getElementById('geo-college-code').value = user.collegeCode || '';
+                
                 document.getElementById('geo-lat').value = mainCampus.latitude || '';
                 document.getElementById('geo-lng').value = mainCampus.longitude || '';
                 document.getElementById('geo-radius').value = mainCampus.radius || '';
@@ -665,28 +756,35 @@
                 radius: parseInt(document.getElementById('geo-radius').value)
             };
 
+            const btn = e.submitter;
+            btn.disabled = true;
+            btn.textContent = 'Updating...';
+
             try {
                 const res = await fetch('/api/admin?action=saveCampusSetup', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('geoattend_token')}` },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify(payload)
                 });
                 
-                const data = await res.json();
                 if (res.ok) {
-                    if (data.token) localStorage.setItem('geoattend_token', data.token); // update the token with college code
                     alert('Geofence updated successfully!');
                     fetchAdminData();
                 } else {
-                    alert('Error updating geofence: ' + data.message);
+                    const data = await res.json();
+                    alert('Error: ' + data.message);
                 }
             } catch (err) {
                 alert('Connection error.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Update Geofence';
             }
         });
 
         document.getElementById('add-student-form').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const btn = e.submitter;
             const payload = {
                 name: document.getElementById('new-name').value,
                 email: document.getElementById('new-email').value,
@@ -695,10 +793,13 @@
                 department: document.getElementById('new-dept').value,
             };
 
+            btn.disabled = true;
+            btn.textContent = 'Registering...';
+
             try {
                 const res = await fetch('/api/students?action=addStudent', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('geoattend_token')}` },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify(payload)
                 });
                 
@@ -708,25 +809,28 @@
                     fetchAdminData();
                 } else {
                     const data = await res.json();
-                    alert('Error adding student: ' + data.message);
+                    alert('Error: ' + data.message);
                 }
             } catch (err) {
                 alert('Connection error.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Submit Registration';
             }
         });
 
         function switchTab(tabId) {
             ['overview', 'students', 'logs', 'geofence'].forEach(id => {
-                document.getElementById(`tab-${id}`).className = 'tab-btn inactive shrink-0 md:w-full';
-                document.getElementById(`content-${id}`).style.display = 'none';
+                const btn = document.getElementById(`tab-${id}`);
+                const content = document.getElementById(`content-${id}`);
+                btn.classList.remove('active');
+                content.style.display = 'none';
             });
-            document.getElementById(`tab-${tabId}`).className = 'tab-btn active shrink-0 md:w-full';
-            document.getElementById(`content-${tabId}`).style.display = '';
             
-            // Close sidebar on mobile after selection
-            if (window.innerWidth < 768) {
-                toggleSidebar(false);
-            }
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+            document.getElementById(`content-${tabId}`).style.display = 'block';
+            
+            if (window.innerWidth < 768) toggleSidebar(false);
         }
 
         function toggleSidebar(forceOpen) {
@@ -737,14 +841,10 @@
                 sidebar.classList.add('open');
                 backdrop.classList.add('active');
                 document.body.style.overflow = 'hidden';
-            } else if (forceOpen === false) {
+            } else {
                 sidebar.classList.remove('open');
                 backdrop.classList.remove('active');
                 document.body.style.overflow = '';
-            } else {
-                const isOpen = sidebar.classList.toggle('open');
-                backdrop.classList.toggle('active', isOpen);
-                document.body.style.overflow = isOpen ? 'hidden' : '';
             }
         }
 

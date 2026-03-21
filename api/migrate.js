@@ -44,21 +44,28 @@ export default async function handler(req, res) {
                 console.log("Unique constraint might already exist or failed. Skipping...");
             }
             
-            console.log("Updated attendance table schema");
-        } catch (attendErr) {
-            console.error("Attendance table migration error:", attendErr);
-        }
+                console.log("Updated attendance table schema");
+            } catch (attendErr) {
+                console.error("Attendance table migration error:", attendErr);
+            }
 
-        return res.status(200).json({ 
-            message: "Migration Successful! The system now supports automatic check-in/out.",
-            steps: [
-                "Dropped NOT NULL on admins.college_name",
-                "Dropped NOT NULL on admins.college_code",
-                "Attempted rename of geofence to campus_setup",
-                "Added attendance columns: attendance_date, check_in_time, check_out_time, distance_at_checkin",
-                "Attempted to add unique constraint for daily attendance"
-            ]
-        });
+            // 4. Add Indexes for Multi-Tenant performance
+            console.log("Adding performance indexes for multi-tenant isolation...");
+            await query('CREATE INDEX IF NOT EXISTS idx_admins_college_code ON admins(college_code)');
+            await query('CREATE INDEX IF NOT EXISTS idx_students_college_code ON students(college_code)');
+            await query('CREATE INDEX IF NOT EXISTS idx_attendance_college_code ON attendance(college_code)');
+            await query('CREATE INDEX IF NOT EXISTS idx_campus_setup_college_code ON campus_setup(college_code)');
+
+            return res.status(200).json({ 
+                message: "Migration Successful! Multi-tenant performance indexes added.",
+                steps: [
+                    "Dropped NOT NULL on admins.college_name",
+                    "Dropped NOT NULL on admins.college_code",
+                    "Added attendance columns: attendance_date, check_in_time, check_out_time, distance_at_checkin",
+                    "Attempted to add unique constraint for daily attendance",
+                    "Created performance indexes for college_code on all tables"
+                ]
+            });
 
     } catch (error) {
         console.error("Migration Error:", error);
