@@ -140,7 +140,7 @@
             }
         }
     </style>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAtcv3jZIS7M7bmf4Mwirbhd1qVulafbvk&callback=initStudentMap" async defer></script>
+
 </head>
 
 <body>
@@ -776,6 +776,7 @@
         fetchDashboardData();
     </script>
 
+    <script>
         window.initStudentMap = function() {
             // Setup generic view pointing near general coordinate or wait for campusConfig
             studentMap = new google.maps.Map(document.getElementById('student-map'), {
@@ -873,6 +874,8 @@
             bounds.extend({ lat, lng });
             studentMap.fitBounds(bounds);
         }
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAtcv3jZIS7M7bmf4Mwirbhd1qVulafbvk&callback=initStudentMap" async defer></script>
 </body>
 
 </html>

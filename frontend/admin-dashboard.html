@@ -165,7 +165,7 @@
         }
         .sidebar-item.active .nav-indicator { display: block; }
     </style>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAtcv3jZIS7M7bmf4Mwirbhd1qVulafbvk&callback=initAdminMap" async defer></script>
+
 </head>
 
 <body>
@@ -919,8 +919,9 @@
         fetchAdminData();
     </script>
 
+    <script>
         let adminMap, adminMarker, adminCircle;
-        window.initAdminMap = function() {
+        function initAdminMap() {
             const latInput = document.getElementById('geo-lat');
             const lngInput = document.getElementById('geo-lng');
             const radiusInput = document.getElementById('geo-radius');
@@ -992,6 +993,8 @@
             latInput.addEventListener('input', updateFromInputs);
             lngInput.addEventListener('input', updateFromInputs);
         };
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAtcv3jZIS7M7bmf4Mwirbhd1qVulafbvk&callback=initAdminMap" async defer></script>
 </body>
 
 </html>
