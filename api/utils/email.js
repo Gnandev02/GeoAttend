@@ -99,4 +99,49 @@ const sendResetEmail = async (toEmail, otp) => {
     }
 };
 
-module.exports = { sendVerificationEmail, sendResetEmail };
+const sendOnboardingEmail = async (toEmail, name, tempPassword, loginUrl = 'https://geoattend.vercel.app/student-login.html') => {
+    try {
+        const transporter = nodemailer.createTransport({
+            host: 'smtp.gmail.com',
+            port: 465,
+            secure: true,
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS,
+            },
+        });
+
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: toEmail,
+            subject: 'Your GeoAttend Account Credentials',
+            html: `
+                <div style="font-family: Arial, sans-serif; padding: 20px; color: #1e293b;">
+                    <h2 style="color: #0284c7;">Welcome to GeoAttend!</h2>
+                    <p>Hello ${name},</p>
+                    <p>An admin has created your GeoAttend account. Here are your credentials:</p>
+                    <ul>
+                        <li><strong>Login Email:</strong> ${toEmail}</li>
+                        <li><strong>Temporary Password:</strong> ${tempPassword}</li>
+                    </ul>
+                    <p>Please log in at <a href="${loginUrl}">GeoAttend Student Portal</a>.</p>
+                    <p><strong>IMPORTANT:</strong> You will be required to change your password immediately upon your first login.</p>
+                </div>
+            `,
+        };
+
+        await new Promise((resolve, reject) => {
+            transporter.sendMail(mailOptions, (err, info) => {
+                if (err) reject(err);
+                else resolve(info);
+            });
+        });
+
+        return true;
+    } catch (error) {
+        console.error('Error sending onboarding email:', error);
+        throw error;
+    }
+};
+
+module.exports = { sendVerificationEmail, sendResetEmail, sendOnboardingEmail };

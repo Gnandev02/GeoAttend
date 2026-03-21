@@ -24,6 +24,10 @@ export default async function handler(req, res) {
         await query('ALTER TABLE admins ALTER COLUMN college_code DROP NOT NULL');
         console.log("Dropped NOT NULL on college_code");
 
+        // 2. Update students table
+        await query('ALTER TABLE students ADD COLUMN IF NOT EXISTS is_first_login BOOLEAN DEFAULT TRUE');
+        console.log("Added is_first_login to students table");
+
         // 3. Update attendance table for Check-In / Check-Out
         try {
             // First, add new columns if they don't exist

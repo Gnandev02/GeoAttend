@@ -105,7 +105,7 @@ export default async function handler(req, res) {
             const student = studentResult.rows[0];
             if (await comparePassword(password, student.password)) {
                 return res.status(200).json({
-                    _id: student.id, name: student.name, email: student.email, rollNumber: student.roll_number, role: 'student', collegeCode: student.college_code, token: generateToken(student.id, student.college_code),
+                    _id: student.id, name: student.name, email: student.email, rollNumber: student.roll_number, role: 'student', collegeCode: student.college_code, isFirstLogin: student.is_first_login, token: generateToken(student.id, student.college_code),
                 });
             } else {
                 return res.status(401).json({ message: 'Invalid credentials' });

@@ -1,5 +1,6 @@
 const { query } = require('./utils/db');
-const { protectAdmin, protectStudent, hashPassword } = require('./utils/auth');
+const { protectAdmin, protectStudent, hashPassword, comparePassword } = require('./utils/auth');
+const { sendOnboardingEmail } = require('./utils/email');
 const bcrypt = require('bcryptjs'); // Still kept for any direct needs if any, but hashing will use utility
 
 export default async function handler(req, res) {
@@ -25,8 +26,8 @@ export default async function handler(req, res) {
             if (!admin.college_code) return res.status(400).json({ message: 'Please complete campus setup first' });
 
             const studentName = req.body.studentName || req.body.name;
-            const { rollNumber, email, password, department } = req.body;
-            if (!studentName || !email || !password || !rollNumber) return res.status(400).json({ message: 'Please provide all required fields' });
+            const { rollNumber, email, department } = req.body;
+            if (!studentName || !email || !rollNumber) return res.status(400).json({ message: 'Please provide all required fields (name, email, roll_number)' });
 
             const studentExists = await query('SELECT * FROM students WHERE email = $1', [email]);
             if (studentExists.rows.length > 0) return res.status(400).json({ message: 'Student email already exists' });
@@ -34,14 +35,43 @@ export default async function handler(req, res) {
             const rollExists = await query('SELECT * FROM students WHERE roll_number = $1 AND college_code = $2', [rollNumber, admin.college_code]);
             if (rollExists.rows.length > 0) return res.status(400).json({ message: 'Roll number already exists in this college' });
 
-            const hashedPassword = await hashPassword(password);
+            const tempPassword = Math.random().toString(36).slice(-8);
+            const hashedPassword = await hashPassword(tempPassword);
 
             const newStudent = await query(
                 'INSERT INTO students (name, email, password, roll_number, department, college_code) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
                 [studentName, email, hashedPassword, rollNumber, department || 'General', admin.college_code]
             );
 
-            return res.status(201).json({ message: 'Student created successfully', student: newStudent.rows[0] });
+            try {
+                const loginUrl = `${req.headers.origin || 'https://geoattend.vercel.app'}/student-login.html`;
+                await sendOnboardingEmail(email, studentName, tempPassword, loginUrl);
+            } catch (emailErr) {
+                console.error("Email sending failed for new student:", emailErr);
+            }
+
+            return res.status(201).json({ message: 'Student created securely. Temporary password sent via email.', student: newStudent.rows[0] });
+        }
+
+
+        if (action === 'changePassword' && req.method === 'POST') {
+            const student = await protectStudent(req);
+            if (!student) return res.status(401).json({ message: 'Not authorized' });
+
+            const { oldPassword, newPassword } = req.body;
+            if (!oldPassword || !newPassword) return res.status(400).json({ message: 'Please provide both current and new passwords' });
+
+            const studentRow = await query('SELECT password FROM students WHERE id = $1', [student.id]);
+            if (studentRow.rows.length === 0) return res.status(404).json({ message: 'User not found' });
+            
+            if (!(await comparePassword(oldPassword, studentRow.rows[0].password))) {
+                return res.status(400).json({ message: 'Incorrect current password' });
+            }
+
+            const hashedPassword = await hashPassword(newPassword);
+            await query('UPDATE students SET password = $1, is_first_login = FALSE WHERE id = $2', [hashedPassword, student.id]);
+
+            return res.status(200).json({ message: 'Password updated successfully' });
         }
 
         if (action === 'getStudents' && req.method === 'GET') {
