@@ -123,12 +123,12 @@
                         <div>
                             <label
                                 class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">Name</label>
-                            <input type="text" id="name" required class="saas-input" placeholder="John Doe">
+                            <input type="text" id="name" required class="saas-input" placeholder="Enter your name" autocomplete="name">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">Email
                                 Address</label>
-                            <input type="email" id="email" required class="saas-input" placeholder="admin@geo.edu">
+                            <input type="email" id="email" required class="saas-input" placeholder="Enter your email" autocomplete="email">
                             <p id="email-error" class="text-xs text-red-500 mt-1 hidden"></p>
                         </div>
                         <div>
@@ -136,7 +136,7 @@
                                 Password
                             </label>
                             <input type="password" id="password" required minlength="6" class="saas-input"
-                                placeholder="••••••••">
+                                placeholder="Enter your password" autocomplete="new-password">
                             <p id="password-error" class="text-xs text-red-500 mt-1 hidden"></p>
                             <p class="text-xs text-slate-400 mt-1 font-medium" id="password-helper">Minimum 6 characters
                             </p>
@@ -146,17 +146,17 @@
                                 Confirm Password
                             </label>
                             <input type="password" id="confirmPassword" required class="saas-input"
-                                placeholder="••••••••">
+                                placeholder="Confirm your password" autocomplete="new-password">
                             <p id="confirm-password-error" class="text-xs text-red-500 mt-1 hidden"></p>
                         </div>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">College Name</label>
-                                <input type="text" id="collegeName" required class="saas-input" placeholder="UC Berkeley">
+                                <input type="text" id="collegeName" required class="saas-input" placeholder="Enter college name">
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">College Code</label>
-                                <input type="text" id="collegeCode" required class="saas-input font-mono" placeholder="UCB01">
+                                <input type="text" id="collegeCode" required class="saas-input font-mono" placeholder="Enter unique college code">
                             </div>
                         </div>
                     </div>
