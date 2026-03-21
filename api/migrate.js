@@ -25,8 +25,8 @@ export default async function handler(req, res) {
         console.log("Dropped NOT NULL on college_code");
 
         // 2. Update students table
-        await query('ALTER TABLE students ADD COLUMN IF NOT EXISTS is_first_login BOOLEAN DEFAULT TRUE');
-        console.log("Added is_first_login to students table");
+        await query('ALTER TABLE students DROP COLUMN IF EXISTS is_first_login');
+        console.log("Dropped is_first_login from students table");
 
         // 3. Update attendance table for Check-In / Check-Out
         try {

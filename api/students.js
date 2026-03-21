@@ -69,7 +69,7 @@ export default async function handler(req, res) {
             }
 
             const hashedPassword = await hashPassword(newPassword);
-            await query('UPDATE students SET password = $1, is_first_login = FALSE WHERE id = $2', [hashedPassword, student.id]);
+            await query('UPDATE students SET password = $1 WHERE id = $2', [hashedPassword, student.id]);
 
             return res.status(200).json({ message: 'Password updated successfully' });
         }
