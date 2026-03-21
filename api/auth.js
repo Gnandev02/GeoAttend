@@ -57,7 +57,7 @@ export default async function handler(req, res) {
             const dbOtp = otpRecord.rows[0];
             const otpTime = new Date(dbOtp.created_at).getTime();
             const currentTime = new Date().getTime();
-            if (currentTime - otpTime > 10 * 60 * 1000) {
+            if (currentTime - otpTime > 5 * 60 * 1000) {
                 await query('DELETE FROM otps WHERE email = $1', [email]);
                 return res.status(400).json({ message: 'OTP has expired. Please request a new one.' });
             }
@@ -142,7 +142,7 @@ export default async function handler(req, res) {
             const otpTime = new Date(dbOtp.created_at).getTime();
             const currentTime = new Date().getTime();
 
-            if (currentTime - otpTime > 10 * 60 * 1000) {
+            if (currentTime - otpTime > 5 * 60 * 1000) {
                 await query('DELETE FROM otps WHERE email = $1', [email]);
                 return res.status(400).json({ message: 'OTP has expired' });
             }
