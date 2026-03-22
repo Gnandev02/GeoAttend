@@ -90,8 +90,8 @@ module.exports = async (req, res) => {
 
             } else if (action === 'checkOut') {
                 const result = await query(
-                    'UPDATE attendance SET check_out_time = $1 WHERE student_id = $2 AND attendance_date = $3 RETURNING *',
-                    [currentTime, student.id, today]
+                    'UPDATE attendance SET check_out_time = $1, status = $2 WHERE student_id = $3 AND attendance_date = $4 RETURNING *',
+                    [currentTime, 'Checked Out', student.id, today]
                 );
 
                 if (result.rows.length === 0) return res.status(400).json({ message: 'No check-in record found for today' });

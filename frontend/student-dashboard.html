@@ -336,6 +336,7 @@
         let mapInitialized = false;
         let isProcessing = false;
         let checkInAttempted = false; // Prevents duplicate check-in submissions
+        let isCheckedOut = false;     // Prevents duplicate checkout submissions
 
         async function fetchCampusConfig() {
             try {
@@ -376,7 +377,12 @@
                 // Reset duplicate guard after fetching fresh data
                 const today = new Date().toISOString().split('T')[0];
                 const todayRecord = attendanceData.find(r => r.date === today);
-                if (todayRecord) checkInAttempted = true; // Already checked in today
+                if (todayRecord) {
+                    checkInAttempted = true; // Already checked in today
+                    if (todayRecord.checkoutTime || todayRecord.check_out_time || todayRecord.status === 'Checked Out') {
+                        isCheckedOut = true; // Already checked out today
+                    }
+                }
 
                 updateAttendanceUI();
 
@@ -448,7 +454,7 @@
                                     <p class="text-xs font-semibold text-slate-400 mt-0.5">Campus Geo-zone • ${record.status}</p>
                                 </div>
                             </div>
-                            <span class="${statusClass}">${record.status}</span>
+                            <span class="${record.status === 'Present' || record.status === 'Checked Out' ? 'badge-success' : 'badge-danger'}">${record.status}</span>
                         </div>
                     `;
                 });
@@ -698,9 +704,11 @@
             }
 
             // Auto Check-Out
-            if (dist > campusConfig.radius && todayRecord && todayRecord.checkinTime && !todayRecord.checkoutTime) {
+            const checkoutBuffer = 40; // 40 meters buffer to prevent GPS jitter checkout
+            if (dist > (campusConfig.radius + checkoutBuffer) && todayRecord && todayRecord.checkinTime && !isCheckedOut) {
                 isProcessing = true;
-                console.log(`[AutoCheck] Attempting check-out (outside campus)...`);
+                isCheckedOut = true; // Set flag immediately
+                console.log(`[AutoCheck] Attempting check-out (outside campus by ${(dist - campusConfig.radius).toFixed(1)}m)...`);
                 try {
                     const res = await fetch('/api/attendance?action=checkOut', {
                         method: 'POST',
@@ -712,10 +720,28 @@
                         if (data.attendance) updateCheckInOutUI(data.attendance);
                         showAlert(`🚪 Automatic Departure Detected: Checked Out at ${data.attendance?.checkoutTime ? data.attendance.checkoutTime.substring(0,8) : 'N/A'}!`, true);
                         await fetchDashboardData();
+                        
+                        // Stop tracking after check-out
+                        if (watchId) {
+                            navigator.geolocation.clearWatch(watchId);
+                            watchId = null;
+                            const markBtn = document.getElementById('markBtn');
+                            if (markBtn) {
+                                document.getElementById('markText').textContent = "Start Tracking";
+                                document.getElementById('tracking-status').textContent = "Checked out for today";
+                                markBtn.classList.replace('bg-green-500', 'bg-white');
+                                markBtn.classList.remove('text-white');
+                            }
+                        }
                     } else {
+                        checkInAttempted = false; // Reset if failed
+                        isCheckedOut = false;
                         console.warn('[AutoCheck] Check-out failed:', data.message);
                     }
-                } catch (e) { console.error('[AutoCheck] Check-out error:', e); }
+                } catch (e) {
+                    isCheckedOut = false;
+                    console.error('[AutoCheck] Check-out error:', e);
+                }
                 finally { isProcessing = false; }
             }
         }
