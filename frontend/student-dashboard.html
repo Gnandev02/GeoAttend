@@ -256,7 +256,7 @@
                         <div class="relative z-10 w-full">
                             <h3 class="font-bold mb-1">Campus Tracker</h3>
                             <p id="tracking-status" class="text-xs text-blue-100 mb-4 opacity-90 font-medium tracking-wide">Automatic Arrival Detection</p>
-                            <button onclick="toggleTracking()" id="markBtn"
+                            <button onclick="startTracking()" id="startTrackingBtn"
                                 class="w-full bg-white text-[#0f172a] hover:bg-slate-50 hover:-translate-y-0.5 font-bold py-2.5 px-4 rounded-xl text-sm transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-80">
                                 <i data-lucide="navigation" class="w-4 h-4"></i> <span id="markText">Start Tracking</span>
                             </button>
@@ -538,15 +538,15 @@
             box.classList.remove('hidden');
         }
 
-        function toggleTracking() {
+        function startTracking() {
             // --- STOP TRACKING ---
             if (watchId) {
                 navigator.geolocation.clearWatch(watchId);
                 watchId = null;
                 document.getElementById('markText').textContent = "Start Tracking";
                 document.getElementById('tracking-status').textContent = "Automatic Arrival Detection";
-                document.getElementById('markBtn').classList.replace('bg-green-500', 'bg-white');
-                document.getElementById('markBtn').classList.replace('text-white', 'text-[#0f172a]');
+                document.getElementById('startTrackingBtn').classList.replace('bg-green-500', 'bg-white');
+                document.getElementById('startTrackingBtn').classList.replace('text-white', 'text-[#0f172a]');
                 return;
             }
 
@@ -559,60 +559,63 @@
             // --- SHOW LOADING STATE ---
             document.getElementById('markText').textContent = "Requesting...";
             document.getElementById('tracking-status').textContent = "Waiting for location permission...";
-            document.getElementById('markBtn').disabled = true;
+            document.getElementById('startTrackingBtn').disabled = true;
 
             // --- START CONTINUOUS WATCHING directly (no getCurrentPosition) ---
             let firstFix = true;
             watchId = navigator.geolocation.watchPosition(
-                async function(position) {
-                    if (firstFix) {
-                        document.getElementById('markBtn').disabled = false;
-                        document.getElementById('markText').textContent = "Tracking...";
-                        document.getElementById('tracking-status').textContent = "Live Geofence Monitoring Active";
-                        document.getElementById('markBtn').classList.replace('bg-white', 'bg-green-500');
-                        document.getElementById('markBtn').classList.add('text-white');
-                        firstFix = false;
-                        console.log(`[Tracking] Initial position obtained: (${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)})`);
-                    }
+                function(position) {
+                    try {
+                        if (firstFix) {
+                            document.getElementById('startTrackingBtn').disabled = false;
+                            document.getElementById('markText').textContent = "Tracking...";
+                            document.getElementById('tracking-status').textContent = "Live Geofence Monitoring Active";
+                            document.getElementById('startTrackingBtn').classList.replace('bg-white', 'bg-green-500');
+                            document.getElementById('startTrackingBtn').classList.add('text-white');
+                            firstFix = false;
+                            console.log(`[Tracking] Initial position obtained: (${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)})`);
+                        }
 
-                    const { latitude, longitude } = position.coords;
-                    if (!campusConfig) await fetchCampusConfig();
-                    if (!campusConfig) {
-                        showAlert('⚠️ Campus geofence not configured. Contact your administrator.', false);
-                        return;
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        
+                        // ensure campus config is loaded cleanly without await
+                        if (!campusConfig) {
+                            fetchCampusConfig().then(() => {
+                                if (campusConfig) processTrackingFix(lat, lng);
+                            }).catch(err => console.error(err));
+                        } else {
+                            processTrackingFix(lat, lng);
+                        }
+                    } catch (err) {
+                        console.error("Tracking error:", err);
                     }
-                    const dist = calculateDistanceLocal(latitude, longitude, campusConfig.latitude, campusConfig.longitude);
-                    updateStudentLocationOnMap(latitude, longitude);
-                    console.log(`[Google Maps Info] Student: ${latitude.toFixed(6)}, ${longitude.toFixed(6)} | Admin: ${campusConfig.latitude}, ${campusConfig.longitude} | Dist: ${dist.toFixed(1)}m`);
-
-                    lastDistance = Math.round(dist);
-                    document.getElementById('current-distance').textContent = lastDistance;
-                    handleAutoCheck(latitude, longitude, dist);
                 },
-                function(err) {
-                    if (err.code === err.TIMEOUT) {
-                        console.warn('[Tracking] Location request timed out, retrying automatically...');
+                function(error) {
+                    console.error("GPS error:", error);
+                    if (error.code === 3) {
+                        console.log("Retrying...");
                         // natively retries, do NOT clear watch or disable UI.
                         return;
                     }
 
                     // --- PERMISSION DENIED or FATAL ERROR ---
-                    document.getElementById('markBtn').disabled = false;
+                    document.getElementById('startTrackingBtn').disabled = false;
                     document.getElementById('markText').textContent = "Start Tracking";
                     document.getElementById('tracking-status').textContent = "Automatic Arrival Detection";
-                    document.getElementById('markBtn').classList.replace('bg-green-500', 'bg-white');
-                    document.getElementById('markBtn').classList.remove('text-white');
+                    document.getElementById('startTrackingBtn').classList.replace('bg-green-500', 'bg-white');
+                    document.getElementById('startTrackingBtn').classList.remove('text-white');
 
                     let msg = '';
-                    if (err.code === err.PERMISSION_DENIED) {
+                    if (error.code === error.PERMISSION_DENIED) {
                         msg = "📍 Location permission denied.\n\nTo enable:\n• Chrome/Edge: Click the 🔒 lock icon → Site settings → Location → Allow\n• Safari/Firefox: Permissions → Location -> Allow.";
-                    } else if (err.code === err.POSITION_UNAVAILABLE) {
+                    } else if (error.code === error.POSITION_UNAVAILABLE) {
                         msg = "📡 GPS signal unavailable. Please enable Location Services on your device and try again.";
                     } else {
-                        msg = "Location error: " + err.message;
+                        msg = "Location error: " + error.message;
                     }
                     showAlert(msg, false);
-                    console.warn('[Tracking] Permission/location error:', err.code, err.message);
+                    console.warn('[Tracking] Permission/location error:', error.code, error.message);
                     
                     if (watchId) {
                         navigator.geolocation.clearWatch(watchId);
@@ -623,16 +626,16 @@
             );
         }
 
-        async function handleAutoCheck(lat, lng, dist) {
-            if (isProcessing) return;
+        function processTrackingFix(lat, lng) {
+            const dist = calculateDistanceLocal(lat, lng, campusConfig.latitude, campusConfig.longitude);
+            updateStudentLocationOnMap(lat, lng);
+            console.log("Distance:", dist);
+
+            lastDistance = Math.round(dist);
+            document.getElementById('current-distance').textContent = lastDistance;
 
             const today = new Date().toISOString().split('T')[0];
             const todayRecord = attendanceData.find(r => r.date === today);
-
-            // --- DEBUG LOGS ---
-            console.log(`[AutoCheck] Student coords: (${lat.toFixed(6)}, ${lng.toFixed(6)})`);
-            console.log(`[AutoCheck] Campus center: (${campusConfig.latitude}, ${campusConfig.longitude}), Radius: ${campusConfig.radius}m`);
-            console.log(`[AutoCheck] Distance: ${Math.round(dist)}m | Inside radius: ${dist <= campusConfig.radius} | Today record: ${todayRecord ? 'YES ('+todayRecord.status+')' : 'NONE'} | checkInAttempted: ${checkInAttempted}`);
 
             // Live UI Badge Update
             const presenceBadge = document.getElementById('presence-badge');
@@ -648,86 +651,77 @@
 
             // Auto Check-In
             if (dist <= campusConfig.radius && !todayRecord && !checkInAttempted) {
-                isProcessing = true;
                 checkInAttempted = true; // Set flag before API call to prevent duplicate fires
                 console.log(`[AutoCheck] Attempting check-in...`);
-                try {
-                    const res = await fetch('/api/attendance?action=checkIn', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                        body: JSON.stringify({ latitude: lat, longitude: lng })
-                    });
-                    const data = await res.json();
-                    console.log(`[AutoCheck] Check-in response: ${res.status}`, data);
-                    if (res.ok) {
-                        // Instantly update the UI from the API response before re-fetch
+                fetch('/api/attendance?action=checkIn', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ latitude: lat, longitude: lng })
+                })
+                .then(res => res.json().then(data => ({ status: res.status, ok: res.ok, data })))
+                .then(({ ok, data }) => {
+                    if (ok) {
                         if (data.attendance) updateCheckInOutUI(data.attendance);
-                        showAlert(`✅ Automatic Arrival Detected: Checked In at ${data.attendance?.checkinTime ? data.attendance.checkinTime.substring(0,8) : 'N/A'}!`, true);
-                        await fetchDashboardData();
+                        showAlert(`✅ Automatic Arrival Detected: Checked In!`, true);
+                        fetchDashboardData().catch(err => console.error(err));
                     } else {
-                        // If server rejected, reset the flag so user can try moving and retrying
                         checkInAttempted = false;
                         if (data.message && data.message.toLowerCase().includes('9')) {
                             document.getElementById('tracking-status').textContent = 'Waiting for 9:00 AM Check-In window...';
                             showAlert('⏰ ' + data.message, false);
                         } else if (data.message && data.message.toLowerCase().includes('already')) {
-                            checkInAttempted = true; // Already checked in — set flag back
+                            checkInAttempted = true;
                             showAlert('ℹ️ ' + data.message, true);
-                            await fetchDashboardData();
+                            fetchDashboardData().catch(e => console.error(e));
                         } else {
                             showAlert('⚠️ Check-in failed: ' + (data.message || 'Unknown error'), false);
                         }
                     }
-                } catch (e) {
-                    console.error('[AutoCheck] Check-in error:', e);
+                })
+                .catch(err => {
+                    console.error('[AutoCheck] Check-in error:', err);
                     checkInAttempted = false;
-                } finally { isProcessing = false; }
-
-            } else if (dist <= campusConfig.radius && (todayRecord || checkInAttempted)) {
-                console.log('[AutoCheck] Inside campus but check-in already done today — skipping.');
+                });
             }
 
             // Auto Check-Out
-            const checkoutBuffer = 5; // 5 meters buffer to prevent GPS jitter checkout
-            if (dist > (campusConfig.radius + checkoutBuffer) && !checkedOut) {
+            if (dist > (campusConfig.radius + 5) && !checkedOut) {
                 if (todayRecord && todayRecord.checkinTime) {
-                    isProcessing = true;
-                    console.log("Triggering checkout...");
+                    console.log("Trigger checkout");
                     checkedOut = true; // Set flag immediately
-                    try {
-                        const res = await fetch('/api/attendance?action=checkOut', {
-                        method: 'POST',
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
-                    const data = await res.json();
-                    if (res.ok) {
-                        // Instantly update checkout time in UI before re-fetch
-                        if (data.attendance) updateCheckInOutUI(data.attendance);
-                        showAlert(`🚪 Automatic Departure Detected: Checked Out!`, true);
-                        await fetchDashboardData();
-                        
-                        // Stop tracking after check-out
-                        if (watchId) {
-                            navigator.geolocation.clearWatch(watchId);
-                            watchId = null;
-                            const markBtn = document.getElementById('markBtn');
-                            if (markBtn) {
-                                document.getElementById('markText').textContent = "Start Tracking";
-                                document.getElementById('tracking-status').textContent = "Checked out for today";
-                                markBtn.classList.replace('bg-green-500', 'bg-white');
-                                markBtn.classList.remove('text-white');
+                    
+                    fetch("/api/attendance?action=checkOut", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` }
+                    })
+                    .then(res => res.json().then(data => ({ status: res.status, ok: res.ok, data })))
+                    .then(({ ok, data }) => {
+                        console.log("Checkout success", data);
+                        if (ok) {
+                            if (data.attendance) updateCheckInOutUI(data.attendance);
+                            showAlert(`🚪 Automatic Departure Detected: Checked Out!`, true);
+                            fetchDashboardData().catch(e => console.error(e));
+                            
+                            if (watchId) {
+                                navigator.geolocation.clearWatch(watchId);
+                                watchId = null;
+                                const markBtn = document.getElementById('startTrackingBtn');
+                                if (markBtn) {
+                                    document.getElementById('markText').textContent = "Start Tracking";
+                                    document.getElementById('tracking-status').textContent = "Checked out for today";
+                                    markBtn.classList.replace('bg-green-500', 'bg-white');
+                                    markBtn.classList.remove('text-white');
+                                }
                             }
+                        } else {
+                            checkedOut = false;
                         }
-                    } else {
-                        checkInAttempted = false; // Reset if failed
+                    })
+                    .catch(err => {
+                        console.error("Checkout error", err);
                         checkedOut = false;
-                        console.warn('[AutoCheck] Check-out failed:', data.message);
-                    }
-                } catch (e) {
-                    checkedOut = false;
-                    console.error('[AutoCheck] Check-out error:', e);
+                    });
                 }
-                finally { isProcessing = false; }
             }
         }
 
