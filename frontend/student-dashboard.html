@@ -561,105 +561,65 @@
             document.getElementById('tracking-status').textContent = "Waiting for location permission...";
             document.getElementById('markBtn').disabled = true;
 
-            // --- STEP 1: REQUEST PERMISSION via getCurrentPosition ---
-            // This MUST be the first call to ensure mobile browsers show the permission popup.
-            // We use a generous 15s timeout to allow the user to respond to the popup.
-            navigator.geolocation.getCurrentPosition(
-                function(initialPosition) {
-                    // --- PERMISSION GRANTED: Activate tracking UI ---
-                    document.getElementById('markBtn').disabled = false;
-                    document.getElementById('markText').textContent = "Tracking...";
-                    document.getElementById('tracking-status').textContent = "Live Geofence Monitoring Active";
-                    document.getElementById('markBtn').classList.replace('bg-white', 'bg-green-500');
-                    document.getElementById('markBtn').classList.add('text-white');
+            // --- START CONTINUOUS WATCHING directly (no getCurrentPosition) ---
+            let firstFix = true;
+            watchId = navigator.geolocation.watchPosition(
+                async function(position) {
+                    if (firstFix) {
+                        document.getElementById('markBtn').disabled = false;
+                        document.getElementById('markText').textContent = "Tracking...";
+                        document.getElementById('tracking-status').textContent = "Live Geofence Monitoring Active";
+                        document.getElementById('markBtn').classList.replace('bg-white', 'bg-green-500');
+                        document.getElementById('markBtn').classList.add('text-white');
+                        firstFix = false;
+                        console.log(`[Tracking] Initial position obtained: (${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)})`);
+                    }
 
-                    // Process the initial position immediately
-                    (async function() {
-                        const { latitude, longitude } = initialPosition.coords;
-                        console.log(`[Tracking] Initial position obtained: (${latitude.toFixed(6)}, ${longitude.toFixed(6)})`);
-                        if (!campusConfig) await fetchCampusConfig();
-                        if (!campusConfig) {
-                            showAlert('⚠️ Campus geofence not configured. Please contact your administrator.', false);
-                            return;
-                        }
-                        const dist = calculateDistanceLocal(latitude, longitude, campusConfig.latitude, campusConfig.longitude);
-                        updateStudentLocationOnMap(latitude, longitude);
-                        console.log(`[Google Maps Info] Student: ${latitude.toFixed(6)}, ${longitude.toFixed(6)} | Admin: ${campusConfig.latitude}, ${campusConfig.longitude} | Dist: ${dist.toFixed(1)}m`);
+                    const { latitude, longitude } = position.coords;
+                    if (!campusConfig) await fetchCampusConfig();
+                    if (!campusConfig) {
+                        showAlert('⚠️ Campus geofence not configured. Contact your administrator.', false);
+                        return;
+                    }
+                    const dist = calculateDistanceLocal(latitude, longitude, campusConfig.latitude, campusConfig.longitude);
+                    updateStudentLocationOnMap(latitude, longitude);
+                    console.log(`[Google Maps Info] Student: ${latitude.toFixed(6)}, ${longitude.toFixed(6)} | Admin: ${campusConfig.latitude}, ${campusConfig.longitude} | Dist: ${dist.toFixed(1)}m`);
 
-                        lastDistance = Math.round(dist);
-                        document.getElementById('current-distance').textContent = lastDistance;
-                        handleAutoCheck(latitude, longitude, dist);
-                    })();
-
-                    // --- STEP 2: START CONTINUOUS WATCHING ---
-                    watchId = navigator.geolocation.watchPosition(
-                        async function(position) {
-                            const { latitude, longitude } = position.coords;
-                            if (!campusConfig) await fetchCampusConfig();
-                            if (!campusConfig) {
-                                showAlert('⚠️ Campus geofence not configured. Contact your administrator.', false);
-                                return;
-                            }
-                            const dist = calculateDistanceLocal(latitude, longitude, campusConfig.latitude, campusConfig.longitude);
-                        updateStudentLocationOnMap(latitude, longitude);
-                        console.log(`[Google Maps Info] Student: ${latitude.toFixed(6)}, ${longitude.toFixed(6)} | Admin: ${campusConfig.latitude}, ${campusConfig.longitude} | Dist: ${dist.toFixed(1)}m`);
-
-                            lastDistance = Math.round(dist);
-                            document.getElementById('current-distance').textContent = lastDistance;
-                            handleAutoCheck(latitude, longitude, dist);
-                        },
-                        function(err) {
-                            let msg = '';
-                            if (err.code === err.PERMISSION_DENIED) {
-                                msg = "📍 Location permission was revoked. Please re-enable GPS access in your browser settings.";
-                            } else if (err.code === err.POSITION_UNAVAILABLE) {
-                                msg = "📡 GPS signal lost. Please move to an open area.";
-                            } else if (err.code === err.TIMEOUT) {
-                                // Timeout during watch is non-fatal, just log it
-                                console.warn('[Tracking] Location update timed out, retrying...');
-                                return;
-                            } else {
-                                msg = "Location error: " + err.message;
-                            }
-                            showAlert(msg, false);
-                            console.warn('[Tracking] Watch error:', err.code, err.message);
-                            // Stop tracking on fatal errors
-                            if (err.code !== err.TIMEOUT) {
-                                navigator.geolocation.clearWatch(watchId);
-                                watchId = null;
-                                document.getElementById('markText').textContent = "Start Tracking";
-                                document.getElementById('tracking-status').textContent = "Automatic Arrival Detection";
-                                document.getElementById('markBtn').disabled = false;
-                                document.getElementById('markBtn').classList.replace('bg-green-500', 'bg-white');
-                                document.getElementById('markBtn').classList.remove('text-white');
-                            }
-                        },
-                        { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
-                    );
+                    lastDistance = Math.round(dist);
+                    document.getElementById('current-distance').textContent = lastDistance;
+                    handleAutoCheck(latitude, longitude, dist);
                 },
                 function(err) {
-                    // --- PERMISSION DENIED or ERROR: Always re-enable the button so user can try again ---
+                    if (err.code === err.TIMEOUT) {
+                        console.warn('[Tracking] Location request timed out, retrying automatically...');
+                        // natively retries, do NOT clear watch or disable UI.
+                        return;
+                    }
+
+                    // --- PERMISSION DENIED or FATAL ERROR ---
                     document.getElementById('markBtn').disabled = false;
                     document.getElementById('markText').textContent = "Start Tracking";
                     document.getElementById('tracking-status').textContent = "Automatic Arrival Detection";
-                    // Ensure button styling is reset
                     document.getElementById('markBtn').classList.replace('bg-green-500', 'bg-white');
                     document.getElementById('markBtn').classList.remove('text-white');
 
                     let msg = '';
                     if (err.code === err.PERMISSION_DENIED) {
-                        msg = "📍 Location permission denied.\n\nTo enable:\n• Chrome/Edge: Click the 🔒 lock icon → Site settings → Location → Allow\n• Firefox: Click the shield icon → Permissions → Access Your Location → Allow\n• Safari: Settings → Privacy → Location Services → Allow\n\nAfter enabling, click 'Start Tracking' again.";
+                        msg = "📍 Location permission denied.\n\nTo enable:\n• Chrome/Edge: Click the 🔒 lock icon → Site settings → Location → Allow\n• Safari/Firefox: Permissions → Location -> Allow.";
                     } else if (err.code === err.POSITION_UNAVAILABLE) {
                         msg = "📡 GPS signal unavailable. Please enable Location Services on your device and try again.";
-                    } else if (err.code === err.TIMEOUT) {
-                        msg = "⏱️ Location request timed out. Please ensure GPS is enabled and try again.";
                     } else {
                         msg = "Location error: " + err.message;
                     }
                     showAlert(msg, false);
                     console.warn('[Tracking] Permission/location error:', err.code, err.message);
+                    
+                    if (watchId) {
+                        navigator.geolocation.clearWatch(watchId);
+                        watchId = null;
+                    }
                 },
-                { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+                { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 }
             );
         }
 
@@ -729,12 +689,13 @@
 
             // Auto Check-Out
             const checkoutBuffer = 5; // 5 meters buffer to prevent GPS jitter checkout
-            if (dist > (campusConfig.radius + checkoutBuffer) && todayRecord && todayRecord.checkinTime && !checkedOut) {
-                isProcessing = true;
-                checkedOut = true; // Set flag immediately
-                console.log(`[AutoCheck] Attempting check-out (outside campus by ${(dist - campusConfig.radius).toFixed(1)}m)...`);
-                try {
-                    const res = await fetch('/api/attendance?action=checkOut', {
+            if (dist > (campusConfig.radius + checkoutBuffer) && !checkedOut) {
+                if (todayRecord && todayRecord.checkinTime) {
+                    isProcessing = true;
+                    console.log("Triggering checkout...");
+                    checkedOut = true; // Set flag immediately
+                    try {
+                        const res = await fetch('/api/attendance?action=checkOut', {
                         method: 'POST',
                         headers: { 'Authorization': `Bearer ${token}` }
                     });

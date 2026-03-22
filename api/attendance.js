@@ -104,8 +104,8 @@ module.exports = async (req, res) => {
                 }
 
             } else if (action === 'checkOut') {
-                const getCheckInQuery = await query('SELECT check_in_time FROM attendance WHERE student_id = $1 AND attendance_date = $2', [student.id, today]);
-                if (getCheckInQuery.rows.length === 0) return res.status(400).json({ message: 'No check-in record found for today' });
+                const getCheckInQuery = await query('SELECT check_in_time FROM attendance WHERE student_id = $1 AND attendance_date = $2 AND check_out_time IS NULL', [student.id, today]);
+                if (getCheckInQuery.rows.length === 0) return res.status(400).json({ message: 'No active check-in record found for today' });
                 
                 const checkInTimeStr = getCheckInQuery.rows[0].check_in_time;
                 let durationMinutes = 0;
