@@ -674,6 +674,18 @@
             console.log(`[AutoCheck] Campus center: (${campusConfig.latitude}, ${campusConfig.longitude}), Radius: ${campusConfig.radius}m`);
             console.log(`[AutoCheck] Distance: ${Math.round(dist)}m | Inside radius: ${dist <= campusConfig.radius} | Today record: ${todayRecord ? 'YES ('+todayRecord.status+')' : 'NONE'} | checkInAttempted: ${checkInAttempted}`);
 
+            // Live UI Badge Update
+            const presenceBadge = document.getElementById('presence-badge');
+            if (presenceBadge && !checkedOut) {
+                if (dist <= campusConfig.radius) {
+                    presenceBadge.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700';
+                    presenceBadge.textContent = '✅ Inside Campus';
+                } else {
+                    presenceBadge.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700';
+                    presenceBadge.textContent = '❌ Outside Campus';
+                }
+            }
+
             // Auto Check-In
             if (dist <= campusConfig.radius && !todayRecord && !checkInAttempted) {
                 isProcessing = true;
@@ -716,7 +728,7 @@
             }
 
             // Auto Check-Out
-            const checkoutBuffer = 50; // 50 meters buffer to prevent GPS jitter checkout
+            const checkoutBuffer = 5; // 5 meters buffer to prevent GPS jitter checkout
             if (dist > (campusConfig.radius + checkoutBuffer) && todayRecord && todayRecord.checkinTime && !checkedOut) {
                 isProcessing = true;
                 checkedOut = true; // Set flag immediately
