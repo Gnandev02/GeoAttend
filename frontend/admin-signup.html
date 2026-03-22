@@ -149,16 +149,7 @@
                                 placeholder="Confirm your password" autocomplete="new-password">
                             <p id="confirm-password-error" class="text-xs text-red-500 mt-1 hidden"></p>
                         </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">College Name</label>
-                                <input type="text" id="collegeName" required class="saas-input" placeholder="Enter college name">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">College Code</label>
-                                <input type="text" id="collegeCode" required class="saas-input font-mono" placeholder="Enter unique college code">
-                            </div>
-                        </div>
+
                     </div>
 
                     <!-- OTP Section (Hidden initially) -->
@@ -229,8 +220,6 @@
             const name = document.getElementById('name').value;
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            const collegeName = document.getElementById('collegeName').value;
-            const collegeCode = document.getElementById('collegeCode').value;
 
             const submitBtn = document.getElementById('submit-btn');
             const btnText = document.getElementById('btn-text');
@@ -318,7 +307,7 @@
                     const response = await fetch('/api/auth?action=adminSignup', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ name, email, password, otp: otpValue, collegeName, collegeCode })
+                        body: JSON.stringify({ name, email, password, otp: otpValue })
                     });
 
                     const data = await response.json();
@@ -367,7 +356,7 @@
                 const response = await fetch('/api/auth?action=sendAdminOtp', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, email, password, collegeName, collegeCode })
+                    body: JSON.stringify({ name, email, password })
                 });
 
                 const data = await response.json();
@@ -390,10 +379,10 @@
                 // Make form fields readonly since they are locked in
                 document.querySelectorAll('.saas-input').forEach(input => {
                     input.readOnly = true;
-                    input.classList.add('bg-slate-50', 'text-slate-500');
+                    input.classList.add('bg-slate-100', 'text-slate-500', 'opacity-70');
                 });
                 otpInput.readOnly = false;
-                otpInput.classList.remove('bg-slate-50', 'text-slate-500');
+                otpInput.classList.remove('bg-slate-100', 'text-slate-500', 'opacity-70');
 
                 // Show OTP section and update UI states
                 otpSection.classList.remove('hidden');
@@ -446,8 +435,6 @@
             const name = document.getElementById('name').value;
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            const collegeName = document.getElementById('collegeName').value;
-            const collegeCode = document.getElementById('collegeCode').value;
             const resendBtn = document.getElementById('resend-btn');
             const successMsg = document.getElementById('success-msg');
             const errorMsg = document.getElementById('error-msg');
@@ -460,7 +447,7 @@
                 const response = await fetch('/api/auth?action=sendAdminOtp', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, email, password, collegeName, collegeCode })
+                    body: JSON.stringify({ name, email, password })
                 });
                 const data = await response.json();
                 if (response.ok) {
