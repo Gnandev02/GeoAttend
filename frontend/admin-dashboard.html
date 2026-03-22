@@ -767,10 +767,10 @@
         function downloadLogsCSV() {
             if (allLogs.length === 0) return alert("No logs to download");
             
-            const headers = "Date,Student Name,Roll Number,Check-In,Check-Out,Hours,Status\n";
+            const headers = "Date,Student Name,Roll Number,Check-In,Check-Out,Duration (Mins),Status\n";
             const rows = allLogs.map(log => {
-                const hours = calculateHours(log.checkinTime, log.checkoutTime);
-                return `${log.date},"${log.studentId?.name || ''}","${log.studentId?.rollNumber || ''}",${log.checkinTime || ''},${log.checkoutTime || ''},${hours},${log.status}`;
+                const dur = log.durationMinutes || (log.checkinTime && log.checkoutTime ? calculateMins(log.checkinTime, log.checkoutTime) : 0);
+                return `${log.date},"${log.studentId?.name || ''}","${log.studentId?.rollNumber || ''}",${log.checkinTime || ''},${log.checkoutTime || ''},${dur},${log.status}`;
             }).join("\n");
             
             const blob = new Blob([headers + rows], { type: 'text/csv' });
@@ -803,34 +803,34 @@
                 .toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
         }
 
-        function calculateHours(start, end) {
-            if (!start || !end) return '--';
+        function calculateMins(start, end) {
+            if (!start || !end) return 0;
             try {
-                const toMs = (t) => {
+                const toMins = (t) => {
                     const ampm = t.match(/am|pm/i);
                     let clean = t.replace(/am|pm/gi, '').trim();
-                    let [h, min, sec] = clean.split(':').map(Number);
+                    let [h, min] = clean.split(':').map(Number);
                     if (ampm) {
                         if (ampm[0].toLowerCase() === 'pm' && h !== 12) h += 12;
                         if (ampm[0].toLowerCase() === 'am' && h === 12) h = 0;
                     }
-                    return (h * 3600 + min * 60 + (sec || 0)) * 1000;
+                    return h * 60 + (min || 0);
                 };
-                const diff = toMs(end) - toMs(start);
-                if (diff < 0) return '0.0h';
-                return (diff / 3600000).toFixed(1) + 'h';
-            } catch (_) { return '--'; }
+                const diff = toMins(end) - toMins(start);
+                return diff > 0 ? diff : 0;
+            } catch (_) { return 0; }
         }
 
         function renderLogs(l) {
             document.getElementById('table-logs-body').innerHTML = (l || []).map(log => {
-                const hours = calculateHours(log.checkinTime, log.checkoutTime);
+                const dur = log.durationMinutes || (log.checkinTime && log.checkoutTime ? calculateMins(log.checkinTime, log.checkoutTime) : 0);
+                const durationText = dur ? `${dur} mins` : '--';
                 const dateDisplay = fmtDate(log.date);
                 const checkinDisplay = fmtTime(log.checkinTime);
                 const checkoutDisplay = log.checkoutTime ? fmtTime(log.checkoutTime) : '--:--';
                 
                 let badgeClass = "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ";
-                if(log.status === 'Present') badgeClass += "bg-emerald-50 text-emerald-600 border border-emerald-100";
+                if(log.status === 'Present' || log.status === 'completed') badgeClass += "bg-emerald-50 text-emerald-600 border border-emerald-100";
                 else badgeClass += "bg-slate-50 text-slate-500 border border-slate-100";
 
                 return `
@@ -843,7 +843,7 @@
                         <td class="py-4 px-8 text-sm font-bold text-emerald-600">${checkinDisplay}</td>
                         <td class="py-4 px-8 text-sm font-bold text-slate-400">${checkoutDisplay}</td>
                         <td class="py-4 px-8">
-                            <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md">${hours}</span>
+                            <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md">${durationText}</span>
                         </td>
                         <td class="py-4 px-8">
                             <span class="${badgeClass}">${log.status || 'Student'}</span>

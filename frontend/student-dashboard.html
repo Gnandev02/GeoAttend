@@ -239,6 +239,11 @@
                                 <span class="text-slate-400 font-semibold">Out:</span>
                                 <span id="display-checkout" class="text-slate-600">--:--</span>
                             </p>
+                            <p class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                                <i data-lucide="clock" class="w-4 h-4 text-purple-400"></i>
+                                <span class="text-slate-400 font-semibold">Duration:</span>
+                                <span id="display-duration" class="text-slate-600">--</span>
+                            </p>
                         </div>
                     </div>
 
@@ -336,7 +341,7 @@
         let mapInitialized = false;
         let isProcessing = false;
         let checkInAttempted = false; // Prevents duplicate check-in submissions
-        let isCheckedOut = false;     // Prevents duplicate checkout submissions
+        let checkedOut = false;       // Prevents duplicate checkout submissions
 
         async function fetchCampusConfig() {
             try {
@@ -379,8 +384,8 @@
                 const todayRecord = attendanceData.find(r => r.date === today);
                 if (todayRecord) {
                     checkInAttempted = true; // Already checked in today
-                    if (todayRecord.checkoutTime || todayRecord.check_out_time || todayRecord.status === 'Checked Out') {
-                        isCheckedOut = true; // Already checked out today
+                    if (todayRecord.checkoutTime || todayRecord.check_out_time || todayRecord.status === 'Checked Out' || todayRecord.status === 'completed') {
+                        checkedOut = true; // Already checked out today
                     }
                 }
 
@@ -420,6 +425,8 @@
                 if (dateEl) dateEl.textContent = '--';
                 document.getElementById('display-checkin').textContent = '--:--';
                 document.getElementById('display-checkout').textContent = '--:--';
+                const durationEl = document.getElementById('display-duration');
+                if (durationEl) durationEl.textContent = '--';
                 document.getElementById('presence-badge').className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-500';
                 document.getElementById('presence-badge').textContent = 'Not Checked In';
             }
@@ -450,11 +457,11 @@
                                     <span class="text-sm font-extrabold text-slate-900 leading-none mt-1">${day}</span>
                                 </div>
                                 <div>
-                                    <p class="text-sm font-bold text-slate-900">In: ${timeDisplay}</p>
+                                    <p class="text-sm font-bold text-slate-900">In: ${timeDisplay} ${record.durationMinutes ? `• ${record.durationMinutes} mins` : ''}</p>
                                     <p class="text-xs font-semibold text-slate-400 mt-0.5">Campus Geo-zone • ${record.status}</p>
                                 </div>
                             </div>
-                            <span class="${record.status === 'Present' || record.status === 'Checked Out' ? 'badge-success' : 'badge-danger'}">${record.status}</span>
+                            <span class="${record.status === 'Present' || record.status === 'Checked Out' || record.status === 'completed' ? 'badge-success' : 'badge-danger'}">${record.status}</span>
                         </div>
                     `;
                 });
@@ -504,13 +511,18 @@
             // Update times in AM/PM format
             document.getElementById('display-checkin').textContent  = formatTime(checkin);
             document.getElementById('display-checkout').textContent = checkout ? formatTime(checkout) : '--:--';
+            
+            const durationEl = document.getElementById('display-duration');
+            if (durationEl) {
+                durationEl.textContent = record.durationMinutes ? `${record.durationMinutes} mins` : '--';
+            }
 
             // Update presence badge
             const presenceBadge = document.getElementById('presence-badge');
             if (status === 'Present' && !checkout) {
                 presenceBadge.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700';
                 presenceBadge.textContent = '✅ Inside Campus';
-            } else if (checkout) {
+            } else if (status === 'completed' || checkout) {
                 presenceBadge.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600';
                 presenceBadge.textContent = '🚪 Checked Out';
             } else {
@@ -704,10 +716,10 @@
             }
 
             // Auto Check-Out
-            const checkoutBuffer = 40; // 40 meters buffer to prevent GPS jitter checkout
-            if (dist > (campusConfig.radius + checkoutBuffer) && todayRecord && todayRecord.checkinTime && !isCheckedOut) {
+            const checkoutBuffer = 50; // 50 meters buffer to prevent GPS jitter checkout
+            if (dist > (campusConfig.radius + checkoutBuffer) && todayRecord && todayRecord.checkinTime && !checkedOut) {
                 isProcessing = true;
-                isCheckedOut = true; // Set flag immediately
+                checkedOut = true; // Set flag immediately
                 console.log(`[AutoCheck] Attempting check-out (outside campus by ${(dist - campusConfig.radius).toFixed(1)}m)...`);
                 try {
                     const res = await fetch('/api/attendance?action=checkOut', {
@@ -718,7 +730,7 @@
                     if (res.ok) {
                         // Instantly update checkout time in UI before re-fetch
                         if (data.attendance) updateCheckInOutUI(data.attendance);
-                        showAlert(`🚪 Automatic Departure Detected: Checked Out at ${data.attendance?.checkoutTime ? data.attendance.checkoutTime.substring(0,8) : 'N/A'}!`, true);
+                        showAlert(`🚪 Automatic Departure Detected: Checked Out!`, true);
                         await fetchDashboardData();
                         
                         // Stop tracking after check-out
@@ -735,11 +747,11 @@
                         }
                     } else {
                         checkInAttempted = false; // Reset if failed
-                        isCheckedOut = false;
+                        checkedOut = false;
                         console.warn('[AutoCheck] Check-out failed:', data.message);
                     }
                 } catch (e) {
-                    isCheckedOut = false;
+                    checkedOut = false;
                     console.error('[AutoCheck] Check-out error:', e);
                 }
                 finally { isProcessing = false; }

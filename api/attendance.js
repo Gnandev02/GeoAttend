@@ -2,6 +2,21 @@ const { query } = require('./utils/db');
 const { protectAdmin, protectStudent } = require('./utils/auth');
 const { calculateDistance } = require('./utils/geoHelper');
 
+// Helper to convert "10:00:00 AM" or "09:30 AM" to total minutes
+function timeStringToMinutes(timeStr) {
+    if (!timeStr) return 0;
+    const match = timeStr.trim().match(/(\d+):(\d+):?(\d+)?\s*(AM|PM|am|pm)?/);
+    if (!match) return 0;
+    let [ , h, m, , ampm ] = match;
+    h = parseInt(h);
+    m = parseInt(m);
+    if (ampm) {
+        if (ampm.toLowerCase() === 'pm' && h < 12) h += 12;
+        if (ampm.toLowerCase() === 'am' && h === 12) h = 0;
+    }
+    return h * 60 + m;
+}
+
 module.exports = async (req, res) => {
     // Handle CORS preflight
     if (req.method === 'OPTIONS') {
@@ -89,9 +104,22 @@ module.exports = async (req, res) => {
                 }
 
             } else if (action === 'checkOut') {
+                const getCheckInQuery = await query('SELECT check_in_time FROM attendance WHERE student_id = $1 AND attendance_date = $2', [student.id, today]);
+                if (getCheckInQuery.rows.length === 0) return res.status(400).json({ message: 'No check-in record found for today' });
+                
+                const checkInTimeStr = getCheckInQuery.rows[0].check_in_time;
+                let durationMinutes = 0;
+                if (checkInTimeStr) {
+                    const inMins = timeStringToMinutes(checkInTimeStr);
+                    const outMins = timeStringToMinutes(currentTime);
+                    durationMinutes = outMins > inMins ? outMins - inMins : 0;
+                }
+
+                await query('ALTER TABLE attendance ADD COLUMN IF NOT EXISTS duration_minutes INTEGER DEFAULT 0');
+
                 const result = await query(
-                    'UPDATE attendance SET check_out_time = $1, status = $2 WHERE student_id = $3 AND attendance_date = $4 RETURNING *',
-                    [currentTime, 'Checked Out', student.id, today]
+                    'UPDATE attendance SET check_out_time = $1, status = $2, duration_minutes = $3 WHERE student_id = $4 AND attendance_date = $5 RETURNING *',
+                    [currentTime, 'completed', durationMinutes, student.id, today]
                 );
 
                 if (result.rows.length === 0) return res.status(400).json({ message: 'No check-in record found for today' });
@@ -135,19 +163,28 @@ module.exports = async (req, res) => {
                 if (!studentId || !date || !checkInTime) return res.status(400).json({ message: 'Missing required fields (studentId, date, checkInTime)' });
 
                 await query(`ALTER TABLE attendance ADD COLUMN IF NOT EXISTS attendance_type VARCHAR(20) DEFAULT 'auto'`);
+                await query(`ALTER TABLE attendance ADD COLUMN IF NOT EXISTS duration_minutes INTEGER DEFAULT 0`);
+
+                let durationMinutes = 0;
+                if (checkInTime && checkOutTime) {
+                    const inMins = timeStringToMinutes(checkInTime);
+                    const outMins = timeStringToMinutes(checkOutTime);
+                    durationMinutes = outMins > inMins ? outMins - inMins : 0;
+                }
 
                 const queryStr = `
-                    INSERT INTO attendance (student_id, college_code, attendance_date, check_in_time, check_out_time, status, attendance_type, session_name)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                    INSERT INTO attendance (student_id, college_code, attendance_date, check_in_time, check_out_time, status, attendance_type, session_name, duration_minutes)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
                     ON CONFLICT (student_id, attendance_date) DO UPDATE SET 
                         check_in_time = EXCLUDED.check_in_time, 
                         check_out_time = EXCLUDED.check_out_time,
                         status = EXCLUDED.status,
-                        attendance_type = EXCLUDED.attendance_type
+                        attendance_type = EXCLUDED.attendance_type,
+                        duration_minutes = EXCLUDED.duration_minutes
                     RETURNING *
                 `;
                 const result = await query(queryStr, [
-                    studentId, admin.college_code, date, checkInTime, checkOutTime || null, 'Present', 'manual', 'Manual Entry'
+                    studentId, admin.college_code, date, checkInTime, checkOutTime || null, checkOutTime ? 'completed' : 'Present', 'manual', 'Manual Entry', durationMinutes
                 ]);
 
                 return res.status(200).json({ message: 'Attendance marked successfully', attendance: result.rows[0] });
@@ -201,6 +238,7 @@ module.exports = async (req, res) => {
                         },
                         locationCoordinates: { lat: a.latitude, lng: a.longitude },
                         distanceFromCenter: a.distance_at_checkin,
+                        durationMinutes: a.duration_minutes || 0,
                         status: a.status,
                         date: dateStr,
                         checkinTime: a.check_in_time || null,
@@ -238,6 +276,7 @@ module.exports = async (req, res) => {
                         locationCoordinates: { lat: a.latitude, lng: a.longitude },
                         status: a.status,
                         distanceFromCenter: a.distance_at_checkin,
+                        durationMinutes: a.duration_minutes || 0,
                         sessionName: a.session_name,
                         createdAt: a.timestamp
                     };
