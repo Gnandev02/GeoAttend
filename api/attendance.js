@@ -127,6 +127,30 @@ module.exports = async (req, res) => {
                     [student.id, student.college_code, today, currentTime, status, Math.round(distance), latitude, longitude, sessionName || 'Manual Mark']
                 );
                 return res.status(201).json({ message: 'Attendance processed', attendance: result.rows[0], distance: Math.round(distance) });
+            } else if (action === 'manualMark') {
+                const admin = await protectAdmin(req);
+                if (!admin) return res.status(401).json({ message: 'Not authorized as an admin' });
+
+                const { studentId, date, checkInTime, checkOutTime } = req.body;
+                if (!studentId || !date || !checkInTime) return res.status(400).json({ message: 'Missing required fields (studentId, date, checkInTime)' });
+
+                await query(`ALTER TABLE attendance ADD COLUMN IF NOT EXISTS attendance_type VARCHAR(20) DEFAULT 'auto'`);
+
+                const queryStr = `
+                    INSERT INTO attendance (student_id, college_code, attendance_date, check_in_time, check_out_time, status, attendance_type, session_name)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                    ON CONFLICT (student_id, attendance_date) DO UPDATE SET 
+                        check_in_time = EXCLUDED.check_in_time, 
+                        check_out_time = EXCLUDED.check_out_time,
+                        status = EXCLUDED.status,
+                        attendance_type = EXCLUDED.attendance_type
+                    RETURNING *
+                `;
+                const result = await query(queryStr, [
+                    studentId, admin.college_code, date, checkInTime, checkOutTime || null, 'Present', 'manual', 'Manual Entry'
+                ]);
+
+                return res.status(200).json({ message: 'Attendance marked successfully', attendance: result.rows[0] });
             }
         } else if (req.method === 'GET' && action === 'getAttendanceLogs') {
             // View Attendance (Admin or Student)

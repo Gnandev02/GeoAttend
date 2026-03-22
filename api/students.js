@@ -74,6 +74,30 @@ export default async function handler(req, res) {
             return res.status(200).json({ message: 'Password updated successfully' });
         }
 
+        if (action === 'updateStudent' && req.method === 'PUT') {
+            const admin = await protectAdmin(req);
+            if (!admin) return res.status(401).json({ message: 'Not authorized as an admin' });
+
+            const { id, name, email, rollNumber, department } = req.body;
+            if (!id || !name || !email || !rollNumber) return res.status(400).json({ message: 'Missing required fields' });
+
+            // Ensure email isn't taken by another student
+            const emailCheck = await query('SELECT id FROM students WHERE email = $1 AND id != $2', [email, id]);
+            if (emailCheck.rows.length > 0) return res.status(400).json({ message: 'Email already in use' });
+
+            // Ensure roll isn't taken in this college
+            const rollCheck = await query('SELECT id FROM students WHERE roll_number = $1 AND college_code = $2 AND id != $3', [rollNumber, admin.college_code, id]);
+            if (rollCheck.rows.length > 0) return res.status(400).json({ message: 'Roll number already exists in this college' });
+
+            const updateQuery = await query(
+                'UPDATE students SET name = $1, email = $2, roll_number = $3, department = $4 WHERE id = $5 AND college_code = $6 RETURNING *',
+                [name, email, rollNumber, department || 'General', id, admin.college_code]
+            );
+
+            if (updateQuery.rows.length === 0) return res.status(404).json({ message: 'Student not found or unauthorized' });
+            return res.status(200).json({ message: 'Student updated successfully', student: updateQuery.rows[0] });
+        }
+
         if (action === 'getStudents' && req.method === 'GET') {
             const admin = await protectAdmin(req);
             if (!admin) return res.status(401).json({ message: 'Not authorized as an admin' });
