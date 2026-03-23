@@ -457,6 +457,19 @@
                             </div>
                         </div>
 
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Attendance Start Time</label>
+                                <input id="geo-start-time" type="time" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all" />
+                                <p class="text-[10px] text-slate-400 font-medium">Leave blank for anytime</p>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Attendance End Time</label>
+                                <input id="geo-end-time" type="time" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all" />
+                                <p class="text-[10px] text-slate-400 font-medium">Leave blank for anytime</p>
+                            </div>
+                        </div>
+
                         <div class="pt-6 border-t border-slate-50 flex justify-end">
                             <button type="submit" class="btn-indigo px-10 py-4 rounded-xl shadow-lg shadow-indigo-100">Update Geofence</button>
                         </div>
@@ -865,6 +878,9 @@
                 document.getElementById('geo-lng').value = mainCampus.longitude || '';
                 document.getElementById('geo-radius').value = mainCampus.radius || '';
                 
+                if (mainCampus.attendanceStartTime) document.getElementById('geo-start-time').value = mainCampus.attendanceStartTime;
+                if (mainCampus.attendanceEndTime) document.getElementById('geo-end-time').value = mainCampus.attendanceEndTime;
+                
                 if (window.adminMap && mainCampus.latitude) {
                     const pos = { lat: parseFloat(mainCampus.latitude), lng: parseFloat(mainCampus.longitude) };
                     adminMap.setCenter(pos);
@@ -889,7 +905,9 @@
                 collegeCode: document.getElementById('geo-college-code').value,
                 latitude: parseFloat(document.getElementById('geo-lat').value),
                 longitude: parseFloat(document.getElementById('geo-lng').value),
-                radius: parseInt(document.getElementById('geo-radius').value)
+                radius: parseInt(document.getElementById('geo-radius').value),
+                attendanceStartTime: document.getElementById('geo-start-time').value,
+                attendanceEndTime: document.getElementById('geo-end-time').value
             };
 
             const btn = e.submitter;

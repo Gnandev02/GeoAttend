@@ -29,7 +29,14 @@ export default async function handler(req, res) {
             if (geofenceQuery.rows.length > 0) {
                 const geofence = geofenceQuery.rows[0];
                 return res.status(200).json({
-                    _id: geofence.id, name: geofence.name, latitude: geofence.latitude, longitude: geofence.longitude, radius: geofence.radius, collegeCode: geofence.college_code
+                    _id: geofence.id, 
+                    name: geofence.name, 
+                    latitude: geofence.latitude, 
+                    longitude: geofence.longitude, 
+                    radius: geofence.radius, 
+                    collegeCode: geofence.college_code,
+                    attendanceStartTime: geofence.attendance_start_time,
+                    attendanceEndTime: geofence.attendance_end_time
                 });
             } else {
                 return res.status(200).json({});
@@ -37,7 +44,7 @@ export default async function handler(req, res) {
         }
 
         if (action === 'saveCampusSetup' && req.method === 'POST') {
-            const { name, collegeName, collegeCode, latitude, longitude, radius } = req.body;
+            const { name, collegeName, collegeCode, latitude, longitude, radius, attendanceStartTime, attendanceEndTime } = req.body;
             if (!latitude || !longitude || !radius) {
                 return res.status(400).json({ message: 'Please provide all geofence details' });
             }
@@ -65,13 +72,13 @@ export default async function handler(req, res) {
             if (geofenceCheck.rows.length > 0) {
                 const currentGeofence = geofenceCheck.rows[0];
                 geofenceResult = await query(
-                    'UPDATE campus_setup SET name = $1, latitude = $2, longitude = $3, radius = $4 WHERE college_code = $5 RETURNING *',
-                    [name || currentGeofence.name, latitude, longitude, radius, adminCollegeCode]
+                    'UPDATE campus_setup SET name = $1, latitude = $2, longitude = $3, radius = $4, attendance_start_time = $5, attendance_end_time = $6 WHERE college_code = $7 RETURNING *',
+                    [name || currentGeofence.name, latitude, longitude, radius, attendanceStartTime || null, attendanceEndTime || null, adminCollegeCode]
                 );
             } else {
                 geofenceResult = await query(
-                    'INSERT INTO campus_setup (name, latitude, longitude, radius, college_code) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-                    [name || 'Main Campus', latitude, longitude, radius, adminCollegeCode]
+                    'INSERT INTO campus_setup (name, latitude, longitude, radius, college_code, attendance_start_time, attendance_end_time) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+                    [name || 'Main Campus', latitude, longitude, radius, adminCollegeCode, attendanceStartTime || null, attendanceEndTime || null]
                 );
             }
 
@@ -80,7 +87,16 @@ export default async function handler(req, res) {
             return res.status(201).json({
                 message: 'Campus setup updated successfully',
                 token: generateToken(admin.id, adminCollegeCode), // Return a new JWT so the frontend knows the admin has a college_code
-                geofence: { _id: geofence.id, name: geofence.name, latitude: geofence.latitude, longitude: geofence.longitude, radius: geofence.radius, collegeCode: geofence.college_code }
+                geofence: { 
+                    _id: geofence.id, 
+                    name: geofence.name, 
+                    latitude: geofence.latitude, 
+                    longitude: geofence.longitude, 
+                    radius: geofence.radius, 
+                    collegeCode: geofence.college_code,
+                    attendanceStartTime: geofence.attendance_start_time,
+                    attendanceEndTime: geofence.attendance_end_time
+                }
             });
         }
 

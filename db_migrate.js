@@ -17,6 +17,10 @@ async function run() {
 
         await pool.query('ALTER TABLE geofence RENAME TO campus_setup');
         console.log("Renamed geofence table to campus_setup");
+
+        await pool.query('ALTER TABLE campus_setup ADD COLUMN IF NOT EXISTS attendance_start_time TIME');
+        await pool.query('ALTER TABLE campus_setup ADD COLUMN IF NOT EXISTS attendance_end_time TIME');
+        console.log("Added attendance timing columns to campus_setup");
         
     } catch (e) {
         console.error(e);

@@ -59,6 +59,11 @@ export default async function handler(req, res) {
             await query('CREATE INDEX IF NOT EXISTS idx_students_college_code ON students(college_code)');
             await query('CREATE INDEX IF NOT EXISTS idx_attendance_college_code ON attendance(college_code)');
             await query('CREATE INDEX IF NOT EXISTS idx_campus_setup_college_code ON campus_setup(college_code)');
+            
+            // 5. Add Timing Columns to campus_setup
+            console.log("Adding attendance timing columns to campus_setup...");
+            await query('ALTER TABLE campus_setup ADD COLUMN IF NOT EXISTS attendance_start_time TIME');
+            await query('ALTER TABLE campus_setup ADD COLUMN IF NOT EXISTS attendance_end_time TIME');
 
             return res.status(200).json({ 
                 message: "Migration Successful! Multi-tenant performance indexes added.",

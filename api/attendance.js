@@ -42,22 +42,32 @@ module.exports = async (req, res) => {
             // Store exact IST time in 12-hour AM/PM format: "10:00:49 AM"
             const currentTime = now.toLocaleTimeString('en-IN', { ...IST, hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
             const currentHour = parseInt(now.toLocaleTimeString('en-IN', { ...IST, hour12: false, hour: '2-digit' }), 10);
-
             if (action === 'checkIn') {
                 if (isNaN(latitude) || isNaN(longitude)) return res.status(400).json({ message: 'Invalid location coordinates. Please try again.' });
 
-                let status = 'Present';
-                if (currentHour < 9) {
-                    return res.status(400).json({ message: 'Check-in only available after 9:00 AM' });
-                } else if (currentHour >= 17) {
-                    status = 'Late'; // After 5 PM
-                }
-
-                // Check geofence
+                // Check geofence and timings
                 const geofenceQuery = await query('SELECT * FROM campus_setup WHERE college_code = $1', [student.college_code]);
                 if (geofenceQuery.rows.length === 0) return res.status(500).json({ message: 'Campus geofence not configured. Ask your administrator to set it up.' });
                 
                 const geofence = geofenceQuery.rows[0];
+                const startTimeMins = geofence.attendance_start_time ? timeStringToMinutes(geofence.attendance_start_time) : null;
+                const endTimeMins = geofence.attendance_end_time ? timeStringToMinutes(geofence.attendance_end_time) : null;
+                const currentTimeMins = timeStringToMinutes(currentTime);
+
+                let status = 'Present';
+
+                // VALIDATION: Start Time (if set)
+                if (startTimeMins !== null && currentTimeMins < startTimeMins) {
+                    return res.status(400).json({ 
+                        message: `Attendance allowed only after ${geofence.attendance_start_time.substring(0, 5)} ${geofence.attendance_start_time.toLowerCase().includes('pm') ? 'PM' : 'AM'}` 
+                    });
+                }
+                
+                // VALIDATION: End Time (if set) -> mark as Late
+                if (endTimeMins !== null && currentTimeMins >= endTimeMins) {
+                    status = 'Late';
+                }
+
                 const campusLat = parseFloat(geofence.latitude);
                 const campusLng = parseFloat(geofence.longitude);
                 const campusRadius = parseFloat(geofence.radius);
@@ -290,7 +300,7 @@ module.exports = async (req, res) => {
             const campusStudent = await protectStudent(req);
             if (!campusStudent) return res.status(401).json({ message: 'Not authorized' });
 
-            const geofenceQuery = await query('SELECT latitude, longitude, radius FROM campus_setup WHERE college_code = $1', [campusStudent.college_code]);
+            const geofenceQuery = await query('SELECT latitude, longitude, radius, attendance_start_time, attendance_end_time FROM campus_setup WHERE college_code = $1', [campusStudent.college_code]);
             console.log(`[GetCampus] college_code=${campusStudent.college_code}, found=${geofenceQuery.rows.length > 0}`);
             if (geofenceQuery.rows.length === 0) return res.status(404).json({ message: 'Campus geofence not configured. Ask your administrator to set it up.' });
 
@@ -298,7 +308,9 @@ module.exports = async (req, res) => {
             return res.status(200).json({
                 latitude: parseFloat(cfg.latitude),
                 longitude: parseFloat(cfg.longitude),
-                radius: parseFloat(cfg.radius)
+                radius: parseFloat(cfg.radius),
+                attendanceStartTime: cfg.attendance_start_time,
+                attendanceEndTime: cfg.attendance_end_time
             });
         } else {
             return res.status(405).json({ message: 'Method Not Allowed' });

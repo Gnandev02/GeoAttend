@@ -244,6 +244,10 @@
                                 <span class="text-slate-400 font-semibold">Duration:</span>
                                 <span id="display-duration" class="text-slate-600">--</span>
                             </p>
+                            <p class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest pt-2 mt-2 border-t border-slate-50 flex items-center gap-2">
+                                <i data-lucide="info" class="w-3 h-3"></i>
+                                Window: <span id="display-window" class="text-indigo-700">Anytime</span>
+                            </p>
                         </div>
                     </div>
 
@@ -350,6 +354,19 @@
                 });
                 if (res.ok) {
                     campusConfig = await res.json();
+                    
+                    // Display attendance window
+                    const windowEl = document.getElementById('display-window');
+                    if (windowEl) {
+                        if (!campusConfig.attendanceStartTime && !campusConfig.attendanceEndTime) {
+                            windowEl.textContent = 'Anytime';
+                        } else {
+                            const start = campusConfig.attendanceStartTime ? formatTime(campusConfig.attendanceStartTime) : 'Anytime';
+                            const end = campusConfig.attendanceEndTime ? formatTime(campusConfig.attendanceEndTime) : 'Anytime';
+                            windowEl.textContent = `${start} - ${end}`;
+                        }
+                    }
+
                     if(mapInitialized) renderMapCampus(campusConfig);
                 }
             } catch (e) { console.error("Campus config error:", e); }
@@ -666,8 +683,9 @@
                         fetchDashboardData().catch(err => console.error(err));
                     } else {
                         checkInAttempted = false;
-                        if (data.message && data.message.toLowerCase().includes('9')) {
-                            document.getElementById('tracking-status').textContent = 'Waiting for 9:00 AM Check-In window...';
+                        if (data.message && (data.message.toLowerCase().includes('after') || data.message.toLowerCase().includes('window'))) {
+                            const startTime = campusConfig.attendanceStartTime ? formatTime(campusConfig.attendanceStartTime) : 'the allowed time';
+                            document.getElementById('tracking-status').textContent = `Waiting for ${startTime} Check-In window...`;
                             showAlert('⏰ ' + data.message, false);
                         } else if (data.message && data.message.toLowerCase().includes('already')) {
                             checkInAttempted = true;
