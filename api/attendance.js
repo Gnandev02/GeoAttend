@@ -50,6 +50,10 @@ module.exports = async (req, res) => {
                 if (geofenceQuery.rows.length === 0) return res.status(500).json({ message: 'Campus geofence not configured. Ask your administrator to set it up.' });
                 
                 const geofence = geofenceQuery.rows[0];
+                if (geofence.attendance_start_time === undefined) {
+                    console.warn("[Schema Warning] attendance_start_time column missing in campus_setup table.");
+                }
+
                 const startTimeMins = geofence.attendance_start_time ? timeStringToMinutes(geofence.attendance_start_time) : null;
                 const endTimeMins = geofence.attendance_end_time ? timeStringToMinutes(geofence.attendance_end_time) : null;
                 const currentTimeMins = timeStringToMinutes(currentTime);

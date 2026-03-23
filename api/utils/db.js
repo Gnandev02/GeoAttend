@@ -8,8 +8,12 @@ const getDbPool = () => {
             throw new Error("DATABASE_URL environment variable is missing.");
         }
 
+        const dbUrl = process.env.DATABASE_URL;
+        const urlParts = new URL(dbUrl);
+        console.log(`[DB] Initializing Pool for host: ${urlParts.hostname}, database: ${urlParts.pathname.substring(1)}`);
+
         pool = new Pool({
-            connectionString: process.env.DATABASE_URL,
+            connectionString: dbUrl,
             ssl: {
                 rejectUnauthorized: false
             }

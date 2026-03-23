@@ -73,17 +73,36 @@ export default async function handler(req, res) {
             const startT = (attendanceStartTime && attendanceStartTime.trim() !== '') ? attendanceStartTime : null;
             const endT = (attendanceEndTime && attendanceEndTime.trim() !== '') ? attendanceEndTime : null;
 
-            if (geofenceCheck.rows.length > 0) {
-                const currentGeofence = geofenceCheck.rows[0];
-                geofenceResult = await query(
-                    'UPDATE campus_setup SET name = $1, latitude = $2, longitude = $3, radius = $4, attendance_start_time = $5, attendance_end_time = $6 WHERE college_code = $7 RETURNING *',
-                    [name || currentGeofence.name, latitude, longitude, radius, startT, endT, adminCollegeCode]
-                );
-            } else {
-                geofenceResult = await query(
-                    'INSERT INTO campus_setup (name, latitude, longitude, radius, college_code, attendance_start_time, attendance_end_time) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-                    [name || 'Main Campus', latitude, longitude, radius, adminCollegeCode, startT, endT]
-                );
+            try {
+                if (geofenceCheck.rows.length > 0) {
+                    const currentGeofence = geofenceCheck.rows[0];
+                    geofenceResult = await query(
+                        'UPDATE campus_setup SET name = $1, latitude = $2, longitude = $3, radius = $4, attendance_start_time = $5, attendance_end_time = $6 WHERE college_code = $7 RETURNING *',
+                        [name || currentGeofence.name, latitude, longitude, radius, startT, endT, adminCollegeCode]
+                    );
+                } else {
+                    geofenceResult = await query(
+                        'INSERT INTO campus_setup (name, latitude, longitude, radius, college_code, attendance_start_time, attendance_end_time) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+                        [name || 'Main Campus', latitude, longitude, radius, adminCollegeCode, startT, endT]
+                    );
+                }
+            } catch (err) {
+                if (err.code === '42703') { // undefined_column
+                    console.warn("[Schema Warning] Timing columns missing. Falling back to basic setup.");
+                    if (geofenceCheck.rows.length > 0) {
+                        geofenceResult = await query(
+                            'UPDATE campus_setup SET name = $1, latitude = $2, longitude = $3, radius = $4 WHERE college_code = $5 RETURNING *',
+                            [name || geofenceCheck.rows[0].name, latitude, longitude, radius, adminCollegeCode]
+                        );
+                    } else {
+                        geofenceResult = await query(
+                            'INSERT INTO campus_setup (name, latitude, longitude, radius, college_code) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+                            [name || 'Main Campus', latitude, longitude, radius, adminCollegeCode]
+                        );
+                    }
+                } else {
+                    throw err;
+                }
             }
 
             const geofence = geofenceResult.rows[0];
