@@ -358,12 +358,15 @@
                     // Display attendance window
                     const windowEl = document.getElementById('display-window');
                     if (windowEl) {
-                        if (!campusConfig.attendanceStartTime && !campusConfig.attendanceEndTime) {
-                            windowEl.textContent = 'Anytime';
+                        const start = campusConfig.attendanceStartTime;
+                        const end = campusConfig.attendanceEndTime;
+                        
+                        if (!start && !end) {
+                            windowEl.textContent = 'Allowed Anytime';
                         } else {
-                            const start = campusConfig.attendanceStartTime ? formatTime(campusConfig.attendanceStartTime) : 'Anytime';
-                            const end = campusConfig.attendanceEndTime ? formatTime(campusConfig.attendanceEndTime) : 'Anytime';
-                            windowEl.textContent = `${start} - ${end}`;
+                            const startStr = start ? formatTime(start) : 'Anytime';
+                            const endStr = end ? formatTime(end) : 'Anytime';
+                            windowEl.textContent = `${startStr} - ${endStr}`;
                         }
                     }
 

@@ -69,16 +69,20 @@ export default async function handler(req, res) {
             const geofenceCheck = await query('SELECT * FROM campus_setup WHERE college_code = $1', [adminCollegeCode]);
             let geofenceResult;
 
+            // Handle empty strings as null for database consistency
+            const startT = (attendanceStartTime && attendanceStartTime.trim() !== '') ? attendanceStartTime : null;
+            const endT = (attendanceEndTime && attendanceEndTime.trim() !== '') ? attendanceEndTime : null;
+
             if (geofenceCheck.rows.length > 0) {
                 const currentGeofence = geofenceCheck.rows[0];
                 geofenceResult = await query(
                     'UPDATE campus_setup SET name = $1, latitude = $2, longitude = $3, radius = $4, attendance_start_time = $5, attendance_end_time = $6 WHERE college_code = $7 RETURNING *',
-                    [name || currentGeofence.name, latitude, longitude, radius, attendanceStartTime || null, attendanceEndTime || null, adminCollegeCode]
+                    [name || currentGeofence.name, latitude, longitude, radius, startT, endT, adminCollegeCode]
                 );
             } else {
                 geofenceResult = await query(
                     'INSERT INTO campus_setup (name, latitude, longitude, radius, college_code, attendance_start_time, attendance_end_time) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-                    [name || 'Main Campus', latitude, longitude, radius, adminCollegeCode, attendanceStartTime || null, attendanceEndTime || null]
+                    [name || 'Main Campus', latitude, longitude, radius, adminCollegeCode, startT, endT]
                 );
             }
 

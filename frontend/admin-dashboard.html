@@ -899,6 +899,17 @@
                 alert('Geofence updated (Demo Mode)');
                 return;
             }
+            const attendanceStartTime = document.getElementById('geo-start-time').value;
+            const attendanceEndTime = document.getElementById('geo-end-time').value;
+
+            // Simple validation: End Time must be after Start Time
+            if (attendanceStartTime && attendanceEndTime) {
+                if (attendanceStartTime >= attendanceEndTime) {
+                    alert("Attendance End Time must be later than Start Time.");
+                    return;
+                }
+            }
+
             const payload = {
                 name: document.getElementById('geo-name').value,
                 collegeName: document.getElementById('geo-college-name').value,
@@ -906,8 +917,8 @@
                 latitude: parseFloat(document.getElementById('geo-lat').value),
                 longitude: parseFloat(document.getElementById('geo-lng').value),
                 radius: parseInt(document.getElementById('geo-radius').value),
-                attendanceStartTime: document.getElementById('geo-start-time').value,
-                attendanceEndTime: document.getElementById('geo-end-time').value
+                attendanceStartTime,
+                attendanceEndTime
             };
 
             const btn = e.submitter;

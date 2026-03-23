@@ -58,8 +58,10 @@ module.exports = async (req, res) => {
 
                 // VALIDATION: Start Time (if set)
                 if (startTimeMins !== null && currentTimeMins < startTimeMins) {
+                    const displayStart = geofence.attendance_start_time.substring(0, 5);
+                    const isPM = geofence.attendance_start_time.toLowerCase().includes('pm') || parseInt(geofence.attendance_start_time.split(':')[0]) >= 12;
                     return res.status(400).json({ 
-                        message: `Attendance allowed only after ${geofence.attendance_start_time.substring(0, 5)} ${geofence.attendance_start_time.toLowerCase().includes('pm') ? 'PM' : 'AM'}` 
+                        message: `Attendance allowed only after ${displayStart} ${isPM ? 'PM' : 'AM'}` 
                     });
                 }
                 
