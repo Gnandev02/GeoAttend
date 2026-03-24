@@ -134,7 +134,7 @@ module.exports = async (req, res) => {
                 await query('ALTER TABLE attendance ADD COLUMN IF NOT EXISTS duration_minutes INTEGER DEFAULT 0');
 
                 const result = await query(
-                    'UPDATE attendance SET check_out_time = $1, status = $2, duration_minutes = $3 WHERE student_id = $4 AND attendance_date = $5 RETURNING *',
+                    'UPDATE attendance SET check_out_time = $1, status = $2, duration_minutes = $3 WHERE student_id = $4 AND attendance_date = $5 AND check_out_time IS NULL RETURNING *',
                     [currentTime, 'completed', durationMinutes, student.id, today]
                 );
 

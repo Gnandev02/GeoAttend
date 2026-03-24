@@ -642,7 +642,7 @@
                         watchId = null;
                     }
                 },
-                { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 }
+                { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
             );
         }
 
@@ -706,7 +706,7 @@
             }
 
             // Auto Check-Out
-            if (dist > (campusConfig.radius + 5) && !checkedOut) {
+            if (dist > campusConfig.radius && !checkedOut) {
                 if (todayRecord && todayRecord.checkinTime) {
                     console.log("Trigger checkout");
                     checkedOut = true; // Set flag immediately
@@ -723,16 +723,9 @@
                             showAlert(`🚪 Automatic Departure Detected: Checked Out!`, true);
                             fetchDashboardData().catch(e => console.error(e));
                             
-                            if (watchId) {
-                                navigator.geolocation.clearWatch(watchId);
-                                watchId = null;
-                                const markBtn = document.getElementById('startTrackingBtn');
-                                if (markBtn) {
-                                    document.getElementById('markText').textContent = "Start Tracking";
-                                    document.getElementById('tracking-status').textContent = "Checked out for today";
-                                    markBtn.classList.replace('bg-green-500', 'bg-white');
-                                    markBtn.classList.remove('text-white');
-                                }
+                            const markBtn = document.getElementById('startTrackingBtn');
+                            if (markBtn) {
+                                document.getElementById('tracking-status').textContent = "Live Monitoring Active (Checked Out)";
                             }
                         } else {
                             checkedOut = false;
