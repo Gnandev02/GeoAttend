@@ -30,13 +30,44 @@ module.exports = async (req, res) => {
             const student = await protectStudent(req);
             if (!student) return res.status(401).json({ message: 'Not authorized as a student' });
 
-            const { sessionName } = req.body;
+            const { sessionName, type } = req.body;
             
             // 1. FORCED NUMERIC CONVERSION & VALIDATION
             const latitude = Number(req.body.lat);
             const longitude = Number(req.body.lng);
 
-            console.log("[BACKEND DEBUG] Incoming Location:", { lat: latitude, lng: longitude, body: req.body });
+            console.log("[BACKEND DEBUG] Incoming Location:", { lat: latitude, lng: longitude, type, body: req.body });
+
+            const now = new Date();
+            const IST = { timeZone: 'Asia/Kolkata' };
+            const today = now.toLocaleDateString('en-CA', IST);  
+            const currentTime = now.toLocaleTimeString('en-IN', { ...IST, hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+            // Handle simplified IN/OUT from frontend Step 7
+            if (type === 'IN' || type === 'OUT') {
+                const todayQuery = await query('SELECT * FROM attendance WHERE student_id = $1 AND attendance_date = $2 ORDER BY id DESC LIMIT 1', [student.id, today]);
+                const todayRecord = todayQuery.rows[0];
+
+                if (type === 'IN') {
+                    if (todayRecord) return res.status(200).json({ message: 'Already marked IN', attendance: todayRecord });
+                    const result = await query(
+                        `INSERT INTO attendance (student_id, college_code, attendance_date, check_in_time, status, session_name)
+                         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+                        [student.id, student.college_code, today, currentTime, 'Present', sessionName || 'Campus Check-in']
+                    );
+                    return res.status(201).json({ message: 'Status: IN', attendance: result.rows[0] });
+                } else {
+                    if (!todayRecord || todayRecord.check_out_time) return res.status(200).json({ message: 'Already OUT' });
+                    const inMins = timeStringToMinutes(todayRecord.check_in_time);
+                    const outMins = timeStringToMinutes(currentTime);
+                    const durationMinutes = outMins > inMins ? outMins - inMins : 0;
+                    const result = await query(
+                        'UPDATE attendance SET check_out_time = $1, status = $2, duration_minutes = $3 WHERE student_id = $4 AND attendance_date = $5 AND check_out_time IS NULL RETURNING *',
+                        [currentTime, 'completed', durationMinutes, student.id, today]
+                    );
+                    return res.status(200).json({ message: 'Status: OUT', attendance: result.rows[0] });
+                }
+            }
 
             if (isNaN(latitude) || isNaN(longitude)) {
                 return res.status(400).json({ message: "Invalid GPS coordinates (NaN)." });
@@ -46,11 +77,6 @@ module.exports = async (req, res) => {
                 return res.status(400).json({ message: "Invalid GPS range." });
             }
 
-            const now = new Date();
-            const IST = { timeZone: 'Asia/Kolkata' };
-            const today = now.toLocaleDateString('en-CA', IST);  
-            const currentTime = now.toLocaleTimeString('en-IN', { ...IST, hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            
             // FETCH CAMPUS SETUP (SINGLE SOURCE OF TRUTH BY college_code)
             const geofenceQuery = await query('SELECT latitude, longitude, radius, attendance_start_time, attendance_end_time FROM campus_setup WHERE college_code = $1', [student.college_code]);
             if (geofenceQuery.rows.length === 0) return res.status(500).json({ message: 'Campus geofence not configured.' });

@@ -96,7 +96,7 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="saas-card p-6"><h3 class="font-bold text-slate-900 mb-4">Live Distance</h3><p class="text-3xl font-extrabold text-slate-900"><span id="distance-val">--</span> <span class="text-base text-slate-400">meters</span></p></div>
+                <div class="saas-card p-6"><h3 class="font-bold text-slate-900 mb-4">Live Distance</h3><p class="text-3xl font-extrabold text-slate-900"><span id="distance">--</span></p></div>
                 <div class="saas-card p-6"><h3 class="font-bold text-slate-900 mb-4">Presence Alert</h3><div id="presence-badge" class="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-500 inline-block">Unknown</div></div>
             </div>
 
@@ -116,125 +116,172 @@
         document.getElementById('user-name').textContent = user.name || 'Student';
         document.getElementById('user-info').textContent = `${user.rollNumber || ''} • ${user.email}`;
 
-        let studentMap, campusMarker, studentMarker, geofenceCircle, watchId;
+        let map, marker, radius, campusCenter, lastStatus;
 
-        function updateStudentLocation(lat, lng) {
-            const newPosition = { lat: lat, lng: lng };
-            console.log("Live location:", lat, lng);
+        // STEP 1: FETCH CAMPUS DATA FROM BACKEND
+        async function initDashboard() {
+            try {
+                const res = await fetch("/api/get-campus", { headers: { "Authorization": "Bearer " + token } });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.message);
 
-            // Move marker
-            if (studentMarker) {
-                studentMarker.setPosition(newPosition);
-            } else if (studentMap) {
-                studentMarker = new google.maps.Marker({
-                    position: newPosition,
-                    map: studentMap,
-                    title: "Your Location",
-                    icon: "http://maps.google.com/mapfiles/ms/icons/green-dot.png"
+                campusCenter = { lat: data.lat, lng: data.lng };
+                radius = data.radius;
+
+                document.getElementById("campus-center").innerText = `${data.lat.toFixed(6)}, ${data.lng.toFixed(6)}`;
+
+                // STEP 2: INITIALIZE MAP CORRECTLY
+                map = new google.maps.Map(document.getElementById("student-map"), {
+                    center: campusCenter,
+                    zoom: 17,
+                    disableDefaultUI: true
                 });
-            }
 
-            // Smooth center map
-            if (studentMap) {
-                studentMap.panTo(newPosition);
-            }
+                new google.maps.Circle({
+                    map,
+                    center: campusCenter,
+                    radius: radius,
+                    fillColor: "#4f46e5",
+                    fillOpacity: 0.2,
+                    strokeColor: "#4f46e5",
+                    strokeWeight: 2
+                });
 
-            // Update UI
-            document.getElementById("your-gps").innerText = lat.toFixed(6) + ", " + lng.toFixed(6);
+                fetchTodayStats();
+            } catch (err) {
+                console.error("Initialization error:", err);
+                showAlert("Could not load campus data.", false);
+            }
         }
 
+        // STEP 3: FIX GPS TRACKING
         function startTracking() {
-            if (watchId) return;
-            
-            if (!navigator.geolocation) {
-                showAlert("Geolocation is not supported by this browser.", false);
-                return;
-            }
-
             document.getElementById('markText').textContent = "Tracking Active";
             document.getElementById('startTrackingBtn').classList.replace('bg-blue-600', 'bg-green-600');
             document.getElementById('startTrackingBtn').disabled = true;
 
-            const geoOptions = {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 0
-            };
-
-            watchId = navigator.geolocation.watchPosition(
-                async (pos) => {
+            navigator.geolocation.watchPosition(
+                (pos) => {
                     const lat = pos.coords.latitude;
                     const lng = pos.coords.longitude;
-                    
-                    // Live Update Map & UI
-                    updateStudentLocation(lat, lng);
-
-                    try {
-                        const res = await fetch("/api/attendance", {
-                            method: "POST",
-                            headers: { 
-                                "Authorization": "Bearer " + token, 
-                                "Content-Type": "application/json" 
-                            },
-                            body: JSON.stringify({ lat, lng })
-                        });
-                        
-                        const data = await res.json();
-                        
-                        if (!res.ok) return;
-
-                        // Update Dashboard Metrics
-                        const rawDistance = Number(data.distance);
-                        document.getElementById("distance-val").innerText = isNaN(rawDistance) ? "--" : Math.round(rawDistance);
-                        
-                        if (data.campus && typeof data.campus.lat === 'number') {
-                            const cPos = { lat: data.campus.lat, lng: data.campus.lng };
-                            document.getElementById("campus-center").textContent = `${cPos.lat.toFixed(6)}, ${cPos.lng.toFixed(6)}`;
-                            
-                            // Ensure campus marker exists
-                            if (!campusMarker && studentMap) {
-                                campusMarker = new google.maps.Marker({
-                                    position: cPos,
-                                    map: studentMap,
-                                    icon: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
-                                });
-                            } else if (campusMarker) {
-                                campusMarker.setPosition(cPos);
-                            }
-
-                            if (!geofenceCircle && studentMap) {
-                                geofenceCircle = new google.maps.Circle({ 
-                                    map: studentMap, center: cPos, radius: 100, 
-                                    fillColor: "#0284c7", fillOpacity: 0.15, 
-                                    strokeColor: "#0284c7", strokeWeight: 2 
-                                });
-                            }
-                        }
-
-                        const badge = document.getElementById('presence-badge');
-                        if (data.inside) {
-                            badge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700';
-                            badge.textContent = "✅ Inside Campus";
-                        } else {
-                            badge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700';
-                            badge.textContent = "❌ Outside Campus";
-                        }
-
-                        if (data.action === 'checked-in' || data.action === 'checked-out') {
-                            showAlert(data.message, true);
-                            fetchLogs();
-                        }
-
-                    } catch (err) { console.error("Tracking error:", err); }
+                    updateLocation(lat, lng);
                 },
                 (err) => {
-                    console.error("GPS error:", err);
-                    let msg = "GPS Error";
-                    if (err.code === err.PERMISSION_DENIED) msg = "Please Enable GPS Permission";
-                    showAlert(msg, false);
+                    console.error(err);
+                    showAlert("Please Enable GPS Permission", false);
                 },
-                geoOptions
+                { enableHighAccuracy: true }
             );
+        }
+
+        // STEP 4: UPDATE LOCATION FUNCTION
+        function updateLocation(lat, lng) {
+            const userPos = { lat, lng };
+            console.log("Live location:", lat, lng);
+
+            document.getElementById("your-gps").innerText = lat.toFixed(6) + ", " + lng.toFixed(6);
+
+            if (!marker) {
+                marker = new google.maps.Marker({
+                    position: userPos,
+                    map: map,
+                    icon: "http://maps.google.com/mapfiles/ms/icons/green-dot.png"
+                });
+            } else {
+                marker.setPosition(userPos);
+            }
+
+            map.panTo(userPos);
+            calculateDistance(lat, lng);
+        }
+
+        // STEP 5: FIX DISTANCE CALCULATION
+        function calculateDistance(lat, lng) {
+            if (!campusCenter) return;
+
+            const R = 6371000;
+            const dLat = (lat - campusCenter.lat) * Math.PI / 180;
+            const dLng = (lng - campusCenter.lng) * Math.PI / 180;
+
+            const a =
+                Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(campusCenter.lat * Math.PI/180) *
+                Math.cos(lat * Math.PI/180) *
+                Math.sin(dLng/2) * Math.sin(dLng/2);
+
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            const distance = R * c;
+
+            document.getElementById("distance").innerText = Math.round(distance) + " meters";
+
+            // STEP 6: FIX ATTENDANCE LOGIC
+            const currentStatus = distance <= radius ? "IN" : "OUT";
+            
+            const badge = document.getElementById('presence-badge');
+            if (currentStatus === "IN") {
+                badge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 inline-block';
+                badge.textContent = "✅ Inside Campus";
+            } else {
+                badge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 inline-block';
+                badge.textContent = "❌ Outside Campus";
+            }
+
+            if (lastStatus !== currentStatus) {
+                checkAttendance(distance);
+                lastStatus = currentStatus;
+            }
+        }
+
+        function checkAttendance(distance) {
+            if (distance <= radius) {
+                markAttendance("IN");
+            } else {
+                markAttendance("OUT");
+            }
+        }
+
+        // STEP 7: CALL BACKEND FOR ATTENDANCE
+        async function markAttendance(type) {
+            try {
+                const res = await fetch("/api/attendance", {
+                    method: "POST",
+                    headers: { 
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + token
+                    },
+                    body: JSON.stringify({ type })
+                });
+                const data = await res.json();
+                if (data.message) showAlert(data.message, res.ok);
+                fetchTodayStats();
+            } catch (err) {
+                console.error("Mark attendance error:", err);
+            }
+        }
+
+        // STEP 8: REMOVE HARDCODED UI & FETCH FROM BACKEND
+        async function fetchTodayStats() {
+            try {
+                const res = await fetch("/api/attendance-today", { headers: { "Authorization": "Bearer " + token } });
+                const data = await res.json();
+                
+                document.getElementById('attendance-present').textContent = data.stats.present;
+                document.getElementById('attendance-total').textContent = data.stats.total;
+                
+                const pct = data.stats.total ? Math.round((data.stats.present / data.stats.total) * 100) : 0;
+                document.getElementById('attendance-percent').textContent = pct + '%';
+                document.getElementById('attendance-circle').setAttribute('stroke-dasharray', `${pct}, 100`);
+
+                if (data.today) {
+                    document.getElementById('display-checkin').textContent = data.today.check_in_time || '--:--';
+                    document.getElementById('display-checkout').textContent = data.today.check_out_time || '--:--';
+                }
+
+                // Also fetch full logs
+                fetchLogs();
+            } catch (err) {
+                console.error("Fetch stats error:", err);
+            }
         }
 
         async function fetchLogs() {
@@ -247,20 +294,6 @@
                         <div><p class="font-bold text-slate-900">${l.date}</p><p class="text-slate-400">${l.checkinTime} - ${l.checkoutTime || '...'}</p></div>
                         <span class="${l.status === 'Present' || l.status === 'completed' ? 'badge-success' : 'badge-danger'}">${l.status}</span>
                     </div>`).join('');
-
-                const today = new Date().toLocaleDateString('en-CA');
-                const todayLog = logs.find(l => String(l.date).substring(0, 10) === today);
-                if (todayLog) {
-                    document.getElementById('display-checkin').textContent = todayLog.checkinTime || '--:--';
-                    document.getElementById('display-checkout').textContent = todayLog.checkoutTime || '--:--';
-                }
-                
-                const present = logs.filter(l => l.status === 'Present' || l.status === 'completed').length;
-                document.getElementById('attendance-present').textContent = present;
-                document.getElementById('attendance-total').textContent = logs.length;
-                const pct = logs.length ? Math.round((present / logs.length) * 100) : 0;
-                document.getElementById('attendance-percent').textContent = pct + '%';
-                document.getElementById('attendance-circle').setAttribute('stroke-dasharray', `${pct}, 100`);
             } catch (err) { console.error(err); }
         }
 
@@ -271,16 +304,8 @@
             setTimeout(() => box.classList.add('hidden'), 5000);
         }
 
-        window.initMap = () => { 
-            studentMap = new google.maps.Map(document.getElementById('student-map'), { 
-                center: { lat: 15, lng: 75 }, 
-                zoom: 15, 
-                disableDefaultUI: true 
-            }); 
-        };
-        
+        window.initMap = initDashboard;
         function logout() { localStorage.clear(); window.location.href = 'index.html'; }
-        fetchLogs();
     </script>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAtcv3jZIS7M7bmf4Mwirbhd1qVulafbvk&callback=initMap" async defer></script>
 </body>
