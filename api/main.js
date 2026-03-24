@@ -284,7 +284,27 @@ export default async function handler(req, res) {
                 });
             }
         }
+        else if (action === "change-password") {
+            const student = await protectStudent(req);
+            const user = student || await protectAdmin(req);
+            
+            if (!user) return res.status(401).json({ error: "Unauthorized" });
 
+            const { oldPassword, newPassword } = req.body;
+            if (!oldPassword || !newPassword) {
+                return res.status(400).json({ error: "Missing password fields" });
+            }
+
+            const tableName = student ? 'students' : 'admins';
+
+            const isMatch = await comparePassword(oldPassword, user.password);
+            if (!isMatch) return res.status(400).json({ error: "Incorrect current password" });
+
+            const hashedPassword = await hashPassword(newPassword);
+            await query(`UPDATE ${tableName} SET password = $1 WHERE id = $2`, [hashedPassword, user.id]);
+
+            return res.status(200).json({ message: "Password updated successfully" });
+        }
         else {
             return res.status(400).json({ error: "Invalid action: " + action });
         }

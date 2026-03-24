@@ -601,7 +601,7 @@
         const urlParams = new URLSearchParams(window.location.search);
         const isDemo = urlParams.get('demo') === 'true';
 
-        const token = localStorage.getItem('geoattend_token');
+        const token = localStorage.getItem('token');
         const userStr = localStorage.getItem('geoattend_user');
         
         let user = {};
@@ -752,7 +752,7 @@
             try {
                 const res = await fetch('/api/main?action=deleteStudent', {
                     method: 'DELETE',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('geoattend_token')}` },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
                     body: JSON.stringify({ id })
                 });
                 if (res.ok) fetchAdminData();

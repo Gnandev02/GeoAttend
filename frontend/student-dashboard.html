@@ -109,7 +109,7 @@
 
     <script>
         lucide.createIcons();
-        const token = localStorage.getItem('geoattend_token');
+        const token = localStorage.getItem('token');
         const user = JSON.parse(localStorage.getItem('geoattend_user') || '{}');
         if (!token) window.location.href = 'student-login.html';
 
