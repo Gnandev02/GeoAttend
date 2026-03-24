@@ -31,9 +31,9 @@ module.exports = async (req, res) => {
             if (!student) return res.status(401).json({ message: 'Not authorized as a student' });
 
             const { sessionName } = req.body;
-            // Parse coordinates as floats — JSON may send them as strings
-            const latitude = parseFloat(req.body.lat !== undefined ? req.body.lat : req.body.latitude);
-            const longitude = parseFloat(req.body.lng !== undefined ? req.body.lng : req.body.longitude);
+            const latitude = parseFloat(req.body.lat);
+            const longitude = parseFloat(req.body.lng);
+
             const now = new Date();
 
             // CRITICAL: Vercel serverless runs in UTC. Must specify timeZone explicitly.
@@ -42,9 +42,10 @@ module.exports = async (req, res) => {
             // Store exact IST time in 12-hour AM/PM format: "10:00:49 AM"
             const currentTime = now.toLocaleTimeString('en-IN', { ...IST, hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
             const currentHour = parseInt(now.toLocaleTimeString('en-IN', { ...IST, hour12: false, hour: '2-digit' }), 10);
+            
             if (!action || action === 'track') {
-                if (latitude === undefined || longitude === undefined || isNaN(latitude)) {
-                    return res.status(400).json({ message: 'Missing location data (lat, lng).' });
+                if (!latitude || !longitude) {
+                    return res.status(400).json({ message: "Invalid GPS data" });
                 }
 
                 // Check geofence and timings
@@ -52,21 +53,17 @@ module.exports = async (req, res) => {
                 if (geofenceQuery.rows.length === 0) return res.status(500).json({ message: 'Campus geofence not configured.' });
                 
                 const geofence = geofenceQuery.rows[0];
-                const campusRadius = parseFloat(geofence.radius);
-                const campusLat = parseFloat(geofence.latitude);
-                const campusLng = parseFloat(geofence.longitude);
-
                 const distance = calculateDistance(
                     latitude,
                     longitude,
-                    campusLat,
-                    campusLng
+                    parseFloat(geofence.latitude),
+                    parseFloat(geofence.longitude)
                 );
 
-                console.log("Student:", latitude, longitude);
-                console.log("Campus:", campusLat, campusLng);
+                console.log("GPS:", latitude, longitude);
+                console.log("Campus:", geofence.latitude, geofence.longitude);
                 console.log("Distance:", distance);
-                console.log("Radius:", campusRadius);
+                console.log("Radius:", geofence.radius);
 
                 const startTimeMins = geofence.attendance_start_time ? timeStringToMinutes(geofence.attendance_start_time) : null;
                 const endTimeMins = geofence.attendance_end_time ? timeStringToMinutes(geofence.attendance_end_time) : null;
@@ -76,7 +73,7 @@ module.exports = async (req, res) => {
                 const todayQuery = await query('SELECT * FROM attendance WHERE student_id = $1 AND attendance_date = $2 ORDER BY id DESC LIMIT 1', [student.id, today]);
                 const todayRecord = todayQuery.rows[0];
 
-                if (distance <= campusRadius) {
+                if (distance <= parseFloat(geofence.radius)) {
                     // Inside Radius -> Check-in
                     if (todayRecord) {
                         return res.status(200).json({ message: 'Already checked in', attendance: todayRecord, action: "none", distance });
