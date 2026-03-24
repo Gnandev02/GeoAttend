@@ -32,8 +32,9 @@ module.exports = async (req, res) => {
 
             const { sessionName } = req.body;
             // Parse coordinates as floats — JSON may send them as strings
-            const latitude = parseFloat(req.body.latitude);
-            const longitude = parseFloat(req.body.longitude);
+            const latitude = parseFloat(req.body.lat !== undefined ? req.body.lat : req.body.latitude);
+            const longitude = parseFloat(req.body.lng !== undefined ? req.body.lng : req.body.longitude);
+            const distance = parseFloat(req.body.distance);
             const now = new Date();
 
             // CRITICAL: Vercel serverless runs in UTC. Must specify timeZone explicitly.
@@ -42,124 +43,92 @@ module.exports = async (req, res) => {
             // Store exact IST time in 12-hour AM/PM format: "10:00:49 AM"
             const currentTime = now.toLocaleTimeString('en-IN', { ...IST, hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
             const currentHour = parseInt(now.toLocaleTimeString('en-IN', { ...IST, hour12: false, hour: '2-digit' }), 10);
-            if (action === 'checkIn') {
-                if (isNaN(latitude) || isNaN(longitude)) return res.status(400).json({ message: 'Invalid location coordinates. Please try again.' });
+            if (!action || action === 'track') {
+                if (latitude === undefined || longitude === undefined || distance === undefined) {
+                    return res.status(400).json({ message: 'Missing location data (lat, lng, distance).' });
+                }
 
                 // Check geofence and timings
                 const geofenceQuery = await query('SELECT * FROM campus_setup WHERE college_code = $1', [student.college_code]);
-                if (geofenceQuery.rows.length === 0) return res.status(500).json({ message: 'Campus geofence not configured. Ask your administrator to set it up.' });
+                if (geofenceQuery.rows.length === 0) return res.status(500).json({ message: 'Campus geofence not configured.' });
                 
                 const geofence = geofenceQuery.rows[0];
-                if (geofence.attendance_start_time === undefined) {
-                    console.warn("[Schema Warning] attendance_start_time column missing in campus_setup table.");
-                }
-
+                const campusRadius = parseFloat(geofence.radius);
                 const startTimeMins = geofence.attendance_start_time ? timeStringToMinutes(geofence.attendance_start_time) : null;
                 const endTimeMins = geofence.attendance_end_time ? timeStringToMinutes(geofence.attendance_end_time) : null;
                 const currentTimeMins = timeStringToMinutes(currentTime);
 
-                let status = 'Present';
+                // Find today's latest record
+                const todayQuery = await query('SELECT * FROM attendance WHERE student_id = $1 AND attendance_date = $2 ORDER BY id DESC LIMIT 1', [student.id, today]);
+                const todayRecord = todayQuery.rows[0];
 
-                // VALIDATION: Start Time (if set)
-                if (startTimeMins !== null && currentTimeMins < startTimeMins) {
-                    const displayStart = geofence.attendance_start_time.substring(0, 5);
-                    const isPM = geofence.attendance_start_time.toLowerCase().includes('pm') || parseInt(geofence.attendance_start_time.split(':')[0]) >= 12;
-                    return res.status(400).json({ 
-                        message: `Attendance allowed only after ${displayStart} ${isPM ? 'PM' : 'AM'}` 
-                    });
-                }
-                
-                // VALIDATION: End Time (if set) -> mark as Late
-                if (endTimeMins !== null && currentTimeMins >= endTimeMins) {
-                    status = 'Late';
-                }
-
-                const campusLat = parseFloat(geofence.latitude);
-                const campusLng = parseFloat(geofence.longitude);
-                const campusRadius = parseFloat(geofence.radius);
-                const distance = calculateDistance(latitude, longitude, campusLat, campusLng);
-                console.log(`[CheckIn] Student: ${student.id} | Coords: (${latitude}, ${longitude}) | Campus: (${campusLat}, ${campusLng}) | Distance: ${Math.round(distance)}m | Radius: ${campusRadius}m | Inside: ${distance <= campusRadius}`);
-                
-                if (distance > campusRadius) {
-                    console.log(`[CheckIn] REJECTED - Outside radius. Distance: ${Math.round(distance)}m, Radius: ${campusRadius}m`);
-                    return res.status(400).json({ 
-                        message: `You are ${Math.round(distance)}m from campus. You must be within ${campusRadius}m to check in.`, 
-                        distance: Math.round(distance),
-                        requiredRadius: campusRadius
-                    });
-                }
-
-                try {
-                    const result = await query(
-                        `INSERT INTO attendance (student_id, college_code, attendance_date, check_in_time, status, distance_at_checkin, latitude, longitude, session_name)
-                         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-                        [student.id, student.college_code, today, currentTime, status, Math.round(distance), latitude, longitude, sessionName || 'Campus Check-in']
-                    );
-                    const row = result.rows[0];
-                    const dateStr = row.attendance_date instanceof Date
-                        ? row.attendance_date.toISOString().split('T')[0]
-                        : String(row.attendance_date).substring(0, 10);
-                    return res.status(201).json({
-                        message: status === 'Present' ? 'Checked in successfully' : 'Checked in (Late/Absent)',
-                        attendance: {
-                            _id: row.id,
-                            studentId: row.student_id,
-                            date: dateStr,
-                            checkinTime: row.check_in_time,
-                            checkoutTime: row.check_out_time || null,
-                            status: row.status,
-                            distanceFromCenter: row.distance_at_checkin,
-                            latitude: row.latitude,
-                            longitude: row.longitude
-                        },
-                        distance: Math.round(distance)
-                    });
-                } catch (e) {
-                    if (e.code === '23505') return res.status(400).json({ message: 'Already checked in for today' });
-                    throw e;
-                }
-
-            } else if (action === 'checkOut') {
-                const getCheckInQuery = await query('SELECT check_in_time FROM attendance WHERE student_id = $1 AND attendance_date = $2 AND check_out_time IS NULL', [student.id, today]);
-                if (getCheckInQuery.rows.length === 0) return res.status(400).json({ message: 'No active check-in record found for today' });
-                
-                const checkInTimeStr = getCheckInQuery.rows[0].check_in_time;
-                let durationMinutes = 0;
-                if (checkInTimeStr) {
-                    const inMins = timeStringToMinutes(checkInTimeStr);
-                    const outMins = timeStringToMinutes(currentTime);
-                    durationMinutes = outMins > inMins ? outMins - inMins : 0;
-                }
-
-                await query('ALTER TABLE attendance ADD COLUMN IF NOT EXISTS duration_minutes INTEGER DEFAULT 0');
-
-                const result = await query(
-                    'UPDATE attendance SET check_out_time = $1, status = $2, duration_minutes = $3 WHERE student_id = $4 AND attendance_date = $5 AND check_out_time IS NULL RETURNING *',
-                    [currentTime, 'completed', durationMinutes, student.id, today]
-                );
-
-                if (result.rows.length === 0) return res.status(400).json({ message: 'No check-in record found for today' });
-                const outRow = result.rows[0];
-                const outDateStr = outRow.attendance_date instanceof Date
-                    ? outRow.attendance_date.toISOString().split('T')[0]
-                    : String(outRow.attendance_date).substring(0, 10);
-                return res.status(200).json({
-                    message: 'Checked out successfully',
-                    attendance: {
-                        _id: outRow.id,
-                        studentId: outRow.student_id,
-                        date: outDateStr,
-                        checkinTime: outRow.check_in_time,
-                        checkoutTime: outRow.check_out_time,
-                        status: outRow.status,
-                        distanceFromCenter: outRow.distance_at_checkin,
-                        latitude: outRow.latitude,
-                        longitude: outRow.longitude
+                if (distance <= campusRadius) {
+                    // Inside Radius -> Check-in
+                    if (todayRecord) {
+                        return res.status(200).json({ message: 'Already checked in', attendance: todayRecord, action: "none" });
                     }
-                });
 
+                    // VALIDATION: Start Time (if set)
+                    if (startTimeMins !== null && currentTimeMins < startTimeMins) {
+                        const displayStart = geofence.attendance_start_time.substring(0, 5);
+                        const isPM = geofence.attendance_start_time.toLowerCase().includes('pm') || parseInt(geofence.attendance_start_time.split(':')[0]) >= 12;
+                        return res.status(400).json({ message: `Attendance allowed only after ${displayStart} ${isPM ? 'PM' : 'AM'}` });
+                    }
+
+                    // VALIDATION: End Time (if set) -> mark as Late
+                    const status = (endTimeMins !== null && currentTimeMins >= endTimeMins) ? 'Late' : 'Present';
+
+                    try {
+                        const result = await query(
+                            `INSERT INTO attendance (student_id, college_code, attendance_date, check_in_time, status, distance_at_checkin, latitude, longitude, session_name)
+                             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+                            [student.id, student.college_code, today, currentTime, status, Math.round(distance), latitude, longitude, sessionName || 'Campus Check-in']
+                        );
+                        return res.status(201).json({
+                            message: 'Checked in successfully',
+                            action: 'checked-in',
+                            attendance: result.rows[0]
+                        });
+                    } catch (e) {
+                        if (e.code === '23505') return res.status(400).json({ message: 'Already checked in for today' });
+                        throw e;
+                    }
+
+                } else {
+                    // Outside Radius -> Check-out
+                    if (!todayRecord) {
+                        // Not checked in, nothing to do
+                        return res.status(200).json({ message: 'Outside campus', action: 'none' });
+                    }
+                    if (todayRecord.check_out_time !== null) {
+                        // Already checked out
+                        return res.status(200).json({ message: 'Already checked out', attendance: todayRecord, action: 'none' });
+                    }
+
+                    // Perform checkout update where check_out_time IS NULL
+                    const checkInTimeStr = todayRecord.check_in_time;
+                    let durationMinutes = 0;
+                    if (checkInTimeStr) {
+                        const inMins = timeStringToMinutes(checkInTimeStr);
+                        const outMins = timeStringToMinutes(currentTime);
+                        durationMinutes = outMins > inMins ? outMins - inMins : 0;
+                    }
+
+                    await query('ALTER TABLE attendance ADD COLUMN IF NOT EXISTS duration_minutes INTEGER DEFAULT 0');
+
+                    const result = await query(
+                        'UPDATE attendance SET check_out_time = $1, status = $2, duration_minutes = $3 WHERE student_id = $4 AND attendance_date = $5 AND check_out_time IS NULL RETURNING *',
+                        [currentTime, 'completed', durationMinutes, student.id, today]
+                    );
+
+                    if (result.rows.length === 0) return res.status(400).json({ message: 'Checkout collision or record missing' });
+                    return res.status(200).json({
+                        message: 'Checked out successfully',
+                        action: 'checked-out',
+                        attendance: result.rows[0]
+                    });
+                }
             } else if (action === 'markAttendance') {
-                // Legacy support for single marking
                 const geofenceQuery = await query('SELECT * FROM campus_setup WHERE college_code = $1', [student.college_code]);
                 const geofence = geofenceQuery.rows[0];
                 const distance = calculateDistance(latitude, longitude, geofence.latitude, geofence.longitude);
