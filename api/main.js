@@ -69,6 +69,15 @@ export default async function handler(req, res) {
             const student = await protectStudent(req);
             if (!student) return res.status(401).json({ message: 'Not authorized as a student' });
 
+            // Always re-validate student from DB to avoid FK violations from token-fallback IDs
+            let studentRow = student._fromToken
+                ? (await query('SELECT * FROM students WHERE id = $1', [student.id])).rows[0]
+                : student;
+            
+            if (!studentRow) {
+                return res.status(401).json({ message: 'Student account not found. Please ask your admin or re-register.' });
+            }
+
             const latitude = Number(req.body.lat);
             const longitude = Number(req.body.lng);
 
@@ -85,7 +94,7 @@ export default async function handler(req, res) {
             // FETCH CAMPUS SETUP (TASK 2)
             const geofenceQuery = await query(
                 'SELECT latitude, longitude, radius, attendance_start_time, attendance_end_time FROM campus_setup WHERE college_code = $1', 
-                [student.college_code]
+                [studentRow.college_code]
             );
             if (geofenceQuery.rows.length === 0) return res.status(500).json({ message: 'Campus geofence not configured.' });
             const geofence = geofenceQuery.rows[0];
@@ -109,7 +118,7 @@ export default async function handler(req, res) {
             console.log("Campus:", geofence.latitude, geofence.longitude);
             console.log("Distance:", distance);
 
-            const todayQuery = await query('SELECT * FROM attendance WHERE student_id = $1 AND attendance_date = $2 ORDER BY id DESC LIMIT 1', [student.id, today]);
+            const todayQuery = await query('SELECT * FROM attendance WHERE student_id = $1 AND attendance_date = $2 ORDER BY id DESC LIMIT 1', [studentRow.id, today]);
             const todayRecord = todayQuery.rows[0];
             let apiAction = "none";
             let updatedAttendance = todayRecord;
@@ -122,7 +131,7 @@ export default async function handler(req, res) {
                         const result = await query(
                             `INSERT INTO attendance (student_id, college_code, attendance_date, check_in_time, status) 
                              VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-                            [student.id, student.college_code, today, currentTime, 'Present']
+                            [studentRow.id, studentRow.college_code, today, currentTime, 'Present']
                         );
                         updatedAttendance = result.rows[0];
                         apiAction = "checked-in";
@@ -140,7 +149,7 @@ export default async function handler(req, res) {
                     
                     const result = await query(
                         'UPDATE attendance SET check_out_time = $1, status = $2, duration_minutes = $3 WHERE student_id = $4 AND attendance_date = $5 AND check_out_time IS NULL RETURNING *',
-                        [currentTime, 'completed', durationMinutes, student.id, today]
+                        [currentTime, 'completed', durationMinutes, studentRow.id, today]
                     );
                     updatedAttendance = result.rows[0];
                     apiAction = "checked-out";
