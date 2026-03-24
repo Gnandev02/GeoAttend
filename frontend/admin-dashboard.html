@@ -878,8 +878,8 @@
                 document.getElementById('geo-lng').value = mainCampus.longitude || '';
                 document.getElementById('geo-radius').value = mainCampus.radius || '';
                 
-                if (mainCampus.attendanceStartTime) document.getElementById('geo-start-time').value = mainCampus.attendanceStartTime;
-                if (mainCampus.attendanceEndTime) document.getElementById('geo-end-time').value = mainCampus.attendanceEndTime;
+                if (mainCampus.attendance_start_time) document.getElementById('geo-start-time').value = mainCampus.attendance_start_time;
+                if (mainCampus.attendance_end_time) document.getElementById('geo-end-time').value = mainCampus.attendance_end_time;
                 
                 if (window.adminMap && mainCampus.latitude) {
                     const pos = { lat: parseFloat(mainCampus.latitude), lng: parseFloat(mainCampus.longitude) };
