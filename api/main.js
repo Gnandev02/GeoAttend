@@ -151,15 +151,94 @@ export default async function handler(req, res) {
             });
         }
 
-        // --- 3. ATTENDANCE TODAY (Dashboard Stats) ---
+        // --- 3. ATTENDANCE TODAY (Student Dashboard Stats) ---
         else if (action === "attendance-today") {
-            const now = new Date();
-            const today = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
-            const statsQuery = await query(`
-                SELECT (SELECT COUNT(*) FROM students) as total,
-                       (SELECT COUNT(*) FROM attendance WHERE attendance_date = $1 AND (status = 'Present' OR status = 'completed')) as present
-            `, [today]);
-            return res.status(200).json({ stats: { total: parseInt(statsQuery.rows[0].total), present: parseInt(statsQuery.rows[0].present) } });
+            const student = await protectStudent(req);
+            if (student) {
+                // Per-student stats for Student Dashboard
+                const now = new Date();
+                const today = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+
+                // Today's check-in/out record
+                const todayQ = await query(
+                    `SELECT * FROM attendance WHERE student_id = $1 AND attendance_date = $2 ORDER BY id DESC LIMIT 1`,
+                    [student.id, today]
+                );
+                const todayRecord = todayQ.rows[0] || null;
+
+                // Overall stats (total days present / total days recorded)
+                const statsQ = await query(
+                    `SELECT COUNT(*) as total,
+                            SUM(CASE WHEN status = 'Present' OR status = 'completed' THEN 1 ELSE 0 END) as present
+                     FROM attendance WHERE student_id = $1`,
+                    [student.id]
+                );
+                const stats = statsQ.rows[0];
+
+                return res.status(200).json({
+                    stats: { 
+                        total: parseInt(stats.total) || 0, 
+                        present: parseInt(stats.present) || 0 
+                    },
+                    today: todayRecord ? {
+                        check_in_time: todayRecord.check_in_time,
+                        check_out_time: todayRecord.check_out_time,
+                        status: todayRecord.status
+                    } : null
+                });
+            } else {
+                // Admin dashboard: school-wide counts
+                const admin = await protectAdmin(req);
+                const now = new Date();
+                const today = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+                const whereClause = admin ? 'AND college_code = $2' : '';
+                const params = admin ? [today, admin.college_code] : [today];
+                const statsQuery = await query(`
+                    SELECT COUNT(DISTINCT student_id) as present
+                    FROM attendance 
+                    WHERE attendance_date = $1 AND (status = 'Present' OR status = 'completed') ${whereClause}
+                `, params);
+                const totalQ = admin
+                    ? await query('SELECT COUNT(*) as total FROM students WHERE college_code = $1', [admin.college_code])
+                    : await query('SELECT COUNT(*) as total FROM students');
+                return res.status(200).json({ 
+                    overall: { 
+                        totalStudents: parseInt(totalQ.rows[0].total) || 0, 
+                        Present: parseInt(statsQuery.rows[0].present) || 0 
+                    } 
+                });
+            }
+        }
+
+        // --- 3b. ATTENDANCE LOGS (Student and Admin) ---
+        else if (action === "getAttendanceLogs") {
+            const student = await protectStudent(req);
+            if (student) {
+                // Student's own logs
+                const result = await query(
+                    `SELECT attendance_date as date, check_in_time as "checkinTime", check_out_time as "checkoutTime", status, duration_minutes as "durationMinutes"
+                     FROM attendance WHERE student_id = $1 ORDER BY attendance_date DESC LIMIT 30`,
+                    [student.id]
+                );
+                return res.status(200).json(result.rows);
+            }
+
+            // Admin: all logs for their college
+            const admin = await protectAdmin(req);
+            if (!admin) return res.status(401).json({ error: "Unauthorized" });
+            const result = await query(
+                `SELECT a.attendance_date as date, s.name, s.roll_number as "rollNumber",
+                        a.check_in_time as "checkinTime", a.check_out_time as "checkoutTime",
+                        a.status, a.duration_minutes as "durationMinutes",
+                        json_build_object('name', s.name, 'rollNumber', s.roll_number) as "studentId"
+                 FROM attendance a
+                 JOIN students s ON s.id = a.student_id
+                 WHERE a.college_code = $1
+                 ORDER BY a.attendance_date DESC, a.id DESC
+                 LIMIT 200`,
+                [admin.college_code]
+            );
+            return res.status(200).json(result.rows);
         }
 
         // --- 4. AUTHENTICATION ---
