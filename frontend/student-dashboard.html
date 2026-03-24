@@ -20,447 +20,112 @@
         }
     </script>
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f8fafc;
-            color: #1e293b;
-            margin: 0;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-
-        .saas-card {
-            background-color: #ffffff;
-            border: 1px solid #f1f5f9;
-            border-radius: 0.75rem;
-            box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.05);
-        }
-
-        .scrollbar-hide::-webkit-scrollbar {
-            display: none;
-        }
-
-        .scrollbar-hide {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-
-        .badge-success {
-            background-color: #f0fdf4;
-            color: #15803d;
-            border: 1px solid #bbf7d0;
-            padding: 0.125rem 0.625rem;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 700;
-        }
-
-        .badge-danger {
-            background-color: #fef2f2;
-            color: #b91c1c;
-            border: 1px solid #fecaca;
-            padding: 0.125rem 0.625rem;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 700;
-        }
-
-        .tab-btn {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 0.875rem 1.25rem;
-            border-radius: 0.875rem;
-            font-size: 0.9375rem;
-            font-weight: 600;
-            transition: all 0.2s;
-            width: 100%;
-            text-align: left;
-        }
-
-        .tab-btn.active {
-            background-color: #e0f2fe;
-            color: #0369a1;
-        }
-
-        .tab-btn.inactive {
-            color: #64748b;
-        }
-
-        .tab-btn.inactive:hover {
-            background-color: #f8fafc;
-            color: #1e293b;
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        @media (max-width: 767px) {
-            #sidebar {
-                position: fixed !important;
-                top: 0 !important;
-                left: 0 !important;
-                height: 100vh !important;
-                width: 80% !important;
-                max-width: 300px;
-                z-index: 1001 !important;
-                transform: translateX(-100%);
-                transition: transform 0.3s ease;
-                margin: 0 !important;
-                border-radius: 0 !important;
-                box-shadow: 10px 0 30px rgba(0,0,0,0.1);
-                background: white !important;
-                display: flex !important;
-            }
-
-            #sidebar.open {
-                transform: translateX(0);
-            }
-
-            #sidebar-backdrop {
-                display: none;
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0, 0, 0, 0.4);
-                z-index: 1000;
-                backdrop-filter: blur(2px);
-            }
-
-            #sidebar-backdrop.active {
-                display: block;
-            }
-        }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; padding: 20px; }
+        .saas-card { background-color: #fff; border: 1px solid #f1f5f9; border-radius: 0.75rem; box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.05); }
+        .badge-success { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; padding: 0.125rem 0.625rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; }
+        .badge-danger { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; padding: 0.125rem 0.625rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; }
+        .tab-btn { display: flex; align-items: center; gap: 1rem; padding: 0.875rem 1.25rem; border-radius: 0.875rem; font-size: 0.9375rem; font-weight: 600; width: 100%; transition: all 0.2s; }
+        .tab-btn.active { background: #e0f2fe; color: #0369a1; }
+        .tab-btn.inactive { color: #64748b; }
+        .tab-btn.inactive:hover { background: #f8fafc; color: #1e293b; }
     </style>
-
 </head>
 
 <body>
-
-    <header class="md:hidden flex items-center justify-between p-4 bg-white border-b border-slate-200 sticky top-0 z-30 mb-4 rounded-xl saas-card">
-        <div class="flex items-center gap-3">
-            <button onclick="toggleSidebar(true)" class="p-2 text-slate-600 hover:bg-slate-50 rounded-lg">
-                <i data-lucide="menu" class="w-6 h-6"></i>
-            </button>
-            <h1 class="font-bold text-slate-900 tracking-tight">Student Portal</h1>
-        </div>
-        <div id="user-initial-mobile" class="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-sm font-bold">
-            S
-        </div>
-    </header>
-
-    <div id="sidebar-backdrop" onclick="toggleSidebar(false)"></div>
-
-    <div class="max-w-7xl mx-auto flex flex-col md:flex-row gap-6 md:h-[calc(100vh-40px)]">
-
-        <div id="sidebar" class="w-full md:w-64 saas-card flex flex-col overflow-hidden flex-shrink-0 mb-6 md:mb-0 h-full">
-            <div class="p-10 border-b border-slate-50 flex flex-col items-center md:items-start text-center md:text-left relative">
-                <button onclick="toggleSidebar(false)" class="md:hidden absolute top-6 right-6 text-slate-300 hover:text-slate-500">
-                    <i data-lucide="x" class="w-7 h-7"></i>
-                </button>
-                <div id="user-initial"
-                    class="w-20 h-20 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-3xl font-bold mb-5 shadow-sm border border-blue-100/50">
-                    S
-                </div>
-                <h2 id="user-name" class="font-bold text-slate-900 tracking-tight text-2xl">Student</h2>
-                <p id="user-info" class="text-sm text-slate-400 font-medium mt-1">Loading...</p>
-                <button onclick="logout()"
-                    class="mt-6 text-base text-red-500 font-bold flex items-center gap-2 hover:text-red-700 transition-all">
-                    <i data-lucide="log-out" class="w-4 h-4 text-red-500"></i> Logout
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row gap-6">
+        <div id="sidebar" class="w-full md:w-64 saas-card flex flex-col h-full bg-white">
+            <div class="p-10 border-b border-slate-50 flex flex-col items-center relative">
+                <div id="user-initial" class="w-20 h-20 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-3xl font-bold mb-5 border border-blue-100/50">S</div>
+                <h2 id="user-name" class="font-bold text-slate-900 text-2xl">Student</h2>
+                <p id="user-info" class="text-sm text-slate-400 mt-1">rollNumber • email</p>
+                <button onclick="logout()" class="mt-6 text-red-500 font-bold flex items-center gap-2 hover:text-red-700">
+                    <i data-lucide="log-out" class="w-4 h-4"></i> Logout
                 </button>
             </div>
-
-            <div class="p-4 flex-1 space-y-1.5 flex flex-col overflow-y-auto scrollbar-hide">
-                <button onclick="switchTab('overview')" id="tab-overview" class="tab-btn active w-full">
-                    <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard
-                </button>
-                <button onclick="window.location.href='change-password.html'" class="tab-btn inactive w-full">
-                    <i data-lucide="lock" class="w-4 h-4"></i> Change Password
-                </button>
+            <div class="p-4 space-y-1.5 flex flex-col">
+                <button class="tab-btn active"><i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard</button>
+                <button onclick="window.location.href='change-password.html'" class="tab-btn inactive"><i data-lucide="lock" class="w-4 h-4"></i> Change Password</button>
             </div>
         </div>
 
-        <div class="flex-1 overflow-y-auto pr-2 pb-6 space-y-6 scrollbar-hide">
-
-            <div id="content-overview" class="tab-content active space-y-6">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="saas-card p-6 flex items-center gap-5">
-                        <div class="relative w-16 h-16 flex items-center justify-center">
-                            <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                                <path class="stroke-slate-100" stroke-width="3" fill="none"
-                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                                <path id="attendance-circle" class="stroke-[#0284c7]" stroke-dasharray="0, 100"
-                                    stroke-width="3" fill="none"
-                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                            </svg>
-                            <span id="attendance-percent" class="absolute text-sm font-bold text-slate-800">0%</span>
-                        </div>
-                        <div>
-                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Campus Presence</p>
-                            <h3 class="text-2xl font-extrabold text-slate-900 mt-1"><span
-                                    id="attendance-present">0</span> <span
-                                    class="text-base font-semibold text-slate-400">/ <span
-                                        id="attendance-total">0</span> total</span></h3>
-                        </div>
+        <div class="flex-1 space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Summary Cards -->
+                <div class="saas-card p-6 flex items-center gap-5">
+                    <div class="relative w-16 h-16 flex items-center justify-center">
+                        <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                            <path class="stroke-slate-100" stroke-width="3" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            <path id="attendance-circle" class="stroke-[#0284c7]" stroke-dasharray="0, 100" stroke-width="3" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        </svg>
+                        <span id="attendance-percent" class="absolute text-sm font-bold text-slate-800">0%</span>
                     </div>
-
-                    <div class="saas-card p-6 flex flex-col justify-center">
-                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Check-In / Out</p>
-                        <div id="check-times" class="space-y-2">
-                            <p class="text-sm font-bold text-slate-800 flex items-center gap-2">
-                                <i data-lucide="calendar" class="w-4 h-4 text-blue-400"></i>
-                                <span class="text-slate-400 font-semibold">Date:</span>
-                                <span id="display-date" class="text-slate-700">--</span>
-                            </p>
-                            <p class="text-sm font-bold text-slate-800 flex items-center gap-2">
-                                <i data-lucide="log-in" class="w-4 h-4 text-green-500"></i>
-                                <span class="text-slate-400 font-semibold">In:</span>
-                                <span id="display-checkin" class="text-green-700">--:--</span>
-                            </p>
-                            <p class="text-sm font-bold text-slate-800 flex items-center gap-2">
-                                <i data-lucide="log-out" class="w-4 h-4 text-red-400"></i>
-                                <span class="text-slate-400 font-semibold">Out:</span>
-                                <span id="display-checkout" class="text-slate-600">--:--</span>
-                            </p>
-                            <p class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest pt-2 mt-2 border-t border-slate-50 flex items-center gap-2">
-                                <i data-lucide="info" class="w-3 h-3"></i>
-                                Window: <span id="display-window" class="text-indigo-700">Anytime</span>
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="saas-card p-6 bg-gradient-to-br from-[#0f172a] to-[#0284c7] flex items-center justify-between text-white relative overflow-hidden group">
-                        <div class="absolute -right-6 -top-6 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:scale-125 transition-transform duration-500"></div>
-                        <div class="relative z-10 w-full">
-                            <h3 class="font-bold mb-1">Campus Tracker</h3>
-                            <p id="tracking-status" class="text-xs text-blue-100 mb-4 opacity-90 font-medium tracking-wide">Automatic Arrival Detection</p>
-                            <button onclick="startTracking()" id="startTrackingBtn"
-                                class="w-full bg-white text-[#0f172a] hover:bg-slate-50 hover:-translate-y-0.5 font-bold py-2.5 px-4 rounded-xl text-sm transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-80">
-                                <i data-lucide="navigation" class="w-4 h-4"></i> <span id="markText">Start Tracking</span>
-                            </button>
-                        </div>
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Campus Presence</p>
+                        <h3 class="text-2xl font-extrabold text-slate-900 mt-1"><span id="attendance-present">0</span> <span class="text-base font-semibold text-slate-400">/ <span id="attendance-total">0</span></span></h3>
                     </div>
                 </div>
 
-                <div id="alert-box" class="hidden p-4 rounded-xl flex items-start gap-3 border"></div>
-
-                <div class="saas-card p-6 flex flex-col h-[450px]">
-                    <h3 class="font-bold text-slate-900 mb-4 flex items-center gap-2">
-                        <i data-lucide="map" class="w-5 h-5 text-[#0284c7]"></i>
-                        Live Geofence Radar
-                    </h3>
-                    <div id="student-map" class="flex-1 rounded-xl bg-slate-50 border border-slate-100 overflow-hidden relative z-0 flex items-center justify-center text-slate-400 font-medium">
-                        Awaiting Campus Location Initialization...
-                    </div>
-                    <!-- DIAGNOSTIC BAR -->
-                    <div class="mt-4 p-3 bg-slate-50 rounded-lg border border-slate-100 grid grid-cols-2 gap-4">
-                      <div>
-                        <p class="text-[10px] font-bold text-slate-400 uppercase">Your GPS</p>
-                        <p id="diag-student-coords" class="text-xs font-mono font-bold text-slate-700">Waiting for GPS...</p>
-                      </div>
-                      <div>
-                        <p class="text-[10px] font-bold text-slate-400 uppercase">Campus Center</p>
-                        <p id="diag-campus-coords" class="text-xs font-mono font-bold text-slate-700">Loading...</p>
-                      </div>
+                <div class="saas-card p-6 flex flex-col justify-center">
+                    <p class="text-xs font-bold text-slate-400 uppercase mb-3">Today Status</p>
+                    <div class="space-y-2">
+                        <p class="text-sm font-bold text-slate-800 flex items-center gap-2"><i data-lucide="log-in" class="w-4 h-4 text-green-500"></i> In: <span id="display-checkin" class="text-green-700">--:--</span></p>
+                        <p class="text-sm font-bold text-slate-800 flex items-center gap-2"><i data-lucide="log-out" class="w-4 h-4 text-red-500"></i> Out: <span id="display-checkout" class="text-red-700">--:--</span></p>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div class="saas-card overflow-hidden flex flex-col h-96">
-                        <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                            <h3 class="font-bold text-slate-900">Recent Logs</h3>
-                            <button class="text-xs font-bold text-[#0284c7] hover:text-[#0369a1] transition-colors">View All</button>
-                        </div>
-                        <div class="flex-1 overflow-y-auto" id="logs-container">
-                            <div class="h-full flex flex-col items-center justify-center text-slate-400 p-6 text-center">
-                                <p class="text-sm font-medium">Loading records...</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <div class="saas-card p-6">
-                            <h3 class="font-bold text-slate-900 mb-4">Live Distance</h3>
-                            <div class="flex items-end gap-2">
-                                <span id="distance" class="text-3xl font-extrabold text-slate-900">--</span>
-                                <span class="text-slate-400 font-bold mb-1">meters</span>
-                            </div>
-                            <p class="text-xs text-slate-500 mt-2">Live distance from campus center</p>
-                        </div>
-                        <div class="saas-card p-6">
-                            <h3 class="font-bold text-slate-900 mb-4">Presence Alert</h3>
-                            <div id="presence-badge" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-500">
-                                Unknown Status
-                            </div>
-                            <p class="text-xs text-slate-500 mt-3">Verified by campus geofence radius</p>
-                        </div>
+                <div class="saas-card p-6 bg-slate-900 flex items-center justify-between text-white overflow-hidden group">
+                    <div class="relative z-10 w-full">
+                        <h3 class="font-bold mb-1">Campus Tracker</h3>
+                        <p id="tracking-status" class="text-xs text-blue-100 mb-4 font-medium opacity-90">Auto Attendance Detection</p>
+                        <button onclick="startTracking()" id="startTrackingBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-xl text-sm flex items-center justify-center gap-2 shadow-sm">
+                            <i data-lucide="navigation" class="w-4 h-4"></i> <span id="markText">Start Tracking</span>
+                        </button>
                     </div>
                 </div>
+            </div>
+
+            <div id="alert-box" class="hidden p-4 rounded-xl border"></div>
+
+            <div class="saas-card p-6 flex flex-col h-[450px]">
+                <h3 class="font-bold text-slate-900 mb-4 flex items-center gap-2"><i data-lucide="map" class="w-5 h-5 text-[#0284c7]"></i> Live Geofence Radar</h3>
+                <div id="student-map" class="flex-1 rounded-xl bg-slate-50 border flex items-center justify-center text-slate-400">Initializing Tracking...</div>
+                <div class="mt-4 p-3 bg-slate-50 rounded-lg border grid grid-cols-2 gap-4">
+                    <div><p class="text-[10px] font-bold text-slate-400 uppercase">Your GPS</p><p id="diag-student-coords" class="text-xs font-mono font-bold text-slate-700">--</p></div>
+                    <div><p class="text-[10px] font-bold text-slate-400 uppercase">Campus Center</p><p id="diag-campus-coords" class="text-xs font-mono font-bold text-slate-700">--</p></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="saas-card p-6"><h3 class="font-bold text-slate-900 mb-4">Live Distance</h3><p class="text-3xl font-extrabold text-slate-900"><span id="distance">--</span> <span class="text-base text-slate-400">meters</span></p></div>
+                <div class="saas-card p-6"><h3 class="font-bold text-slate-900 mb-4">Presence Alert</h3><div id="presence-badge" class="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-500 inline-block">Unknown</div></div>
+            </div>
+
+            <div class="saas-card overflow-hidden">
+                <div class="p-5 border-b bg-slate-50/50 font-bold text-slate-900">Recent Attendance Logs</div>
+                <div id="logs-container" class="divide-y divide-slate-100"></div>
             </div>
         </div>
     </div>
 
     <script>
         lucide.createIcons();
-
         const token = localStorage.getItem('geoattend_token');
-        const userStr = localStorage.getItem('geoattend_user');
+        const user = JSON.parse(localStorage.getItem('geoattend_user') || '{}');
+        if (!token) window.location.href = 'student-login.html';
 
-        if (!token || !userStr) {
-            window.location.href = 'student-login.html';
-        }
+        document.getElementById('user-name').textContent = user.name || 'Student';
+        document.getElementById('user-info').textContent = `${user.rollNumber || ''} • ${user.email}`;
 
-        const user = JSON.parse(userStr);
-        let attendanceData = [];
-        let campusConfig = null;
-        let studentMap, campusMarker, studentMarker, geofenceCircle, distanceLine;
-        let mapInitialized = false;
-        let trackingStarted = false;
-
-        async function fetchCampusConfig() {
-            try {
-                const res = await fetch('/api/getCampusSetup', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (res.ok) {
-                    campusConfig = await res.json();
-                    document.getElementById('diag-campus-coords').textContent = 
-                        `${Number(campusConfig.latitude).toFixed(6)}, ${Number(campusConfig.longitude).toFixed(6)}`;
-                    
-                    const windowEl = document.getElementById('display-window');
-                    if (windowEl) {
-                        const start = campusConfig.attendance_start_time;
-                        const end = campusConfig.attendance_end_time;
-                        windowEl.textContent = (!start && !end) ? 'ANYTIME' : `${formatTime(start)} - ${formatTime(end)}`;
-                    }
-
-                    if(mapInitialized) renderMapCampus(campusConfig);
-                }
-            } catch (e) { console.error("Campus config error:", e); }
-        }
-
-        async function fetchDashboardData() {
-            try {
-                const res = await fetch(`/api/attendance?action=getAttendanceLogs`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (res.ok) {
-                    attendanceData = await res.json();
-                    updateAttendanceUI();
-                }
-            } catch (e) { console.error('[Dashboard] Error:', e); }
-            
-            const name = user.name || 'Student';
-            document.getElementById('user-name').textContent = name;
-            document.getElementById('user-initial').textContent = name.charAt(0).toUpperCase();
-            document.getElementById('user-info').textContent = user.rollNumber ? `${user.rollNumber} • ${user.email}` : user.email;
-        }
-
-        function updateAttendanceUI() {
-            const present = attendanceData.filter(r => r.status === 'Present').length;
-            const total = attendanceData.length;
-            const percentage = total === 0 ? 0 : Math.round((present / total) * 100);
-
-            document.getElementById('attendance-present').textContent = present;
-            document.getElementById('attendance-total').textContent = total;
-            document.getElementById('attendance-percent').textContent = percentage + '%';
-            document.getElementById('attendance-circle').setAttribute('stroke-dasharray', `${percentage}, 100`);
-
-            const today = new Date().toLocaleDateString('en-CA');
-            const todayRecord = attendanceData.find(r => r.date && r.date.substring(0, 10) === today);
-            
-            if (todayRecord) {
-                updateCheckInOutUI(todayRecord);
-            } else {
-                document.getElementById('display-checkin').textContent = '--:--';
-                document.getElementById('display-checkout').textContent = '--:--';
-                document.getElementById('presence-badge').className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-500';
-                document.getElementById('presence-badge').textContent = 'Not Checked In';
-            }
-
-            const logsContainer = document.getElementById('logs-container');
-            if (attendanceData.length === 0) {
-                logsContainer.innerHTML = '<div class="h-full flex flex-col items-center justify-center text-slate-400 p-6"><p class="text-sm font-medium">No records.</p></div>';
-            } else {
-                let html = '<div class="divide-y divide-slate-100">';
-                attendanceData.slice(0, 10).forEach(record => {
-                    const dateObj = new Date(record.date + 'T00:00:00');
-                    html += `
-                        <div class="p-4 flex items-center justify-between">
-                            <div class="flex items-center gap-4">
-                                <div class="w-10 h-10 rounded-xl bg-slate-50 border border-slate-200 flex flex-col items-center justify-center">
-                                    <span class="text-[10px] font-bold text-slate-500 uppercase">${dateObj.toLocaleString('default', { month: 'short' })}</span>
-                                    <span class="text-sm font-extrabold text-slate-900">${dateObj.getDate()}</span>
-                                </div>
-                                <div>
-                                    <p class="text-sm font-bold text-slate-900">In: ${formatTime(record.checkinTime)}</p>
-                                    <p class="text-xs font-semibold text-slate-400 mt-0.5">${record.status}</p>
-                                </div>
-                            </div>
-                            <span class="${record.status === 'Present' || record.status === 'completed' ? 'badge-success' : 'badge-danger'}">${record.status}</span>
-                        </div>`;
-                });
-                logsContainer.innerHTML = html + '</div>';
-            }
-        }
-
-        function formatTime(timeStr) {
-            if (!timeStr) return '--:--';
-            if (/am|pm/i.test(timeStr)) return timeStr.trim();
-            const parts = timeStr.split(':');
-            let h = parseInt(parts[0], 10);
-            const m = parts[1].padStart(2, '0');
-            const p = h >= 12 ? 'PM' : 'AM';
-            h = h % 12 || 12;
-            return `${h}:${m} ${p}`;
-        }
-
-        function updateCheckInOutUI(record) {
-            document.getElementById('display-date').textContent = record.date;
-            document.getElementById('display-checkin').textContent  = formatTime(record.checkinTime || record.check_in_time);
-            document.getElementById('display-checkout').textContent = record.checkoutTime ? formatTime(record.checkoutTime) : '--:--';
-            
-            const pb = document.getElementById('presence-badge');
-            if (record.status === 'Present' && !record.checkoutTime) {
-                pb.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700';
-                pb.textContent = '✅ Inside Campus';
-            } else if (record.status === 'completed' || record.checkoutTime) {
-                pb.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600';
-                pb.textContent = '🚪 Checked Out';
-            } else {
-                pb.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700';
-                pb.textContent = 'Outside Campus';
-            }
-        }
-
-        function showAlert(msg, isSuccess) {
-            const box = document.getElementById('alert-box');
-            box.className = `p-4 rounded-xl flex items-start gap-3 border ${isSuccess ? 'bg-green-50 border-green-100 text-green-800' : 'bg-red-50 border-red-100 text-red-800'}`;
-            box.innerHTML = `<p class="text-sm font-medium">${msg}</p>`;
-            box.classList.remove('hidden');
-        }
+        let studentMap, campusMarker, studentMarker, geofenceCircle, trackingInterval;
 
         function startTracking() {
-            if (trackingStarted) return;
-            trackingStarted = true;
+            if (trackingInterval) return;
             document.getElementById('markText').textContent = "Tracking Active";
-            document.getElementById('startTrackingBtn').classList.replace('bg-white', 'bg-green-500');
-            document.getElementById('startTrackingBtn').classList.add('text-white');
+            document.getElementById('startTrackingBtn').classList.replace('bg-blue-600', 'bg-green-600');
 
-            setInterval(() => {
+            trackingInterval = setInterval(() => {
                 navigator.geolocation.getCurrentPosition(async (pos) => {
-                    const lat = pos.coords.latitude;
-                    const lng = pos.coords.longitude;
-                    document.getElementById('diag-student-coords').textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-                    updateStudentLocationOnMap(lat, lng);
-
+                    const { latitude: lat, longitude: lng } = pos.coords;
                     try {
                         const res = await fetch("/api/attendance", {
                             method: "POST",
@@ -469,79 +134,78 @@
                         });
                         const data = await res.json();
                         
-                        if (data.distance !== undefined) {
-                            document.getElementById("distance").innerText = Math.round(data.distance);
-                            const pb = document.getElementById('presence-badge');
-                            if (data.inside) {
-                                pb.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700';
-                                pb.textContent = '✅ Inside Campus';
-                            } else {
-                                pb.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700';
-                                pb.textContent = '❌ Outside Campus';
-                            }
-                        }
+                        // UPDATE UI FROM BACKEND (SINGLE SOURCE OF TRUTH)
+                        document.getElementById("distance").innerText = Math.round(data.distance);
+                        document.getElementById("diag-campus-coords").textContent = `${data.campus.lat.toFixed(6)}, ${data.campus.lng.toFixed(6)}`;
+                        document.getElementById("diag-student-coords").textContent = `${data.student.lat.toFixed(6)}, ${data.student.lng.toFixed(6)}`;
+
+                        const badge = document.getElementById('presence-badge');
+                        badge.className = data.inside ? 'px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700' : 'px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700';
+                        badge.textContent = data.inside ? "✅ Inside Campus" : "❌ Outside Campus";
 
                         if (data.action === 'checked-in' || data.action === 'checked-out') {
                             showAlert(data.message, true);
-                            fetchDashboardData();
+                            fetchLogs();
                         }
+
+                        // UPDATE MAP
+                        const campusPos = { lat: data.campus.lat, lng: data.campus.lng };
+                        const studentPos = { lat: data.student.lat, lng: data.student.lng };
+
+                        if (!studentMarker) studentMarker = new google.maps.Marker({ position: studentPos, map: studentMap, icon: "http://maps.google.com/mapfiles/ms/icons/green-dot.png" });
+                        else studentMarker.setPosition(studentPos);
+
+                        if (!campusMarker) campusMarker = new google.maps.Marker({ position: campusPos, map: studentMap, icon: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png" });
+                        else campusMarker.setPosition(campusPos);
+
+                        if (!geofenceCircle) geofenceCircle = new google.maps.Circle({ map: studentMap, center: campusPos, radius: 100, fillColor: "#0284c7", fillOpacity: 0.15, strokeColor: "#0284c7", strokeWeight: 2 });
+                        
+                        const bounds = new google.maps.LatLngBounds();
+                        bounds.extend(studentPos); bounds.extend(campusPos);
+                        studentMap.fitBounds(bounds);
+
                     } catch (err) { console.error(err); }
                 }, null, { enableHighAccuracy: true });
             }, 5000);
         }
 
-        function switchTab(tabId) {
-            ['overview'].forEach(id => {
-                document.getElementById(`tab-${id}`).className = 'tab-btn inactive';
-                document.getElementById(`content-${id}`).classList.remove('active');
-            });
-            document.getElementById(`tab-${tabId}`).className = 'tab-btn active';
-            document.getElementById(`content-${tabId}`).classList.add('active');
+        async function fetchLogs() {
+            try {
+                const res = await fetch(`/api/attendance?action=getAttendanceLogs`, { headers: { 'Authorization': `Bearer ${token}` } });
+                const logs = await res.json();
+                const container = document.getElementById('logs-container');
+                container.innerHTML = logs.map(l => `
+                    <div class="p-4 flex justify-between items-center text-sm">
+                        <div><p class="font-bold text-slate-900">${l.date}</p><p class="text-slate-400">${l.checkinTime} - ${l.checkoutTime || '...'}</p></div>
+                        <span class="${l.status === 'Present' ? 'badge-success' : 'badge-danger'}">${l.status}</span>
+                    </div>`).join('');
+
+                const today = new Date().toISOString().split('T')[0];
+                const todayLog = logs.find(l => l.date === today);
+                if (todayLog) {
+                    document.getElementById('display-checkin').textContent = todayLog.checkinTime;
+                    document.getElementById('display-checkout').textContent = todayLog.checkoutTime || '--:--';
+                }
+                
+                const present = logs.filter(l => l.status === 'Present' || l.status === 'completed').length;
+                document.getElementById('attendance-present').textContent = present;
+                document.getElementById('attendance-total').textContent = logs.length;
+                const pct = logs.length ? Math.round((present / logs.length) * 100) : 0;
+                document.getElementById('attendance-percent').textContent = pct + '%';
+                document.getElementById('attendance-circle').setAttribute('stroke-dasharray', `${pct}, 100`);
+            } catch (err) { console.error(err); }
         }
 
-        function toggleSidebar(open) {
-            document.getElementById('sidebar').classList.toggle('open', open);
-            document.getElementById('sidebar-backdrop').classList.toggle('active', open);
+        function showAlert(msg, success) {
+            const box = document.getElementById('alert-box');
+            box.innerText = msg; box.className = `p-4 rounded-xl border mb-4 ${success ? 'bg-green-50 text-green-800 border-green-200' : 'bg-red-50 text-red-800 border-red-200'}`;
+            box.classList.remove('hidden');
         }
 
+        window.initMap = () => { studentMap = new google.maps.Map(document.getElementById('student-map'), { center: { lat: 15, lng: 75 }, zoom: 15, disableDefaultUI: true }); };
         function logout() { localStorage.clear(); window.location.href = 'index.html'; }
-
-        window.initStudentMap = function() {
-            studentMap = new google.maps.Map(document.getElementById('student-map'), {
-                center: { lat: 12.9716, lng: 77.5946 }, 
-                zoom: 16,
-                disableDefaultUI: true
-            });
-            mapInitialized = true;
-            if (campusConfig) renderMapCampus(campusConfig);
-        };
-
-        function renderMapCampus(config) {
-            if (!mapInitialized) return;
-            const pos = { lat: Number(config.latitude), lng: Number(config.longitude) };
-            studentMap.setCenter(pos);
-            if(!campusMarker) campusMarker = new google.maps.Marker({ position: pos, map: studentMap, icon: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png" });
-            if(!geofenceCircle) geofenceCircle = new google.maps.Circle({ map: studentMap, center: pos, radius: Number(config.radius), fillColor: "#0284c7", fillOpacity: 0.15, strokeColor: "#0284c7", strokeWeight: 2 });
-        }
-
-        function updateStudentLocationOnMap(lat, lng) {
-            if (!mapInitialized || !campusConfig) return;
-            const pos = { lat, lng };
-            if (!studentMarker) studentMarker = new google.maps.Marker({ position: pos, map: studentMap, icon: "http://maps.google.com/mapfiles/ms/icons/green-dot.png" });
-            else studentMarker.setPosition(pos);
-
-            const cPos = { lat: Number(campusConfig.latitude), lng: Number(campusConfig.longitude) };
-            if (!distanceLine) distanceLine = new google.maps.Polyline({ path: [pos, cPos], map: studentMap, strokeColor: "#ef4444", strokeWeight: 2 });
-            else distanceLine.setPath([pos, cPos]);
-
-            const bounds = new google.maps.LatLngBounds();
-            bounds.extend(pos); bounds.extend(cPos);
-            studentMap.fitBounds(bounds);
-        }
-
-        fetchCampusConfig();
-        fetchDashboardData();
+        fetchLogs();
     </script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAtcv3jZIS7M7bmf4Mwirbhd1qVulafbvk&callback=initStudentMap" async defer></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAtcv3jZIS7M7bmf4Mwirbhd1qVulafbvk&callback=initMap" async defer></script>
 </body>
 </html>
