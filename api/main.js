@@ -219,55 +219,68 @@ export default async function handler(req, res) {
             try {
                 const admin = await protectAdmin(req);
                 if (!admin) {
-                return res.status(401).json({ error: "Unauthorized" });
+                    return res.status(401).json({ error: "Unauthorized" });
                 }
 
                 const {
-                latitude,
-                longitude,
-                radius,
-                attendance_start_time,
-                attendance_end_time
+                    latitude,
+                    longitude,
+                    radius,
+                    attendance_start_time,
+                    attendance_end_time
                 } = req.body;
 
                 console.log("Incoming Data:", req.body);
 
-                if (!latitude || !longitude || !radius) {
-                return res.status(400).json({ error: "Missing required fields" });
+                if (
+                    latitude === undefined ||
+                    longitude === undefined ||
+                    radius === undefined
+                ) {
+                    return res.status(400).json({ error: "Missing required fields" });
+                }
+
+                const lat = Number(latitude);
+                const lng = Number(longitude);
+                const rad = Number(radius);
+
+                if (isNaN(lat) || isNaN(lng) || isNaN(rad)) {
+                    return res.status(400).json({ error: "Invalid numeric values" });
                 }
 
                 const result = await query(`
-                INSERT INTO campus_setup 
-                (college_code, latitude, longitude, radius, attendance_start_time, attendance_end_time)
-                VALUES ($1,$2,$3,$4,$5,$6)
-                ON CONFLICT (college_code)
-                DO UPDATE SET
-                    latitude = EXCLUDED.latitude,
-                    longitude = EXCLUDED.longitude,
-                    radius = EXCLUDED.radius,
-                    attendance_start_time = EXCLUDED.attendance_start_time,
-                    attendance_end_time = EXCLUDED.attendance_end_time
-                RETURNING *
+                    INSERT INTO campus_setup 
+                    (college_code, latitude, longitude, radius, attendance_start_time, attendance_end_time)
+                    VALUES ($1,$2,$3,$4,$5,$6)
+                    ON CONFLICT (college_code)
+                    DO UPDATE SET
+                        latitude = EXCLUDED.latitude,
+                        longitude = EXCLUDED.longitude,
+                        radius = EXCLUDED.radius,
+                        attendance_start_time = EXCLUDED.attendance_start_time,
+                        attendance_end_time = EXCLUDED.attendance_end_time
+                    RETURNING *
                 `, [
-                admin.college_code,
-                Number(latitude),
-                Number(longitude),
-                Number(radius),
-                attendance_start_time || null,
-                attendance_end_time || null
+                    admin.college_code,
+                    lat,
+                    lng,
+                    rad,
+                    attendance_start_time || null,
+                    attendance_end_time || null
                 ]);
 
                 return res.status(200).json({
-                success: true,
-                data: result.rows[0]
+                    success: true,
+                    data: result.rows[0]
                 });
 
             } catch (error) {
-                console.error("UPDATE ERROR:", error);
+                console.error("FULL ERROR:", error);
+                console.error("STACK:", error.stack);
 
                 return res.status(500).json({
-                error: "Database update failed",
-                details: error.message
+                    error: "Database update failed",
+                    details: error.message
                 });
             }
         }

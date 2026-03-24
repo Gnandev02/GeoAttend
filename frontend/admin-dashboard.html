@@ -937,7 +937,8 @@
                     fetchAdminData();
                 } else {
                     const data = await res.json();
-                    alert('Error: ' + data.message);
+                    console.log("API RESPONSE:", data);
+                    alert(data.error || data.message || "Something went wrong");
                 }
             } catch (err) {
                 alert('Connection error.');
