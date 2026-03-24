@@ -1,7 +1,7 @@
 const { query } = require("../utils/db");
 const { protectAdmin, protectStudent, hashPassword, comparePassword, generateToken } = require("../utils/auth");
-const { sendVerificationEmail, sendResetEmail, sendOnboardingEmail } = require("../utils/email");
-const { calculateDistance } = require("./utils/geoHelper");
+const { sendVerificationEmail, sendResetEmail, sendOnboardingEmail } = require("./utils/email");
+const { calculateDistance } = require("../utils/geoHelper");
 
 // Helper for time calculation (from attendance.js)
 function timeStringToMinutes(timeStr) {
