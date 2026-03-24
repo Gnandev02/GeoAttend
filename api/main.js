@@ -1,4 +1,4 @@
-const { query } = require("../utils/db");
+const { query } = require("./utils/db");
 const { protectAdmin, protectStudent, hashPassword, comparePassword, generateToken } = require("../utils/auth");
 const { sendVerificationEmail, sendResetEmail, sendOnboardingEmail } = require("./utils/email");
 const { calculateDistance } = require("../utils/geoHelper");
@@ -215,57 +215,60 @@ export default async function handler(req, res) {
             }
         }
 
-        else if (action === "update-geofence" || action === "updateCampus") {
-            const admin = await protectAdmin(req);
-            if (!admin) return res.status(401).json({ error: "Unauthorized" });
+        else if (action === "update-geofence") {
+            try {
+                const admin = await protectAdmin(req);
+                if (!admin) {
+                return res.status(401).json({ error: "Unauthorized" });
+                }
 
-            if (req.method !== "POST") {
-                return res.status(405).json({ error: "Method not allowed" });
-            }
-
-            const {
+                const {
                 latitude,
                 longitude,
                 radius,
                 attendance_start_time,
                 attendance_end_time
-            } = req.body;
+                } = req.body;
 
-            if (!latitude || !longitude || !radius) {
+                console.log("Incoming Data:", req.body);
+
+                if (!latitude || !longitude || !radius) {
                 return res.status(400).json({ error: "Missing required fields" });
-            }
+                }
 
-            try {
                 const result = await query(`
-                    INSERT INTO campus_setup 
-                    (college_code, latitude, longitude, radius, attendance_start_time, attendance_end_time)
-                    VALUES ($1, $2, $3, $4, $5, $6)
-                    ON CONFLICT (college_code)
-                    DO UPDATE SET
-                        latitude = EXCLUDED.latitude,
-                        longitude = EXCLUDED.longitude,
-                        radius = EXCLUDED.radius,
-                        attendance_start_time = EXCLUDED.attendance_start_time,
-                        attendance_end_time = EXCLUDED.attendance_end_time
-                    RETURNING *
+                INSERT INTO campus_setup 
+                (college_code, latitude, longitude, radius, attendance_start_time, attendance_end_time)
+                VALUES ($1,$2,$3,$4,$5,$6)
+                ON CONFLICT (college_code)
+                DO UPDATE SET
+                    latitude = EXCLUDED.latitude,
+                    longitude = EXCLUDED.longitude,
+                    radius = EXCLUDED.radius,
+                    attendance_start_time = EXCLUDED.attendance_start_time,
+                    attendance_end_time = EXCLUDED.attendance_end_time
+                RETURNING *
                 `, [
-                    admin.college_code,
-                    latitude,
-                    longitude,
-                    radius,
-                    attendance_start_time,
-                    attendance_end_time
+                admin.college_code,
+                Number(latitude),
+                Number(longitude),
+                Number(radius),
+                attendance_start_time || null,
+                attendance_end_time || null
                 ]);
 
                 return res.status(200).json({
-                    success: true,
-                    message: "Geofence updated successfully",
-                    data: result.rows[0]
+                success: true,
+                data: result.rows[0]
                 });
 
             } catch (error) {
-                console.error("Geofence Update Error:", error);
-                return res.status(500).json({ error: error.message });
+                console.error("UPDATE ERROR:", error);
+
+                return res.status(500).json({
+                error: "Database update failed",
+                details: error.message
+                });
             }
         }
 
