@@ -33,22 +33,32 @@ export default async function handler(req, res) {
         // --- 1. CAMPUS DATA (Student Dashboard) ---
         if (action === "get-campus" || action === "getCampus") {
             const student = await protectStudent(req);
-            if (!student) return res.status(401).json({ error: "Unauthorized" });
+            const admin = !student ? await protectAdmin(req) : null;
+            const user = student || admin;
+
+            if (!user) return res.status(401).json({ 
+                error: "Unauthorized", 
+                message: "Authentication failed. Please login again." 
+            });
 
             const result = await query(
-                `SELECT latitude, longitude, radius, attendance_start_time, attendance_end_time 
+                `SELECT name, latitude, longitude, radius, attendance_start_time, attendance_end_time, college_code 
                  FROM campus_setup 
                  WHERE college_code = $1`,
-                [student.college_code]
+                [user.college_code]
             );
 
-            if (result.rows.length === 0) return res.status(404).json({ error: "No campus data found" });
+            if (result.rows.length === 0) return res.status(200).json({}); // Return empty for new setup
             const row = result.rows[0];
 
             return res.status(200).json({
-                lat: Number(row.latitude),
-                lng: Number(row.longitude),
-                radius: Number(row.radius)
+                name: row.name,
+                latitude: Number(row.latitude),
+                longitude: Number(row.longitude),
+                radius: Number(row.radius),
+                attendance_start_time: row.attendance_start_time,
+                attendance_end_time: row.attendance_end_time,
+                college_code: row.college_code
             });
         }
 
@@ -238,7 +248,10 @@ export default async function handler(req, res) {
             try {
                 const admin = await protectAdmin(req);
                 if (!admin) {
-                    return res.status(401).json({ error: "Unauthorized" });
+                    return res.status(401).json({ 
+                        error: "Unauthorized", 
+                        message: "Admin session expired or invalid. Please login again." 
+                    });
                 }
 
                 const {
@@ -269,10 +282,11 @@ export default async function handler(req, res) {
 
                 const result = await query(`
                     INSERT INTO campus_setup 
-                    (college_code, latitude, longitude, radius, attendance_start_time, attendance_end_time)
-                    VALUES ($1,$2,$3,$4,$5,$6)
+                    (college_code, name, latitude, longitude, radius, attendance_start_time, attendance_end_time)
+                    VALUES ($1,$2,$3,$4,$5,$6,$7)
                     ON CONFLICT (college_code)
                     DO UPDATE SET
+                        name = EXCLUDED.name,
                         latitude = EXCLUDED.latitude,
                         longitude = EXCLUDED.longitude,
                         radius = EXCLUDED.radius,
@@ -281,6 +295,7 @@ export default async function handler(req, res) {
                     RETURNING *
                 `, [
                     admin.college_code,
+                    req.body.name || 'Main Campus',
                     lat,
                     lng,
                     rad,
@@ -307,7 +322,10 @@ export default async function handler(req, res) {
             const student = await protectStudent(req);
             const user = student || await protectAdmin(req);
             
-            if (!user) return res.status(401).json({ error: "Unauthorized" });
+            if (!user) return res.status(401).json({ 
+                error: "Unauthorized", 
+                message: "Authentication failed. Please login again." 
+            });
 
             const { oldPassword, newPassword } = req.body;
             if (!oldPassword || !newPassword) {

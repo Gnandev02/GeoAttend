@@ -938,7 +938,7 @@
                 } else {
                     const data = await res.json();
                     console.log("API RESPONSE:", data);
-                    alert(data.error || data.message || "Something went wrong");
+                    alert(data.message || data.error || "Something went wrong");
                 }
             } catch (err) {
                 alert('Connection error.');

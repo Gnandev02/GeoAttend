@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 
 const generateToken = (id, collegeCode) => {
-    return jwt.sign({ id, collegeCode }, process.env.JWT_SECRET || 'fallback_secret', {
+    return jwt.sign({ id, collegeCode }, process.env.JWT_SECRET || 'geoattend_secret_key', {
         expiresIn: '30d',
     });
 };
@@ -28,18 +28,14 @@ const authenticateRequest = async (req, tableName) => {
     const authHeader = req.headers.authorization || req.headers.Authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return null; // The handler will return 401 Unauthorized
+        return null;
     }
 
     const token = authHeader.split(' ')[1];
+    const secret = process.env.JWT_SECRET || 'geoattend_secret_key';
     
     try {
-        if (!process.env.JWT_SECRET) {
-            console.error("[Auth] Missing JWT_SECRET");
-            return null;
-        }
-
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, secret);
         
         // Populate req.admin or req.student as requested
         if (tableName === 'admins') {
@@ -55,8 +51,8 @@ const authenticateRequest = async (req, tableName) => {
         return userQuery.rows[0] || null;
 
     } catch (error) {
-        console.error(`[Auth] ${tableName} verification failed:`, error.message);
-        return null; // The handler will return 401 Unauthorized
+        console.error(`[Auth] ${tableName} verification failed for token:`, token.substring(0, 10) + "...", error.message);
+        return null;
     }
 };
 
