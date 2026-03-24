@@ -1,4 +1,4 @@
-const { query } = require('./utils/db');
+const { query } = require('../utils/db');
 const { protectAdmin, protectStudent } = require('./utils/auth');
 const { calculateDistance } = require('./utils/geoHelper');
 

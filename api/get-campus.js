@@ -1,10 +1,10 @@
-const { query } = require("./utils/db");
+const { query } = require("../utils/db");
 
 export default async function handler(req, res) {
   try {
     const result = await query(`
-      SELECT latitude, longitude, radius_m 
-      FROM campus_setup 
+      SELECT latitude, longitude, radius
+      FROM campus_setup
       LIMIT 1
     `);
 
@@ -15,9 +15,9 @@ export default async function handler(req, res) {
     const row = result.rows[0];
 
     res.status(200).json({
-      lat: row.latitude,
-      lng: row.longitude,
-      radius: row.radius_m
+      lat: parseFloat(row.latitude),
+      lng: parseFloat(row.longitude),
+      radius: parseFloat(row.radius)
     });
 
   } catch (err) {

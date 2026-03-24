@@ -1,4 +1,4 @@
-const { query } = require('./utils/db');
+const { query } = require('../utils/db');
 const { protectAdmin } = require('./utils/auth');
 
 export default async function handler(req, res) {

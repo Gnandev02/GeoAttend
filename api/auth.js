@@ -1,4 +1,4 @@
-const { query } = require('./utils/db');
+const { query } = require('../utils/db');
 const { comparePassword, hashPassword, generateToken } = require('./utils/auth');
 const { sendVerificationEmail, sendResetEmail } = require('./utils/email');
 
