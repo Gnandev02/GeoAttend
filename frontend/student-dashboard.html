@@ -100,7 +100,6 @@
             display: block;
         }
 
-        /* Robust Mobile Drawer Styles */
         @media (max-width: 767px) {
             #sidebar {
                 position: fixed !important;
@@ -145,7 +144,6 @@
 
 <body>
 
-    <!-- Mobile Header -->
     <header class="md:hidden flex items-center justify-between p-4 bg-white border-b border-slate-200 sticky top-0 z-30 mb-4 rounded-xl saas-card">
         <div class="flex items-center gap-3">
             <button onclick="toggleSidebar(true)" class="p-2 text-slate-600 hover:bg-slate-50 rounded-lg">
@@ -158,15 +156,12 @@
         </div>
     </header>
 
-    <!-- Sidebar Backdrop -->
     <div id="sidebar-backdrop" onclick="toggleSidebar(false)"></div>
 
     <div class="max-w-7xl mx-auto flex flex-col md:flex-row gap-6 md:h-[calc(100vh-40px)]">
 
-        <!-- Sidebar Navigation -->
         <div id="sidebar" class="w-full md:w-64 saas-card flex flex-col overflow-hidden flex-shrink-0 mb-6 md:mb-0 h-full">
             <div class="p-10 border-b border-slate-50 flex flex-col items-center md:items-start text-center md:text-left relative">
-                <!-- Mobile Close Btn -->
                 <button onclick="toggleSidebar(false)" class="md:hidden absolute top-6 right-6 text-slate-300 hover:text-slate-500">
                     <i data-lucide="x" class="w-7 h-7"></i>
                 </button>
@@ -182,8 +177,7 @@
                 </button>
             </div>
 
-            <div
-                class="p-4 flex-1 space-y-1.5 flex flex-col overflow-y-auto scrollbar-hide">
+            <div class="p-4 flex-1 space-y-1.5 flex flex-col overflow-y-auto scrollbar-hide">
                 <button onclick="switchTab('overview')" id="tab-overview" class="tab-btn active w-full">
                     <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard
                 </button>
@@ -193,13 +187,10 @@
             </div>
         </div>
 
-        <!-- Main Content Area -->
         <div class="flex-1 overflow-y-auto pr-2 pb-6 space-y-6 scrollbar-hide">
 
             <div id="content-overview" class="tab-content active space-y-6">
-                <!-- Top Metrics Row -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <!-- Monthly Attendance Percentage -->
                     <div class="saas-card p-6 flex items-center gap-5">
                         <div class="relative w-16 h-16 flex items-center justify-center">
                             <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
@@ -220,7 +211,6 @@
                         </div>
                     </div>
 
-                    <!-- Arrival Status -->
                     <div class="saas-card p-6 flex flex-col justify-center">
                         <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Check-In / Out</p>
                         <div id="check-times" class="space-y-2">
@@ -239,11 +229,6 @@
                                 <span class="text-slate-400 font-semibold">Out:</span>
                                 <span id="display-checkout" class="text-slate-600">--:--</span>
                             </p>
-                            <p class="text-sm font-bold text-slate-800 flex items-center gap-2">
-                                <i data-lucide="clock" class="w-4 h-4 text-purple-400"></i>
-                                <span class="text-slate-400 font-semibold">Duration:</span>
-                                <span id="display-duration" class="text-slate-600">--</span>
-                            </p>
                             <p class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest pt-2 mt-2 border-t border-slate-50 flex items-center gap-2">
                                 <i data-lucide="info" class="w-3 h-3"></i>
                                 Window: <span id="display-window" class="text-indigo-700">Anytime</span>
@@ -251,12 +236,8 @@
                         </div>
                     </div>
 
-                    <!-- Call to Action Container -->
-                    <div
-                        class="saas-card p-6 bg-gradient-to-br from-[#0f172a] to-[#0284c7] flex items-center justify-between text-white relative overflow-hidden group">
-                        <div
-                            class="absolute -right-6 -top-6 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:scale-125 transition-transform duration-500">
-                        </div>
+                    <div class="saas-card p-6 bg-gradient-to-br from-[#0f172a] to-[#0284c7] flex items-center justify-between text-white relative overflow-hidden group">
+                        <div class="absolute -right-6 -top-6 w-32 h-32 bg-white/10 rounded-full blur-2xl group-hover:scale-125 transition-transform duration-500"></div>
                         <div class="relative z-10 w-full">
                             <h3 class="font-bold mb-1">Campus Tracker</h3>
                             <p id="tracking-status" class="text-xs text-blue-100 mb-4 opacity-90 font-medium tracking-wide">Automatic Arrival Detection</p>
@@ -268,10 +249,8 @@
                     </div>
                 </div>
 
-                <!-- Alerts -->
                 <div id="alert-box" class="hidden p-4 rounded-xl flex items-start gap-3 border"></div>
 
-                <!-- Live Campus View -->
                 <div class="saas-card p-6 flex flex-col h-[450px]">
                     <h3 class="font-bold text-slate-900 mb-4 flex items-center gap-2">
                         <i data-lucide="map" class="w-5 h-5 text-[#0284c7]"></i>
@@ -280,27 +259,32 @@
                     <div id="student-map" class="flex-1 rounded-xl bg-slate-50 border border-slate-100 overflow-hidden relative z-0 flex items-center justify-center text-slate-400 font-medium">
                         Awaiting Campus Location Initialization...
                     </div>
+                    <!-- DIAGNOSTIC BAR -->
+                    <div class="mt-4 p-3 bg-slate-50 rounded-lg border border-slate-100 grid grid-cols-2 gap-4">
+                      <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase">Your GPS</p>
+                        <p id="diag-student-coords" class="text-xs font-mono font-bold text-slate-700">Waiting for GPS...</p>
+                      </div>
+                      <div>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase">Campus Center</p>
+                        <p id="diag-campus-coords" class="text-xs font-mono font-bold text-slate-700">Loading...</p>
+                      </div>
+                    </div>
                 </div>
 
-                <!-- Split Content Area -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <!-- Attendance History Table -->
                     <div class="saas-card overflow-hidden flex flex-col h-96">
                         <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
                             <h3 class="font-bold text-slate-900">Recent Logs</h3>
-                            <button class="text-xs font-bold text-[#0284c7] hover:text-[#0369a1] transition-colors">View
-                                All</button>
+                            <button class="text-xs font-bold text-[#0284c7] hover:text-[#0369a1] transition-colors">View All</button>
                         </div>
                         <div class="flex-1 overflow-y-auto" id="logs-container">
-                            <!-- Populated by JS -->
-                            <div
-                                class="h-full flex flex-col items-center justify-center text-slate-400 p-6 text-center">
+                            <div class="h-full flex flex-col items-center justify-center text-slate-400 p-6 text-center">
                                 <p class="text-sm font-medium">Loading records...</p>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Stats Grid -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         <div class="saas-card p-6">
                             <h3 class="font-bold text-slate-900 mb-4">Live Distance</h3>
@@ -320,9 +304,6 @@
                     </div>
                 </div>
             </div>
-
-
-
         </div>
     </div>
 
@@ -339,16 +320,9 @@
         const user = JSON.parse(userStr);
         let attendanceData = [];
         let campusConfig = null;
-        let watchId = null;
-        let lastDistance = null;
         let studentMap, campusMarker, studentMarker, geofenceCircle, distanceLine;
         let mapInitialized = false;
-        let isProcessing = false;
-        let checkInAttempted = false; // Prevents duplicate check-in submissions
-        let checkedOut = false;       // Prevents duplicate checkout submissions
-
-        let campusLat = null;
-        let campusLng = null;
+        let trackingStarted = false;
 
         async function fetchCampusConfig() {
             try {
@@ -357,22 +331,14 @@
                 });
                 if (res.ok) {
                     campusConfig = await res.json();
-                    campusLat = campusConfig.latitude;
-                    campusLng = campusConfig.longitude;
+                    document.getElementById('diag-campus-coords').textContent = 
+                        `${Number(campusConfig.latitude).toFixed(6)}, ${Number(campusConfig.longitude).toFixed(6)}`;
                     
-                    // Display attendance window
                     const windowEl = document.getElementById('display-window');
                     if (windowEl) {
                         const start = campusConfig.attendance_start_time;
                         const end = campusConfig.attendance_end_time;
-                        
-                        if (!start && !end) {
-                            windowEl.textContent = 'ANYTIME';
-                        } else {
-                            const startStr = start ? formatTime(start) : 'ANYTIME';
-                            const endStr = end ? formatTime(end) : 'ANYTIME';
-                            windowEl.textContent = `${startStr} - ${endStr}`;
-                        }
+                        windowEl.textContent = (!start && !end) ? 'ANYTIME' : `${formatTime(start)} - ${formatTime(end)}`;
                     }
 
                     if(mapInitialized) renderMapCampus(campusConfig);
@@ -382,43 +348,19 @@
 
         async function fetchDashboardData() {
             try {
-                // FIX: Include required action param so backend correctly routes this GET request
-                const attendanceRes = await fetch(`/api/attendance?action=getAttendanceLogs`, {
+                const res = await fetch(`/api/attendance?action=getAttendanceLogs`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
-
-                if (attendanceRes.ok) {
-                    attendanceData = await attendanceRes.json();
-                    console.log(`[Dashboard] Loaded ${attendanceData.length} attendance records.`);
-                } else {
-                    const errData = await attendanceRes.json().catch(() => ({}));
-                    console.error('[Dashboard] Attendance fetch failed:', attendanceRes.status, errData.message);
+                if (res.ok) {
+                    attendanceData = await res.json();
+                    updateAttendanceUI();
                 }
-
-                // Update UI User info from localStorage (profile endpoint not needed)
-                const name = user.name || 'Student';
-                document.getElementById('user-name').textContent = name;
-                document.getElementById('user-initial').textContent = name.charAt(0).toUpperCase();
-                if (document.getElementById('user-initial-mobile')) {
-                    document.getElementById('user-initial-mobile').textContent = name.charAt(0).toUpperCase();
-                }
-                document.getElementById('user-info').textContent = user.rollNumber ? `${user.rollNumber} • ${user.email}` : user.email;
-
-                // Reset duplicate guard after fetching fresh data
-                const today = new Date().toISOString().split('T')[0];
-                const todayRecord = attendanceData.find(r => r.date === today);
-                if (todayRecord) {
-                    checkInAttempted = true; // Already checked in today
-                    if (todayRecord.checkoutTime || todayRecord.check_out_time || todayRecord.status === 'Checked Out' || todayRecord.status === 'completed') {
-                        checkedOut = true; // Already checked out today
-                    }
-                }
-
-                updateAttendanceUI();
-
-            } catch (e) {
-                console.error('[Dashboard] Error loading dashboard data:', e);
-            }
+            } catch (e) { console.error('[Dashboard] Error:', e); }
+            
+            const name = user.name || 'Student';
+            document.getElementById('user-name').textContent = name;
+            document.getElementById('user-initial').textContent = name.charAt(0).toUpperCase();
+            document.getElementById('user-info').textContent = user.rollNumber ? `${user.rollNumber} • ${user.email}` : user.email;
         }
 
         function updateAttendanceUI() {
@@ -431,147 +373,83 @@
             document.getElementById('attendance-percent').textContent = percentage + '%';
             document.getElementById('attendance-circle').setAttribute('stroke-dasharray', `${percentage}, 100`);
 
-            if (percentage < 75) {
-                document.getElementById('attendance-circle').classList.replace('stroke-[#0284c7]', 'stroke-orange-500');
-            }
-
-            // Use local date (not UTC) to avoid off-by-one in IST (UTC+5:30)
-            const today = new Date().toLocaleDateString('en-CA'); // gives YYYY-MM-DD in local time
-            console.log(`[UI] Today (local): ${today}`);
-
-            // Find today's record — compare only first 10 chars in case date has extra info
+            const today = new Date().toLocaleDateString('en-CA');
             const todayRecord = attendanceData.find(r => r.date && r.date.substring(0, 10) === today);
-            console.log(`[UI] Today record:`, todayRecord || 'NONE');
-
+            
             if (todayRecord) {
                 updateCheckInOutUI(todayRecord);
             } else {
-                const dateEl = document.getElementById('display-date');
-                if (dateEl) dateEl.textContent = '--';
                 document.getElementById('display-checkin').textContent = '--:--';
                 document.getElementById('display-checkout').textContent = '--:--';
-                const durationEl = document.getElementById('display-duration');
-                if (durationEl) durationEl.textContent = '--';
                 document.getElementById('presence-badge').className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-500';
                 document.getElementById('presence-badge').textContent = 'Not Checked In';
             }
-            lucide.createIcons();
 
-            // Populate logs
             const logsContainer = document.getElementById('logs-container');
             if (attendanceData.length === 0) {
-                logsContainer.innerHTML = `
-                    <div class="h-full flex flex-col items-center justify-center text-slate-400 p-6 text-center">
-                        <p class="text-sm font-medium">No recent records found.</p>
-                    </div>`;
+                logsContainer.innerHTML = '<div class="h-full flex flex-col items-center justify-center text-slate-400 p-6"><p class="text-sm font-medium">No records.</p></div>';
             } else {
                 let html = '<div class="divide-y divide-slate-100">';
                 attendanceData.slice(0, 10).forEach(record => {
-                    const dateStr = record.date ? record.date.substring(0, 10) : '';
-                    const dateObj = dateStr ? new Date(dateStr + 'T00:00:00') : new Date();
-                    const month = dateObj.toLocaleString('default', { month: 'short' }).toUpperCase();
-                    const day = ('0' + dateObj.getDate()).slice(-2);
-                    const statusClass = record.status === 'Present' ? 'badge-success' : 'badge-danger';
-                    const timeDisplay = formatTime(record.checkinTime || record.time);
-
+                    const dateObj = new Date(record.date + 'T00:00:00');
                     html += `
-                        <div class="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                        <div class="p-4 flex items-center justify-between">
                             <div class="flex items-center gap-4">
                                 <div class="w-10 h-10 rounded-xl bg-slate-50 border border-slate-200 flex flex-col items-center justify-center">
-                                    <span class="text-[10px] font-bold text-slate-500 uppercase leading-none">${month}</span>
-                                    <span class="text-sm font-extrabold text-slate-900 leading-none mt-1">${day}</span>
+                                    <span class="text-[10px] font-bold text-slate-500 uppercase">${dateObj.toLocaleString('default', { month: 'short' })}</span>
+                                    <span class="text-sm font-extrabold text-slate-900">${dateObj.getDate()}</span>
                                 </div>
                                 <div>
-                                    <p class="text-sm font-bold text-slate-900">In: ${timeDisplay} ${record.durationMinutes ? `• ${record.durationMinutes} mins` : ''}</p>
-                                    <p class="text-xs font-semibold text-slate-400 mt-0.5">Campus Geo-zone • ${record.status}</p>
+                                    <p class="text-sm font-bold text-slate-900">In: ${formatTime(record.checkinTime)}</p>
+                                    <p class="text-xs font-semibold text-slate-400 mt-0.5">${record.status}</p>
                                 </div>
                             </div>
-                            <span class="${record.status === 'Present' || record.status === 'Checked Out' || record.status === 'completed' ? 'badge-success' : 'badge-danger'}">${record.status}</span>
-                        </div>
-                    `;
+                            <span class="${record.status === 'Present' || record.status === 'completed' ? 'badge-success' : 'badge-danger'}">${record.status}</span>
+                        </div>`;
                 });
-                html += '</div>';
-                logsContainer.innerHTML = html;
+                logsContainer.innerHTML = html + '</div>';
             }
         }
 
-        // --- Time/Date Formatting Helpers ---
-
-        // Accepts "10:00:49 AM", "10:00:49", "09:15:30" — always returns 12-hour AM/PM string
         function formatTime(timeStr) {
             if (!timeStr) return '--:--';
-            // Already has AM/PM (new format from updated backend)
             if (/am|pm/i.test(timeStr)) return timeStr.trim();
-            // Parse 24h HH:MM:SS or HH:MM
             const parts = timeStr.split(':');
-            if (parts.length < 2) return timeStr;
-            let hours = parseInt(parts[0], 10);
-            const minutes = parts[1].padStart(2, '0');
-            const seconds = parts[2] ? parts[2].substring(0, 2).padStart(2, '0') : null;
-            const period = hours >= 12 ? 'PM' : 'AM';
-            hours = hours % 12 || 12;
-            return seconds
-                ? `${hours}:${minutes}:${seconds} ${period}`
-                : `${hours}:${minutes} ${period}`;
+            let h = parseInt(parts[0], 10);
+            const m = parts[1].padStart(2, '0');
+            const p = h >= 12 ? 'PM' : 'AM';
+            h = h % 12 || 12;
+            return `${h}:${m} ${p}`;
         }
 
-        // Accepts "2026-03-14" — returns "14 Mar 2026"
-        function formatDate(dateStr) {
-            if (!dateStr) return '--';
-            const d = new Date(dateStr.substring(0, 10) + 'T00:00:00'); // local parse
-            return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-        }
-
-        // Instantly update the check-in / check-out time display from an attendance record object
         function updateCheckInOutUI(record) {
-            const checkin  = record.checkinTime  || record.check_in_time  || null;
-            const checkout = record.checkoutTime || record.check_out_time || null;
-            const date     = record.date || null;
-            const status   = record.status;
-
-            // Update date display
-            const dateEl = document.getElementById('display-date');
-            if (dateEl) dateEl.textContent = date ? formatDate(date) : '--';
-
-            // Update times in AM/PM format
-            document.getElementById('display-checkin').textContent  = formatTime(checkin);
-            document.getElementById('display-checkout').textContent = checkout ? formatTime(checkout) : '--:--';
+            document.getElementById('display-date').textContent = record.date;
+            document.getElementById('display-checkin').textContent  = formatTime(record.checkinTime || record.check_in_time);
+            document.getElementById('display-checkout').textContent = record.checkoutTime ? formatTime(record.checkoutTime) : '--:--';
             
-            const durationEl = document.getElementById('display-duration');
-            if (durationEl) {
-                durationEl.textContent = record.durationMinutes ? `${record.durationMinutes} mins` : '--';
-            }
-
-            // Update presence badge
-            const presenceBadge = document.getElementById('presence-badge');
-            if (status === 'Present' && !checkout) {
-                presenceBadge.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700';
-                presenceBadge.textContent = '✅ Inside Campus';
-            } else if (status === 'completed' || checkout) {
-                presenceBadge.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600';
-                presenceBadge.textContent = '🚪 Checked Out';
+            const pb = document.getElementById('presence-badge');
+            if (record.status === 'Present' && !record.checkoutTime) {
+                pb.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700';
+                pb.textContent = '✅ Inside Campus';
+            } else if (record.status === 'completed' || record.checkoutTime) {
+                pb.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600';
+                pb.textContent = '🚪 Checked Out';
             } else {
-                presenceBadge.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700';
-                presenceBadge.textContent = 'Outside Campus';
+                pb.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700';
+                pb.textContent = 'Outside Campus';
             }
         }
 
         function showAlert(msg, isSuccess) {
             const box = document.getElementById('alert-box');
-            box.className = `p-4 rounded-xl flex items-start gap-3 border ${isSuccess ? (msg.includes('rejected') ? 'bg-orange-50 border-orange-100 text-orange-800' : 'bg-green-50 border-green-100 text-green-800') : 'bg-red-50 border-red-100 text-red-800'}`;
+            box.className = `p-4 rounded-xl flex items-start gap-3 border ${isSuccess ? 'bg-green-50 border-green-100 text-green-800' : 'bg-red-50 border-red-100 text-red-800'}`;
             box.innerHTML = `<p class="text-sm font-medium">${msg}</p>`;
             box.classList.remove('hidden');
         }
 
-        let trackingInterval = null;
-        let currentStudentLat = null;
-        let currentStudentLng = null;
-
-        let trackingStarted = false;
         function startTracking() {
             if (trackingStarted) return;
             trackingStarted = true;
-            
             document.getElementById('markText').textContent = "Tracking Active";
             document.getElementById('startTrackingBtn').classList.replace('bg-white', 'bg-green-500');
             document.getElementById('startTrackingBtn').classList.add('text-white');
@@ -580,208 +458,90 @@
                 navigator.geolocation.getCurrentPosition(async (pos) => {
                     const lat = pos.coords.latitude;
                     const lng = pos.coords.longitude;
-
-                    console.log("Sending:", lat, lng);
-                    
-                    // Update Map
+                    document.getElementById('diag-student-coords').textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
                     updateStudentLocationOnMap(lat, lng);
 
                     try {
-                        const response = await fetch("/api/attendance", {
+                        const res = await fetch("/api/attendance", {
                             method: "POST",
-                            headers: {
-                                "Authorization": "Bearer " + token,
-                                "Content-Type": "application/json"
-                            },
-                            body: JSON.stringify({
-                                lat: lat,
-                                lng: lng
-                            })
+                            headers: { "Authorization": "Bearer " + token, "Content-Type": "application/json" },
+                            body: JSON.stringify({ lat, lng })
                         });
-                        
-                        const data = await response.json();
+                        const data = await res.json();
                         
                         if (data.distance !== undefined) {
                             document.getElementById("distance").innerText = Math.round(data.distance);
-                            
-                            // Live UI Badge Update
-                            const presenceBadge = document.getElementById('presence-badge');
-                            if (presenceBadge) {
-                                if (campusConfig && data.distance <= campusConfig.radius) {
-                                    presenceBadge.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700';
-                                    presenceBadge.textContent = '✅ Inside Campus';
-                                } else {
-                                    presenceBadge.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700';
-                                    presenceBadge.textContent = '❌ Outside Campus';
-                                }
+                            const pb = document.getElementById('presence-badge');
+                            if (data.inside) {
+                                pb.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700';
+                                pb.textContent = '✅ Inside Campus';
+                            } else {
+                                pb.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700';
+                                pb.textContent = '❌ Outside Campus';
                             }
                         }
 
-                        if (data.action === 'checked-in') {
-                            showAlert(`✅ Automatic Arrival Detected: Checked In!`, true);
-                            fetchDashboardData();
-                        } else if (data.action === 'checked-out') {
-                            showAlert(`门 Automatic Departure Detected: Checked Out!`, true);
+                        if (data.action === 'checked-in' || data.action === 'checked-out') {
+                            showAlert(data.message, true);
                             fetchDashboardData();
                         }
-                        
-                        if (data.attendance) {
-                            updateCheckInOutUI(data.attendance);
-                        }
-                    } catch (err) {
-                        console.error("Tracking API Error:", err);
-                    }
-                }, (err) => {
-                    console.error("Geolocation Error:", err);
-                }, { enableHighAccuracy: true });
+                    } catch (err) { console.error(err); }
+                }, null, { enableHighAccuracy: true });
             }, 5000);
         }
 
-
-
         function switchTab(tabId) {
             ['overview'].forEach(id => {
-                document.getElementById(`tab-${id}`).className = 'tab-btn inactive shrink-0 md:w-full';
+                document.getElementById(`tab-${id}`).className = 'tab-btn inactive';
                 document.getElementById(`content-${id}`).classList.remove('active');
             });
-            document.getElementById(`tab-${tabId}`).className = 'tab-btn active shrink-0 md:w-full';
+            document.getElementById(`tab-${tabId}`).className = 'tab-btn active';
             document.getElementById(`content-${tabId}`).classList.add('active');
-
-            // Close sidebar on mobile after selection
-            if (window.innerWidth < 768) {
-                toggleSidebar(false);
-            }
         }
 
-        function toggleSidebar(forceOpen) {
-            const sidebar = document.getElementById('sidebar');
-            const backdrop = document.getElementById('sidebar-backdrop');
-            
-            if (forceOpen === true) {
-                sidebar.classList.add('open');
-                backdrop.classList.add('active');
-                document.body.style.overflow = 'hidden';
-            } else if (forceOpen === false) {
-                sidebar.classList.remove('open');
-                backdrop.classList.remove('active');
-                document.body.style.overflow = '';
-            } else {
-                const isOpen = sidebar.classList.toggle('open');
-                backdrop.classList.toggle('active', isOpen);
-                document.body.style.overflow = isOpen ? 'hidden' : '';
-            }
+        function toggleSidebar(open) {
+            document.getElementById('sidebar').classList.toggle('open', open);
+            document.getElementById('sidebar-backdrop').classList.toggle('active', open);
         }
 
-        function logout() {
-            localStorage.clear();
-            window.location.href = 'index.html';
-        }
+        function logout() { localStorage.clear(); window.location.href = 'index.html'; }
 
-        // Init
-        fetchCampusConfig();
-        fetchDashboardData();
-    </script>
-
-    <script>
         window.initStudentMap = function() {
-            // Setup generic view pointing near general coordinate or wait for campusConfig
             studentMap = new google.maps.Map(document.getElementById('student-map'), {
                 center: { lat: 12.9716, lng: 77.5946 }, 
                 zoom: 16,
-                mapTypeId: 'roadmap',
-                mapTypeControl: false,
-                streetViewControl: false
+                disableDefaultUI: true
             });
             mapInitialized = true;
-            
-            // Try to render if campus config already arrived
-            if (campusConfig) {
-                renderMapCampus(campusConfig);
-            }
+            if (campusConfig) renderMapCampus(campusConfig);
         };
 
         function renderMapCampus(config) {
-            if (!mapInitialized || !config.latitude) return;
-            const cLat = parseFloat(config.latitude);
-            const cLng = parseFloat(config.longitude);
-            const cRad = parseFloat(config.radius);
-            
-            studentMap.setCenter({ lat: cLat, lng: cLng });
-
-            if(!campusMarker) {
-                campusMarker = new google.maps.Marker({
-                    position: { lat: cLat, lng: cLng },
-                    map: studentMap,
-                    title: config.name || "Campus Center",
-                    icon: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png" 
-                });
-            } else {
-                campusMarker.setPosition({ lat: cLat, lng: cLng });
-            }
-
-            if(!geofenceCircle) {
-                geofenceCircle = new google.maps.Circle({
-                    strokeColor: "#0284c7",
-                    strokeOpacity: 0.8,
-                    strokeWeight: 2,
-                    fillColor: "#0284c7",
-                    fillOpacity: 0.15,
-                    map: studentMap,
-                    center: { lat: cLat, lng: cLng },
-                    radius: cRad
-                });
-            } else {
-                geofenceCircle.setCenter({ lat: cLat, lng: cLng });
-                geofenceCircle.setRadius(cRad);
-            }
+            if (!mapInitialized) return;
+            const pos = { lat: Number(config.latitude), lng: Number(config.longitude) };
+            studentMap.setCenter(pos);
+            if(!campusMarker) campusMarker = new google.maps.Marker({ position: pos, map: studentMap, icon: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png" });
+            if(!geofenceCircle) geofenceCircle = new google.maps.Circle({ map: studentMap, center: pos, radius: Number(config.radius), fillColor: "#0284c7", fillOpacity: 0.15, strokeColor: "#0284c7", strokeWeight: 2 });
         }
 
         function updateStudentLocationOnMap(lat, lng) {
             if (!mapInitialized || !campusConfig) return;
-            const cLat = parseFloat(campusConfig.latitude);
-            const cLng = parseFloat(campusConfig.longitude);
+            const pos = { lat, lng };
+            if (!studentMarker) studentMarker = new google.maps.Marker({ position: pos, map: studentMap, icon: "http://maps.google.com/mapfiles/ms/icons/green-dot.png" });
+            else studentMarker.setPosition(pos);
 
-            if (!studentMarker) {
-                studentMarker = new google.maps.Marker({
-                    position: { lat, lng },
-                    map: studentMap,
-                    title: "You are here",
-                    icon: "http://maps.google.com/mapfiles/ms/icons/green-dot.png"
-                });
-            } else {
-                studentMarker.setPosition({ lat, lng });
-            }
+            const cPos = { lat: Number(campusConfig.latitude), lng: Number(campusConfig.longitude) };
+            if (!distanceLine) distanceLine = new google.maps.Polyline({ path: [pos, cPos], map: studentMap, strokeColor: "#ef4444", strokeWeight: 2 });
+            else distanceLine.setPath([pos, cPos]);
 
-            const path = [
-                { lat, lng },
-                { lat: cLat, lng: cLng }
-            ];
-
-            if (!distanceLine) {
-                distanceLine = new google.maps.Polyline({
-                    path: path,
-                    geodesic: true,
-                    strokeColor: "#ef4444",
-                    strokeOpacity: 0.8,
-                    strokeWeight: 2,
-                    map: studentMap,
-                    patterns: [{
-                        icon: { path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW },
-                        offset: '50%'
-                    }]
-                });
-            } else {
-                distanceLine.setPath(path);
-            }
-
-            // Adjust bounds to fit both markers
             const bounds = new google.maps.LatLngBounds();
-            bounds.extend({ lat: cLat, lng: cLng });
-            bounds.extend({ lat, lng });
+            bounds.extend(pos); bounds.extend(cPos);
             studentMap.fitBounds(bounds);
         }
+
+        fetchCampusConfig();
+        fetchDashboardData();
     </script>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAtcv3jZIS7M7bmf4Mwirbhd1qVulafbvk&callback=initStudentMap" async defer></script>
 </body>
-
 </html>
