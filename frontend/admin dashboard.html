@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | GeoAttend</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --secondary: #64748b;
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --sidebar-width: 280px;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --radius-md: 0.75rem;
+            --radius-lg: 1rem;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        .premium-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .premium-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            border-radius: var(--radius-md);
+            color: var(--secondary);
+            font-weight: 500;
+            transition: all 0.2s;
+            text-decoration: none;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+
+        .sidebar-item:hover {
+            background: #f1f5f9;
+            color: var(--text-main);
+        }
+
+        .sidebar-item.active {
+            background: #eef2ff;
+            color: var(--primary);
+            border-color: #e0e7ff;
+        }
+
+        .sidebar-item svg {
+            width: 1.25rem;
+            height: 1.25rem;
+        }
+
+        .btn-indigo {
+            background: var(--primary);
+            color: white;
+            padding: 0.625rem 1.25rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
+        }
+
+        .btn-indigo:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(79, 70, 229, 0.3);
+        }
+
+        .stat-icon {
+            width: 3rem;
+            height: 3rem;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .glass-header {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+        }
+
+        @media (max-width: 767px) {
+            #sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100vh;
+                width: 280px;
+                z-index: 1001;
+                transform: translateX(-100%);
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                background: white;
+                box-shadow: 20px 0 50px rgba(0,0,0,0.1);
+            }
+
+            #sidebar.open { transform: translateX(0); }
+            #sidebar-backdrop {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(15, 23, 42, 0.4);
+                backdrop-filter: blur(4px);
+                z-index: 1000;
+                opacity: 0;
+                transition: opacity 0.3s;
+            }
+            #sidebar-backdrop.active { display: block; opacity: 1; }
+        }
+
+        .nav-indicator {
+            position: absolute;
+            left: 0;
+            width: 4px;
+            height: 24px;
+            background: var(--primary);
+            border-radius: 0 4px 4px 0;
+            display: none;
+        }
+        .sidebar-item.active .nav-indicator { display: block; }
+    </style>
+
+</head>
+
+<body>
+    <!-- Mobile Header -->
+    <header class="md:hidden glass-header flex items-center justify-between p-4 sticky top-0 z-40 mb-2">
+        <div class="flex items-center gap-3">
+            <button onclick="toggleSidebar(true)" class="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+                <i data-lucide="menu" class="w-6 h-6"></i>
+            </button>
+            <span class="font-bold text-slate-900 tracking-tight">GeoAttend</span>
+        </div>
+        <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold ring-2 ring-white">
+            A
+        </div>
+    </header>
+
+    <!-- Sidebar Backdrop -->
+    <div id="sidebar-backdrop" onclick="toggleSidebar(false)"></div>
+
+    <div class="flex min-h-screen">
+        <!-- Sidebar Navigation -->
+        <aside id="sidebar" class="w-full md:w-[280px] bg-white border-r border-slate-200 flex flex-col flex-shrink-0 z-50">
+            <div class="p-6 border-b border-slate-50 flex flex-col relative bg-slate-50/30">
+                <!-- Mobile Close Btn -->
+                <button onclick="toggleSidebar(false)" class="md:hidden absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+                
+                <div class="flex items-center gap-3 mb-8">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-100">
+                        <i data-lucide="shield-check" class="w-6 h-6"></i>
+                    </div>
+                    <h2 class="font-extrabold text-slate-900 tracking-tight text-xl">GeoAttend</h2>
+                </div>
+
+                <div class="p-4 rounded-2xl bg-white border border-slate-100 shadow-sm mb-4">
+                    <h3 id="brand-college-name" class="font-bold text-slate-900 text-sm leading-tight truncate">Admin Portal</h3>
+                    <p id="brand-college-code" class="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-widest">Master Panel</p>
+                </div>
+
+                <button onclick="logout()" class="flex items-center gap-2 text-slate-500 hover:text-red-600 text-sm font-semibold transition-colors group">
+                    <div class="p-1.5 rounded-lg group-hover:bg-red-50">
+                        <i data-lucide="log-out" class="w-4 h-4"></i>
+                    </div>
+                    Logout
+                </button>
+            </div>
+
+            <nav class="p-4 flex-1 space-y-2 overflow-y-auto scrollbar-hide">
+                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-4 mb-3">Main Menu</div>
+                <button onclick="switchTab('overview')" id="tab-overview" class="sidebar-item active w-full">
+                    <div class="nav-indicator"></div>
+                    <i data-lucide="layout-dashboard"></i> Overview
+                </button>
+                <button onclick="switchTab('students')" id="tab-students" class="sidebar-item w-full">
+                    <div class="nav-indicator"></div>
+                    <i data-lucide="users"></i> Manage Students
+                </button>
+                <button onclick="switchTab('logs')" id="tab-logs" class="sidebar-item w-full">
+                    <div class="nav-indicator"></div>
+                    <i data-lucide="file-text"></i> Attendance Logs
+                </button>
+                <button onclick="switchTab('geofence')" id="tab-geofence" class="sidebar-item w-full">
+                    <div class="nav-indicator"></div>
+                    <i data-lucide="settings-2"></i> Campus Setup
+                </button>
+            </nav>
+
+            <div class="p-6 border-t border-slate-50 bg-slate-50/30">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-slate-200 animate-pulse"></div>
+                    <div class="flex-1">
+                        <div class="h-3 w-20 bg-slate-200 rounded animate-pulse mb-1"></div>
+                        <div class="h-2 w-12 bg-slate-100 rounded animate-pulse"></div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 min-w-0 bg-[#f8fafc] overflow-y-auto">
+            <div class="p-6 md:p-10 max-w-6xl mx-auto space-y-8">
+
+            <!-- OVERVIEW TAB -->
+            <div id="content-overview" class="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="premium-card p-6 relative overflow-hidden group">
+                        <div class="stat-icon bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300">
+                            <i data-lucide="users" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-slate-500 uppercase tracking-tight">Total Students</p>
+                            <h3 id="dash-students-count" class="text-3xl font-extrabold text-slate-900 mt-1">0</h3>
+                        </div>
+                        <div class="absolute -right-6 -bottom-6 opacity-[0.03] group-hover:scale-110 transition-transform duration-500">
+                            <i data-lucide="users" class="w-32 h-32"></i>
+                        </div>
+                    </div>
+
+                    <div class="premium-card p-6 relative overflow-hidden group">
+                        <div class="stat-icon bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-300">
+                            <i data-lucide="check-circle-2" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-slate-500 uppercase tracking-tight">Verified Logs</p>
+                            <h3 id="dash-logs-count" class="text-3xl font-extrabold text-slate-900 mt-1">0</h3>
+                        </div>
+                        <div class="absolute -right-6 -bottom-6 opacity-[0.03] group-hover:scale-110 transition-transform duration-500">
+                            <i data-lucide="check-circle-2" class="w-32 h-32"></i>
+                        </div>
+                    </div>
+
+                    <div class="premium-card p-6 bg-slate-900 text-white relative overflow-hidden group border-none shadow-indigo-100 shadow-xl">
+                        <div class="stat-icon bg-white/10 text-white backdrop-blur-md">
+                            <i data-lucide="map-pin" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-slate-400 uppercase tracking-tight">Active Geofence</p>
+                            <h3 id="dash-campus-name" class="text-xl font-bold text-white mt-1 leading-tight truncate">Configuring...</h3>
+                            <p id="dash-campus-radius" class="text-xs font-medium text-slate-400 mt-1">Radius: 0m</p>
+                        </div>
+                        <div class="absolute -right-6 -bottom-6 opacity-10 group-hover:scale-110 transition-transform duration-500 text-white">
+                            <i data-lucide="map-pin" class="w-32 h-32"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Recent Activity -->
+                    <div class="premium-card overflow-hidden flex flex-col h-[400px]">
+                        <div class="p-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/20">
+                            <h3 class="font-bold text-slate-900 flex items-center gap-2">
+                                <i data-lucide="clock" class="w-5 h-5 text-indigo-500"></i>
+                                Recent Enrollment
+                            </h3>
+                            <button onclick="switchTab('students')" class="text-xs font-bold text-indigo-600 hover:text-indigo-700">View All</button>
+                        </div>
+                        <div id="dash-students-list" class="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-hide">
+                            <!-- JS populated -->
+                        </div>
+                    </div>
+
+                    <!-- Live Visualization -->
+                    <div class="premium-card p-6 h-[400px] flex flex-col">
+                        <h3 class="font-bold text-slate-900 mb-6 flex items-center gap-2">
+                            <i data-lucide="activity" class="w-5 h-5 text-indigo-500"></i>
+                            Campus Pulse
+                        </h3>
+                        <div class="flex-1 rounded-2xl bg-slate-50/50 border border-slate-100 relative overflow-hidden flex items-center justify-center shadow-inner group">
+                            <div class="absolute inset-0 opacity-40 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:24px_24px]"></div>
+                            
+                            <div class="relative z-10 w-56 h-56 rounded-full border border-indigo-100 bg-white/50 backdrop-blur-sm flex items-center justify-center">
+                                <div class="w-4 h-4 bg-indigo-600 rounded-full shadow-[0_0_0_8px_rgba(79,70,229,0.1),0_0_40px_rgba(79,70,229,0.4)]"></div>
+                                
+                                <!-- Decorative rings -->
+                                <div class="absolute inset-4 rounded-full border border-indigo-50 animate-[ping_3s_linear_infinite]"></div>
+                                <div class="absolute inset-12 rounded-full border border-indigo-50 animate-[ping_4s_linear_infinite] delay-1000"></div>
+
+                                <!-- Pulsing dots -->
+                                <div class="absolute top-1/4 left-1/3 w-3 h-3 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.6)]"></div>
+                                <div class="absolute bottom-1/3 right-1/4 w-3 h-3 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.6)] delay-700"></div>
+                            </div>
+
+                            <div class="absolute bottom-4 left-4 right-4 flex justify-between">
+                                <div class="px-3 py-1 transparent-badge bg-white/80 border border-slate-100 rounded-lg text-[10px] font-bold text-slate-500 uppercase tracking-widest shadow-sm">Real-time GPS</div>
+                                <div class="flex gap-2">
+                                    <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                                    <div class="w-2 h-2 rounded-full bg-slate-200"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STUDENTS TAB -->
+            <div id="content-students" class="premium-card overflow-hidden flex flex-col h-[calc(100vh-120px)] animate-in fade-in slide-in-from-bottom-4 duration-700" style="display: none;">
+                <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-white">
+                    <div>
+                        <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">Student Directory</h2>
+                        <p class="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Manage institutional access</p>
+                    </div>
+                    <button onclick="document.getElementById('addStudentModal').classList.remove('hidden')" class="btn-indigo">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Add Student
+                    </button>
+                </div>
+                
+                <div class="overflow-auto flex-1 scrollbar-hide">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-slate-50/50 sticky top-0 border-b border-slate-100 backdrop-blur-md">
+                            <tr>
+                                <th class="py-4 px-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Student Information</th>
+                                <th class="py-4 px-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Roll Number</th>
+                                <th class="py-4 px-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Department</th>
+                                <th class="py-4 px-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Settings</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-students-body" class="divide-y divide-slate-100/50">
+                            <!-- JS populated -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- LOGS TAB -->
+            <div id="content-logs" class="premium-card overflow-hidden flex flex-col h-[calc(100vh-120px)] animate-in fade-in slide-in-from-bottom-4 duration-700" style="display: none;">
+                <div class="p-6 border-b border-slate-100 flex flex-col lg:flex-row gap-6 justify-between items-start lg:items-center bg-white">
+                    <div>
+                        <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">Verification Logs</h2>
+                        <p class="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Audit attendance records</p>
+                    </div>
+                    <div class="flex flex-wrap gap-3 w-full lg:w-auto">
+                        <div class="relative flex-1 lg:flex-none">
+                            <i data-lucide="calendar" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                            <input type="date" id="filter-date" class="pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all w-full lg:w-auto" onchange="filterLogs()">
+                        </div>
+                        <div class="relative flex-1 lg:flex-none">
+                            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                            <input type="text" id="filter-student" placeholder="Search logs..." class="pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all w-full lg:w-auto" onkeyup="filterLogs()">
+                        </div>
+                        <button onclick="downloadLogsCSV()" class="btn-indigo bg-slate-900 shadow-none hover:bg-slate-800">
+                            <i data-lucide="download" class="w-4 h-4"></i> Export CSV
+                        </button>
+                    </div>
+                </div>
+                <div class="overflow-auto flex-1 scrollbar-hide">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-slate-50/50 sticky top-0 border-b border-slate-100 backdrop-blur-md">
+                            <tr>
+                                <th class="py-4 px-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Date</th>
+                                <th class="py-4 px-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Student</th>
+                                <th class="py-4 px-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Clock In</th>
+                                <th class="py-4 px-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Clock Out</th>
+                                <th class="py-4 px-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Duration</th>
+                                <th class="py-4 px-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-logs-body" class="divide-y divide-slate-100/50">
+                            <!-- JS populated -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- GEOFENCE TAB -->
+            <div id="content-geofence" class="max-w-3xl animate-in fade-in slide-in-from-bottom-4 duration-700" style="display: none;">
+                <div class="premium-card overflow-hidden">
+                    <div class="p-6 border-b border-slate-100 bg-white">
+                        <h2 class="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3">
+                            <div class="p-2 rounded-lg bg-indigo-50 text-indigo-600">
+                                <i data-lucide="map-pin" class="w-5 h-5"></i>
+                            </div>
+                            Campus Geofence
+                        </h2>
+                    </div>
+
+                                        <div class="px-8 pt-8">
+                        <div id="admin-map" class="w-full h-96 rounded-2xl border border-slate-200 shadow-sm z-0 relative bg-slate-100 flex items-center justify-center text-slate-400 font-medium">Loading Interactive Map...</div>
+                    </div>
+                    <form id="geofence-form" class="p-8 space-y-8">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">College Name</label>
+                                <input id="geo-college-name" required class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all" placeholder="e.g. Geo University" />
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Branch Code</label>
+                                <input id="geo-college-code" required class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 font-mono tracking-widest focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all" placeholder="e.g. GEO-001" />
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Location Name</label>
+                            <input id="geo-name" required class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all" placeholder="e.g. Main High Tech Campus" />
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Latitude</label>
+                                <input id="geo-lat" required type="number" step="any" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-bold text-indigo-600 font-mono focus:ring-4 focus:ring-indigo-100 outline-none transition-all" />
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Longitude</label>
+                                <input id="geo-lng" required type="number" step="any" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-bold text-indigo-600 font-mono focus:ring-4 focus:ring-indigo-100 outline-none transition-all" />
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Radius (M)</label>
+                                <input id="geo-radius" required type="number" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-bold text-indigo-600 focus:ring-4 focus:ring-indigo-100 outline-none transition-all" />
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Attendance Start Time</label>
+                                <input id="geo-start-time" type="time" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all" />
+                                <p class="text-[10px] text-slate-400 font-medium">Leave blank for anytime</p>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Attendance End Time</label>
+                                <input id="geo-end-time" type="time" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all" />
+                                <p class="text-[10px] text-slate-400 font-medium">Leave blank for anytime</p>
+                            </div>
+                        </div>
+
+                        <div class="pt-6 border-t border-slate-50 flex justify-end">
+                            <button type="submit" class="btn-indigo px-10 py-4 rounded-xl shadow-lg shadow-indigo-100">Update Geofence</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Add Student Modal -->
+    <div id="addStudentModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 transition-all duration-300">
+        <div class="premium-card w-full max-w-md bg-white overflow-hidden shadow-2xl scale-in-center">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                <div>
+                    <h3 class="font-extrabold text-slate-900 tracking-tight">Register Student</h3>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Add to college directory</p>
+                </div>
+                <button onclick="document.getElementById('addStudentModal').classList.add('hidden')" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-white rounded-xl transition-all">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form id="add-student-form" class="p-8 space-y-5">
+                <div class="space-y-1.5">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Full Name</label>
+                    <input id="new-name" required class="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all" placeholder="John Doe" />
+                </div>
+                <div class="space-y-1.5">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Email Address</label>
+                    <input id="new-email" type="email" required class="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all" placeholder="john@college.edu" />
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-1.5">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Roll Number</label>
+                        <input id="new-roll" required class="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm font-bold text-indigo-600 font-mono focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all" placeholder="BSE-2024-001" />
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Department</label>
+                        <input id="new-dept" required class="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all" placeholder="Computer Science" />
+                    </div>
+                </div>
+                <div class="pt-6 flex justify-end gap-3">
+                    <button type="button" onclick="document.getElementById('addStudentModal').classList.add('hidden')" class="px-5 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 rounded-lg transition-colors">Discard</button>
+                    <button type="submit" class="btn-indigo py-2.5 px-6">Submit Registration</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Student Modal -->
+    <div id="editStudentModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 transition-all duration-300">
+        <div class="premium-card w-full max-w-md bg-white overflow-hidden shadow-2xl scale-in-center">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                <div>
+                    <h3 class="font-extrabold text-slate-900 tracking-tight">Edit Student</h3>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Update student details</p>
+                </div>
+                <button onclick="document.getElementById('editStudentModal').classList.add('hidden')" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-white rounded-xl transition-all">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form id="edit-student-form" class="p-8 space-y-5">
+                <input type="hidden" id="edit-id" />
+                <div class="space-y-1.5">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Full Name</label>
+                    <input id="edit-name" required class="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all" />
+                </div>
+                <div class="space-y-1.5">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Email Address</label>
+                    <input id="edit-email" type="email" required class="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all" />
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-1.5">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Roll Number</label>
+                        <input id="edit-roll" required class="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm font-bold text-indigo-600 font-mono focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all" />
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Department</label>
+                        <input id="edit-dept" required class="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all" />
+                    </div>
+                </div>
+                <div class="pt-6 flex justify-end gap-3">
+                    <button type="button" onclick="document.getElementById('editStudentModal').classList.add('hidden')" class="px-5 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 rounded-lg transition-colors">Cancel</button>
+                    <button type="submit" class="btn-indigo py-2.5 px-6">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Manual Attendance Modal -->
+    <div id="manualAttendanceModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 transition-all duration-300">
+        <div class="premium-card w-full max-w-md bg-white overflow-hidden shadow-2xl scale-in-center">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                <div>
+                    <h3 class="font-extrabold text-slate-900 tracking-tight">Mark Attendance</h3>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Manual Entry for <span id="manual-student-name" class="text-indigo-600">Student</span></p>
+                </div>
+                <button onclick="document.getElementById('manualAttendanceModal').classList.add('hidden')" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-white rounded-xl transition-all">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form id="manual-attendance-form" class="p-8 space-y-5">
+                <input type="hidden" id="manual-student-id" />
+                <div class="space-y-1.5">
+                    <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Date</label>
+                    <input id="manual-date" type="date" required class="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all" />
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-1.5">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Check-In Time</label>
+                        <input id="manual-checkin" type="time" required class="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm font-bold text-indigo-600 font-mono focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all" />
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Check-Out (Opt)</label>
+                        <input id="manual-checkout" type="time" class="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm font-semibold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all" />
+                    </div>
+                </div>
+                <div class="pt-6 flex justify-end gap-3">
+                    <button type="button" onclick="document.getElementById('manualAttendanceModal').classList.add('hidden')" class="px-5 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 rounded-lg transition-colors">Cancel</button>
+                    <button type="submit" class="btn-indigo py-2.5 px-6">Submit Entry</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const isDemo = urlParams.get('demo') === 'true';
+
+        const token = localStorage.getItem('token');
+        const userStr = localStorage.getItem('geoattend_user');
+        
+        let user = {};
+
+        if (!isDemo) {
+            if (!token || !userStr) {
+                window.location.href = 'admin-login.html';
+            }
+
+            if (userStr) {
+                user = JSON.parse(userStr);
+                if (user.role !== 'admin') {
+                    window.location.href = 'admin-login.html';
+                }
+
+                if (user.collegeName) {
+                    document.getElementById('brand-college-name').textContent = user.collegeName;
+                }
+                if (user.collegeCode) {
+                    document.getElementById('brand-college-code').textContent = user.collegeCode;
+                }
+            }
+        } else {
+            user = { collegeName: "Demo University", collegeCode: "DEMO-101", role: "admin" };
+            document.getElementById('brand-college-name').textContent = user.collegeName;
+            document.getElementById('brand-college-code').textContent = user.collegeCode;
+        }
+
+        let allLogs = [];
+
+        async function fetchAdminData() {
+            if (isDemo) {
+                const studentsData = [
+                    { _id: '1', userId: { name: 'Alice Smith', email: 'alice@demo.edu' }, rollNumber: 'CS-001', department: 'Computer Science' },
+                    { _id: '2', userId: { name: 'Bob Jones', email: 'bob@demo.edu' }, rollNumber: 'CS-002', department: 'Computer Science' },
+                    { _id: '3', userId: { name: 'Charlie Brown', email: 'charlie@demo.edu' }, rollNumber: 'EE-001', department: 'Electrical' },
+                    { _id: '4', userId: { name: 'Diana Prince', email: 'diana@demo.edu' }, rollNumber: 'ME-001', department: 'Mechanical' },
+                    { _id: '5', userId: { name: 'Evan Wright', email: 'evan@demo.edu' }, rollNumber: 'CS-003', department: 'Computer Science' }
+                ];
+                
+                const statsData = { overall: { totalStudents: 142, Present: 128 } };
+                
+                allLogs = [
+                    { date: new Date().toISOString(), studentId: { name: 'Alice Smith', rollNumber: 'CS-001' }, checkinTime: '09:00 AM', checkoutTime: '04:00 PM', status: 'Present' },
+                    { date: new Date().toISOString(), studentId: { name: 'Bob Jones', rollNumber: 'CS-002' }, checkinTime: '09:15 AM', checkoutTime: '', status: 'Present' },
+                    { date: new Date().toISOString(), studentId: { name: 'Charlie Brown', rollNumber: 'EE-001' }, checkinTime: '10:00 AM', checkoutTime: '02:00 PM', status: 'Present' },
+                    { date: new Date(Date.now() - 86400000).toISOString(), studentId: { name: 'Diana Prince', rollNumber: 'ME-001' }, checkinTime: '', checkoutTime: '', status: 'Absent' }
+                ];
+
+                const campusData = { name: "Main Campus Geofence", latitude: 12.9716, longitude: 77.5946, radius: 500 };
+
+                renderOverview(studentsData, statsData, campusData);
+                renderStudents(studentsData);
+                renderLogs(allLogs);
+                renderGeofence(campusData);
+                return;
+            }
+            try {
+                // Students
+                const s = await fetch('/api/main?action=get-students', { headers: { 'Authorization': `Bearer ${token}` } });
+                const studentsData = await s.json();
+
+                // Logs
+                let l = await fetch('/api/main?action=attendance-today', { headers: { 'Authorization': `Bearer ${token}` } });
+                const statsData = await l.json();
+                
+                let a = await fetch('/api/main?action=getAttendanceLogs', { headers: { 'Authorization': `Bearer ${token}` } });
+                allLogs = await a.json();
+
+                // Campus/Geofence
+                let c = await fetch('/api/main?action=get-campus', { headers: { 'Authorization': `Bearer ${token}` } });
+                const campusData = await c.json();
+
+                renderOverview(studentsData, statsData, campusData);
+                renderStudents(studentsData);
+                renderLogs(allLogs);
+                renderGeofence(campusData);
+
+            } catch (e) {
+                console.error("Fetch DB Error", e);
+            }
+        }
+
+        function renderOverview(s, stats, c) {
+            document.getElementById('dash-students-count').textContent = stats.overall?.totalStudents || 0;
+            document.getElementById('dash-logs-count').textContent = stats.overall?.Present || 0;
+
+            const mainCampus = Array.isArray(c) ? c[0] : c;
+
+            if (mainCampus && mainCampus.name) {
+                document.getElementById('dash-campus-name').textContent = mainCampus.name;
+                document.getElementById('dash-campus-radius').textContent = `Radius: ${mainCampus.radius}m`;
+            }
+
+            const listDom = document.getElementById('dash-students-list');
+            listDom.innerHTML = (s.slice(0, 6) || []).map(student => `
+                <div class="px-4 py-3 flex items-center gap-4 bg-white border border-slate-50 rounded-2xl hover:border-indigo-100 hover:shadow-sm transition-all group">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                        ${student.userId?.name?.charAt(0) || 'U'}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-bold text-slate-900 truncate">${student.userId?.name || 'Unknown'}</p>
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate">${student.department || 'General'}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-[10px] font-mono font-bold text-indigo-500">${student.rollNumber || ''}</p>
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function renderStudents(s) {
+            document.getElementById('table-students-body').innerHTML = (s || []).map(student => `
+                <tr class="hover:bg-slate-50/50 transition-colors group">
+                    <td class="py-4 px-8">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 font-bold group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
+                                ${student.userId?.name?.charAt(0) || 'U'}
+                            </div>
+                            <div>
+                                <div class="font-bold text-slate-900">${student.userId?.name || 'Admin/Unknown'}</div>
+                                <div class="text-xs text-slate-400 font-medium">${student.userId?.email || ''}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-4 px-8 text-sm font-bold text-slate-600 font-mono">${student.rollNumber || 'N/A'}</td>
+                    <td class="py-4 px-8 text-sm font-semibold text-slate-600">${student.department || 'N/A'}</td>
+                    <td class="py-4 px-8 text-right flex justify-end gap-2">
+                        <button onclick="openManualAttendanceModal('${student._id}', '${(student.userId?.name || '').replace(/'/g, "\\'")}')" class="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all" title="Mark Manual Attendance">
+                            <i data-lucide="check-square" class="w-4 h-4"></i>
+                        </button>
+                        <button onclick="openEditStudentModal('${student._id}', '${(student.userId?.name || '').replace(/'/g, "\\'")}', '${student.userId?.email || ''}', '${student.rollNumber || ''}', '${student.department || ''}')" class="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all" title="Edit Student">
+                            <i data-lucide="edit" class="w-4 h-4"></i>
+                        </button>
+                        <button onclick="deleteStudent('${student._id}')" class="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Delete Student">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        async function deleteStudent(id) {
+            if (isDemo) return alert('Action Disabled in Demo Mode.');
+            if (!confirm('Are you sure you want to delete this student?')) return;
+            try {
+                const res = await fetch('/api/main?action=deleteStudent', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+                    body: JSON.stringify({ id })
+                });
+                if (res.ok) fetchAdminData();
+                else alert('Failed to delete student');
+            } catch (e) {
+                console.error(e);
+            }
+        }
+        
+        function filterLogs() {
+            const dateStr = document.getElementById('filter-date').value;
+            const searchStr = document.getElementById('filter-student').value.toLowerCase();
+
+            const filtered = allLogs.filter(log => {
+                const logDate = (log.date || '').substring(0, 10);
+                const dateMatch = !dateStr || logDate === dateStr;
+                const nameMatch = !searchStr ||
+                                  (log.studentId?.name || '').toLowerCase().includes(searchStr) ||
+                                  (log.studentId?.rollNumber || '').toLowerCase().includes(searchStr);
+                return dateMatch && nameMatch;
+            });
+            renderLogs(filtered);
+        }
+        
+        function downloadLogsCSV() {
+            if (allLogs.length === 0) return alert("No logs to download");
+            
+            const headers = "Date,Student Name,Roll Number,Check-In,Check-Out,Duration (Mins),Status\n";
+            const rows = allLogs.map(log => {
+                const dur = log.durationMinutes || (log.checkinTime && log.checkoutTime ? calculateMins(log.checkinTime, log.checkoutTime) : 0);
+                return `${log.date},"${log.studentId?.name || ''}","${log.studentId?.rollNumber || ''}",${log.checkinTime || ''},${log.checkoutTime || ''},${dur},${log.status}`;
+            }).join("\n");
+            
+            const blob = new Blob([headers + rows], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('hidden', '');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'attendance_logs.csv');
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function fmtTime(t) {
+            if (!t) return '--:--';
+            if (/am|pm/i.test(t)) return t.trim();
+            const p = t.split(':');
+            if (p.length < 2) return t;
+            let h = parseInt(p[0], 10);
+            const m = p[1].padStart(2, '0');
+            const s = p[2] ? p[2].substring(0, 2).padStart(2, '0') : null;
+            const ampm = h >= 12 ? 'PM' : 'AM';
+            h = h % 12 || 12;
+            return s ? `${h}:${m}:${s} ${ampm}` : `${h}:${m} ${ampm}`;
+        }
+
+        function fmtDate(d) {
+            if (!d) return '--';
+            return new Date(d.substring(0, 10) + 'T00:00:00')
+                .toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+        }
+
+        function calculateMins(start, end) {
+            if (!start || !end) return 0;
+            try {
+                const toMins = (t) => {
+                    const ampm = t.match(/am|pm/i);
+                    let clean = t.replace(/am|pm/gi, '').trim();
+                    let [h, min] = clean.split(':').map(Number);
+                    if (ampm) {
+                        if (ampm[0].toLowerCase() === 'pm' && h !== 12) h += 12;
+                        if (ampm[0].toLowerCase() === 'am' && h === 12) h = 0;
+                    }
+                    return h * 60 + (min || 0);
+                };
+                const diff = toMins(end) - toMins(start);
+                return diff > 0 ? diff : 0;
+            } catch (_) { return 0; }
+        }
+
+        function renderLogs(l) {
+            document.getElementById('table-logs-body').innerHTML = (l || []).map(log => {
+                const dur = log.durationMinutes || (log.checkinTime && log.checkoutTime ? calculateMins(log.checkinTime, log.checkoutTime) : 0);
+                const durationText = dur ? `${dur} mins` : '--';
+                const dateDisplay = fmtDate(log.date);
+                const checkinDisplay = fmtTime(log.checkinTime);
+                const checkoutDisplay = log.checkoutTime ? fmtTime(log.checkoutTime) : '--:--';
+                
+                let badgeClass = "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ";
+                if(log.status === 'Present' || log.status === 'completed') badgeClass += "bg-emerald-50 text-emerald-600 border border-emerald-100";
+                else badgeClass += "bg-slate-50 text-slate-500 border border-slate-100";
+
+                return `
+                    <tr class="hover:bg-slate-50/50 transition-colors">
+                        <td class="py-4 px-8 text-sm font-bold text-slate-800">${dateDisplay}</td>
+                        <td class="py-4 px-8">
+                            <div class="font-bold text-slate-900 text-sm">${log.studentId?.name || 'Unknown'}</div>
+                            <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">${log.studentId?.rollNumber || ''}</div>
+                        </td>
+                        <td class="py-4 px-8 text-sm font-bold text-emerald-600">${checkinDisplay}</td>
+                        <td class="py-4 px-8 text-sm font-bold text-slate-400">${checkoutDisplay}</td>
+                        <td class="py-4 px-8">
+                            <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md">${durationText}</span>
+                        </td>
+                        <td class="py-4 px-8">
+                            <span class="${badgeClass}">${log.status || 'Student'}</span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function renderGeofence(c) {
+            const mainCampus = Array.isArray(c) ? c[0] : c;
+            if (mainCampus && mainCampus.name) {
+                document.getElementById('geo-name').value = mainCampus.name || '';
+                document.getElementById('geo-college-name').value = user.collegeName || '';
+                document.getElementById('geo-college-code').value = user.collegeCode || '';
+                
+                document.getElementById('geo-lat').value = mainCampus.latitude || '';
+                document.getElementById('geo-lng').value = mainCampus.longitude || '';
+                document.getElementById('geo-radius').value = mainCampus.radius || '';
+                
+                if (mainCampus.attendance_start_time) document.getElementById('geo-start-time').value = mainCampus.attendance_start_time;
+                if (mainCampus.attendance_end_time) document.getElementById('geo-end-time').value = mainCampus.attendance_end_time;
+                
+                if (window.adminMap && mainCampus.latitude) {
+                    const pos = { lat: parseFloat(mainCampus.latitude), lng: parseFloat(mainCampus.longitude) };
+                    adminMap.setCenter(pos);
+                    if(adminMarker) adminMarker.setPosition(pos);
+                    if(adminCircle) {
+                        adminCircle.setCenter(pos);
+                        adminCircle.setRadius(parseFloat(mainCampus.radius) || 500);
+                    }
+                }
+            }
+        }
+
+        document.getElementById('geofence-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (isDemo) {
+                alert('Geofence updated (Demo Mode)');
+                return;
+            }
+            const attendanceStartTime = document.getElementById('geo-start-time').value;
+            const attendanceEndTime = document.getElementById('geo-end-time').value;
+
+            // Simple validation: End Time must be after Start Time
+            if (attendanceStartTime && attendanceEndTime) {
+                if (attendanceStartTime >= attendanceEndTime) {
+                    alert("Attendance End Time must be later than Start Time.");
+                    return;
+                }
+            }
+
+            const payload = {
+                name: document.getElementById('geo-name').value,
+                collegeName: document.getElementById('geo-college-name').value,
+                collegeCode: document.getElementById('geo-college-code').value,
+                latitude: parseFloat(document.getElementById('geo-lat').value),
+                longitude: parseFloat(document.getElementById('geo-lng').value),
+                radius: parseInt(document.getElementById('geo-radius').value),
+                attendance_start_time: attendanceStartTime,
+                attendance_end_time: attendanceEndTime
+            };
+
+            const btn = e.submitter;
+            btn.disabled = true;
+            btn.textContent = 'Updating...';
+
+            try {
+                const res = await fetch('/api/main?action=update-geofence', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (res.ok) {
+                    alert('Geofence updated successfully!');
+                    fetchAdminData();
+                } else {
+                    const data = await res.json();
+                    console.log("API RESPONSE:", data);
+                    alert(data.error || data.message || "Something went wrong");
+                }
+            } catch (err) {
+                alert('Connection error.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Update Geofence';
+            }
+        });
+
+        document.getElementById('add-student-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (isDemo) {
+                alert('Student added (Demo Mode)');
+                document.getElementById('addStudentModal').classList.add('hidden');
+                return;
+            }
+            const btn = e.submitter;
+            const payload = {
+                name: document.getElementById('new-name').value,
+                email: document.getElementById('new-email').value,
+                rollNumber: document.getElementById('new-roll').value,
+                department: document.getElementById('new-dept').value,
+            };
+
+            btn.disabled = true;
+            btn.textContent = 'Registering...';
+
+            try {
+                const res = await fetch('/api/main?action=addStudent', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (res.ok) {
+                    document.getElementById('addStudentModal').classList.add('hidden');
+                    document.getElementById('add-student-form').reset();
+                    fetchAdminData();
+                } else {
+                    const data = await res.json();
+                    alert('Error: ' + data.message);
+                }
+            } catch (err) {
+                alert('Connection error.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Submit Registration';
+            }
+        });
+
+        // Edit Student Logic
+        function openEditStudentModal(id, name, email, roll, dept) {
+            document.getElementById('edit-id').value = id;
+            document.getElementById('edit-name').value = name;
+            document.getElementById('edit-email').value = email;
+            document.getElementById('edit-roll').value = roll;
+            document.getElementById('edit-dept').value = dept;
+            document.getElementById('editStudentModal').classList.remove('hidden');
+        }
+
+        document.getElementById('edit-student-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (isDemo) {
+                alert('Student updated (Demo Mode)');
+                document.getElementById('editStudentModal').classList.add('hidden');
+                return;
+            }
+            const btn = e.submitter;
+            const payload = {
+                id: document.getElementById('edit-id').value,
+                name: document.getElementById('edit-name').value,
+                email: document.getElementById('edit-email').value,
+                rollNumber: document.getElementById('edit-roll').value,
+                department: document.getElementById('edit-dept').value,
+            };
+
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+
+            try {
+                const res = await fetch('/api/main?action=updateStudent', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify(payload)
+                });
+                if (res.ok) {
+                    document.getElementById('editStudentModal').classList.add('hidden');
+                    fetchAdminData();
+                } else {
+                    const data = await res.json();
+                    alert('Error: ' + data.message);
+                }
+            } catch (err) { alert('Connection error.'); }
+            finally {
+                btn.disabled = false;
+                btn.textContent = 'Save Changes';
+            }
+        });
+
+        // Manual Attendance Logic
+        function openManualAttendanceModal(id, name) {
+            document.getElementById('manual-student-id').value = id;
+            document.getElementById('manual-student-name').textContent = name;
+            
+            // Prefill current date
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('manual-date').value = today;
+            document.getElementById('manual-checkin').value = '09:00';
+            document.getElementById('manual-checkout').value = '';
+
+            document.getElementById('manualAttendanceModal').classList.remove('hidden');
+        }
+
+        document.getElementById('manual-attendance-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (isDemo) {
+                alert('Attendance Marked (Demo Mode)');
+                document.getElementById('manualAttendanceModal').classList.add('hidden');
+                return;
+            }
+            
+            const btn = e.submitter;
+            const checkinTime24 = document.getElementById('manual-checkin').value;
+            const checkoutTime24 = document.getElementById('manual-checkout').value;
+            
+            // Convert to AM/PM format matching the existing system
+            const toAMPM = (time24) => {
+                if (!time24) return '';
+                let [h, m] = time24.split(':');
+                h = parseInt(h);
+                const ampm = h >= 12 ? 'PM' : 'AM';
+                h = h % 12 || 12;
+                return `${h}:${m} ${ampm}`;
+            };
+
+            const payload = {
+                studentId: document.getElementById('manual-student-id').value,
+                date: document.getElementById('manual-date').value,
+                checkInTime: toAMPM(checkinTime24),
+                checkOutTime: toAMPM(checkoutTime24),
+            };
+
+            btn.disabled = true;
+            btn.textContent = 'Submitting...';
+
+            try {
+                const res = await fetch('/api/main?action=manualMark', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify(payload)
+                });
+                if (res.ok) {
+                    document.getElementById('manualAttendanceModal').classList.add('hidden');
+                    document.getElementById('manual-attendance-form').reset();
+                    fetchAdminData(); // Refresh logs
+                } else {
+                    const data = await res.json();
+                    alert('Error: ' + data.message);
+                }
+            } catch (err) { alert('Connection error.'); }
+            finally {
+                btn.disabled = false;
+                btn.textContent = 'Submit Entry';
+            }
+        });
+
+        function switchTab(tabId) {
+            ['overview', 'students', 'logs', 'geofence'].forEach(id => {
+                const btn = document.getElementById(`tab-${id}`);
+                const content = document.getElementById(`content-${id}`);
+                btn.classList.remove('active');
+                content.style.display = 'none';
+            });
+            
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+            document.getElementById(`content-${tabId}`).style.display = 'block';
+            
+            if (window.innerWidth < 768) toggleSidebar(false);
+        }
+
+        function toggleSidebar(forceOpen) {
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            
+            if (forceOpen === true) {
+                sidebar.classList.add('open');
+                backdrop.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            } else {
+                sidebar.classList.remove('open');
+                backdrop.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        }
+
+        function logout() {
+            if (!isDemo) localStorage.clear();
+            window.location.href = 'index.html';
+        }
+
+        fetchAdminData();
+    </script>
+
+    <script>
+        let adminMap, adminMarker, adminCircle;
+        function initAdminMap() {
+            const latInput = document.getElementById('geo-lat');
+            const lngInput = document.getElementById('geo-lng');
+            const radiusInput = document.getElementById('geo-radius');
+
+            const lat = parseFloat(latInput.value) || 12.9716;
+            const lng = parseFloat(lngInput.value) || 77.5946;
+            const radius = parseFloat(radiusInput.value) || 500;
+
+            adminMap = new google.maps.Map(document.getElementById('admin-map'), {
+                center: { lat, lng },
+                zoom: 16,
+                mapTypeId: 'roadmap',
+                mapTypeControl: false,
+                streetViewControl: false
+            });
+
+            adminMarker = new google.maps.Marker({
+                position: { lat, lng },
+                map: adminMap,
+                draggable: true,
+                animation: google.maps.Animation.DROP,
+                title: "Campus Center"
+            });
+
+            adminCircle = new google.maps.Circle({
+                strokeColor: "#4f46e5",
+                strokeOpacity: 0.8,
+                strokeWeight: 2,
+                fillColor: "#4f46e5",
+                fillOpacity: 0.15,
+                map: adminMap,
+                center: { lat, lng },
+                radius: radius
+            });
+
+            google.maps.event.addListener(adminMarker, 'dragend', function(event) {
+                const newLat = event.latLng.lat();
+                const newLng = event.latLng.lng();
+                latInput.value = newLat.toFixed(6);
+                lngInput.value = newLng.toFixed(6);
+                adminCircle.setCenter({ lat: newLat, lng: newLng });
+            });
+
+            adminMap.addListener('click', (e) => {
+                const newLat = e.latLng.lat();
+                const newLng = e.latLng.lng();
+                adminMarker.setPosition({ lat: newLat, lng: newLng });
+                adminCircle.setCenter({ lat: newLat, lng: newLng });
+                latInput.value = newLat.toFixed(6);
+                lngInput.value = newLng.toFixed(6);
+            });
+
+            radiusInput.addEventListener('input', (e) => {
+                const r = parseFloat(e.target.value) || 0;
+                if(adminCircle) adminCircle.setRadius(r);
+            });
+            
+            // Allow manual keyboard entry for lat/lng to move map
+            const updateFromInputs = () => {
+                const nLat = parseFloat(latInput.value) || 0;
+                const nLng = parseFloat(lngInput.value) || 0;
+                if (nLat && nLng) {
+                    const pos = { lat: nLat, lng: nLng };
+                    adminMap.setCenter(pos);
+                    adminMarker.setPosition(pos);
+                    adminCircle.setCenter(pos);
+                }
+            };
+            latInput.addEventListener('input', updateFromInputs);
+            lngInput.addEventListener('input', updateFromInputs);
+        };
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAtcv3jZIS7M7bmf4Mwirbhd1qVulafbvk&callback=initAdminMap" async defer></script>
+</body>
+
+</html>
