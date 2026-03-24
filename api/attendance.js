@@ -32,18 +32,18 @@ module.exports = async (req, res) => {
 
             const { sessionName } = req.body;
             
-            // 1. FORCED NUMERIC CONVERSION
+            // 1. FORCED NUMERIC CONVERSION & VALIDATION
             const latitude = Number(req.body.lat);
             const longitude = Number(req.body.lng);
 
-            // 2. STRICT VALIDATION
-            if (
-                isNaN(latitude) || isNaN(longitude) ||
-                Math.abs(latitude) > 90 ||
-                Math.abs(longitude) > 180
-            ) {
-                console.error("CRITICAL: Invalid GPS values received", { latitude, longitude });
-                return res.status(400).json({ message: "Invalid GPS values." });
+            console.log("[BACKEND DEBUG] Incoming Location:", { lat: latitude, lng: longitude, body: req.body });
+
+            if (isNaN(latitude) || isNaN(longitude)) {
+                return res.status(400).json({ message: "Invalid GPS coordinates (NaN)." });
+            }
+
+            if (Math.abs(latitude) > 90 || Math.abs(longitude) > 180) {
+                return res.status(400).json({ message: "Invalid GPS range." });
             }
 
             const now = new Date();
@@ -53,7 +53,7 @@ module.exports = async (req, res) => {
             
             // FETCH CAMPUS SETUP (SINGLE SOURCE OF TRUTH BY college_code)
             const geofenceQuery = await query('SELECT latitude, longitude, radius, attendance_start_time, attendance_end_time FROM campus_setup WHERE college_code = $1', [student.college_code]);
-            if (geofenceQuery.rows.length === 0) return res.status(500).json({ message: 'Campus setup not found.' });
+            if (geofenceQuery.rows.length === 0) return res.status(500).json({ message: 'Campus geofence not configured.' });
             
             const geofence = geofenceQuery.rows[0];
             const cLat = Number(geofence.latitude);
@@ -63,9 +63,11 @@ module.exports = async (req, res) => {
             const distance = calculateDistance(latitude, longitude, cLat, cLng);
             const inside = distance <= cRad;
 
+            console.log("[BACKEND DEBUG] Distance Calculated:", { distance, radius: cRad, inside });
+
             const diagParams = {
-                distance,
-                inside,
+                distance: isNaN(distance) ? Infinity : distance,
+                inside: !!inside,
                 campus: { lat: cLat, lng: cLng },
                 student: { lat: latitude, lng: longitude }
             };
@@ -108,14 +110,15 @@ module.exports = async (req, res) => {
                              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
                             [student.id, student.college_code, today, currentTime, 'Present', Math.round(distance), latitude, longitude, sessionName || 'Campus Check-in']
                         );
+                        console.log("[BACKEND DEBUG] Check-in Created:", result.rows[0]);
                         return res.status(201).json({
-                            message: 'Checked in',
+                            message: 'Checked in successfully',
                             action: 'checked-in',
                             attendance: result.rows[0],
                             ...diagParams
                         });
                     } catch (e) {
-                        if (e.code === '23505') return res.status(400).json({ message: 'Already checked in', ...diagParams });
+                        if (e.code === '23505') return res.status(400).json({ message: 'Check-in collision', ...diagParams });
                         throw e;
                     }
 
@@ -135,9 +138,10 @@ module.exports = async (req, res) => {
                         'UPDATE attendance SET check_out_time = $1, status = $2, duration_minutes = $3 WHERE student_id = $4 AND attendance_date = $5 AND check_out_time IS NULL RETURNING *',
                         [currentTime, 'completed', durationMinutes, student.id, today]
                     );
+                    console.log("[BACKEND DEBUG] Check-out Updated:", result.rows[0]);
 
                     return res.status(200).json({
-                        message: 'Checked out',
+                        message: 'Checked out successfully',
                         action: 'checked-out',
                         attendance: result.rows[0],
                         ...diagParams
@@ -183,7 +187,8 @@ module.exports = async (req, res) => {
                 `, [admin.college_code]);
                 const mapped = attendanceQuery.rows.map(a => ({
                     _id: a.id, studentId: { _id: a.student_id, name: a.student_name, email: a.student_email, rollNumber: a.roll_number },
-                    locationCoordinates: { lat: a.latitude, lng: a.longitude }, distanceFromCenter: a.distance_at_checkin, status: a.status, date: a.attendance_date.toISOString().split('T')[0],
+                    locationCoordinates: { lat: a.latitude, lng: a.longitude }, distanceFromCenter: a.distance_at_checkin, status: a.status, 
+                    date: a.attendance_date instanceof Date ? a.attendance_date.toISOString().split('T')[0] : String(a.attendance_date).substring(0, 10),
                     checkinTime: a.check_in_time, checkoutTime: a.check_out_time, sessionName: a.session_name
                 }));
                 return res.status(200).json(mapped);
@@ -192,7 +197,9 @@ module.exports = async (req, res) => {
             if (student) {
                 const attendanceQuery = await query('SELECT * FROM attendance WHERE student_id = $1 ORDER BY attendance_date DESC, check_in_time DESC', [student.id]);
                 const mapped = attendanceQuery.rows.map(a => ({
-                    _id: a.id, date: a.attendance_date.toISOString().split('T')[0], checkinTime: a.check_in_time, checkoutTime: a.check_out_time, status: a.status, distanceFromCenter: a.distance_at_checkin
+                    _id: a.id, 
+                    date: a.attendance_date instanceof Date ? a.attendance_date.toISOString().split('T')[0] : String(a.attendance_date).substring(0, 10),
+                    checkinTime: a.check_in_time, checkoutTime: a.check_out_time, status: a.status, distanceFromCenter: a.distance_at_checkin
                 }));
                 return res.status(200).json(mapped);
             }
@@ -205,7 +212,7 @@ module.exports = async (req, res) => {
             return res.status(200).json({ latitude: Number(cfg.latitude), longitude: Number(cfg.longitude), radius: Number(cfg.radius), attendanceStartTime: cfg.attendance_start_time, attendanceEndTime: cfg.attendance_end_time });
         }
     } catch (error) {
-        console.error(error);
-        return res.status(500).json({ message: error.message });
+        console.error("[BACKEND ERROR]", error);
+        return res.status(500).json({ message: error.message || 'Server Error' });
     }
 };
