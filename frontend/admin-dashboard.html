@@ -661,18 +661,18 @@
             }
             try {
                 // Students
-                const s = await fetch('/api/students?action=get-students', { headers: { 'Authorization': `Bearer ${token}` } });
+                const s = await fetch('/api/main?action=get-students', { headers: { 'Authorization': `Bearer ${token}` } });
                 const studentsData = await s.json();
 
                 // Logs
-                let l = await fetch('/api/admin?action=getDashboardStats', { headers: { 'Authorization': `Bearer ${token}` } });
+                let l = await fetch('/api/main?action=attendance-today', { headers: { 'Authorization': `Bearer ${token}` } });
                 const statsData = await l.json();
                 
                 let a = await fetch('/api/main?action=getAttendanceLogs', { headers: { 'Authorization': `Bearer ${token}` } });
                 allLogs = await a.json();
 
                 // Campus/Geofence
-                let c = await fetch('/api/admin?action=getCampusSetup', { headers: { 'Authorization': `Bearer ${token}` } });
+                let c = await fetch('/api/main?action=get-campus', { headers: { 'Authorization': `Bearer ${token}` } });
                 const campusData = await c.json();
 
                 renderOverview(studentsData, statsData, campusData);
@@ -750,7 +750,7 @@
             if (isDemo) return alert('Action Disabled in Demo Mode.');
             if (!confirm('Are you sure you want to delete this student?')) return;
             try {
-                const res = await fetch('/api/students?action=deleteStudent', {
+                const res = await fetch('/api/main?action=deleteStudent', {
                     method: 'DELETE',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('geoattend_token')}` },
                     body: JSON.stringify({ id })
@@ -926,7 +926,7 @@
             btn.textContent = 'Updating...';
 
             try {
-                const res = await fetch('/api/admin?action=saveCampusSetup', {
+                const res = await fetch('/api/main?action=update-geofence', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify(payload)
@@ -966,7 +966,7 @@
             btn.textContent = 'Registering...';
 
             try {
-                const res = await fetch('/api/students?action=addStudent', {
+                const res = await fetch('/api/main?action=addStudent', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify(payload)
@@ -1018,7 +1018,7 @@
             btn.textContent = 'Saving...';
 
             try {
-                const res = await fetch('/api/students?action=updateStudent', {
+                const res = await fetch('/api/main?action=updateStudent', {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify(payload)

@@ -176,11 +176,97 @@ export default async function handler(req, res) {
         }
 
         // --- 5. STUDENTS MANAGEMENT ---
-        else if (action === "get-students" || action === "getStudents") {
+        else if (action === "get-students" || action === "getStudents" || action === "addStudent" || action === "updateStudent" || action === "deleteStudent") {
             const admin = await protectAdmin(req);
-            if (!admin) return res.status(401).json({ message: 'Not authorized' });
-            const result = await query('SELECT * FROM students WHERE college_code = $1', [admin.college_code]);
-            return res.status(200).json(result.rows.map(s => ({ _id: s.id, name: s.name, email: s.email, rollNumber: s.roll_number, department: s.department, collegeCode: s.college_code })));
+            if (!admin) return res.status(401).json({ message: 'Not authorized as an admin' });
+
+            if (action === "get-students" || action === "getStudents") {
+                const result = await query('SELECT * FROM students WHERE college_code = $1', [admin.college_code]);
+                return res.status(200).json(result.rows.map(s => ({ _id: s.id, name: s.name, email: s.email, rollNumber: s.roll_number, department: s.department, collegeCode: s.college_code, userId: { name: s.name, email: s.email } })));
+            }
+
+            if (action === "addStudent") {
+                const { name, email, rollNumber, department } = req.body;
+                const tempPassword = Math.random().toString(36).slice(-8);
+                const hashedPassword = await hashPassword(tempPassword);
+                const result = await query(
+                    'INSERT INTO students (name, email, password, roll_number, department, college_code) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+                    [name, email, hashedPassword, rollNumber, department || 'General', admin.college_code]
+                );
+                try {
+                    await sendOnboardingEmail(email, name, tempPassword, `${req.headers.origin}/student-login.html`);
+                } catch (e) { console.error("Email fail:", e); }
+                return res.status(201).json({ message: 'Student added', student: result.rows[0] });
+            }
+
+            if (action === "updateStudent") {
+                const { id, name, email, rollNumber, department } = req.body;
+                const result = await query(
+                    'UPDATE students SET name = $1, email = $2, roll_number = $3, department = $4 WHERE id = $5 AND college_code = $6 RETURNING *',
+                    [name, email, rollNumber, department, id, admin.college_code]
+                );
+                return res.status(200).json({ message: 'Updated', student: result.rows[0] });
+            }
+
+            if (action === "deleteStudent") {
+                const { id } = req.body;
+                await query('DELETE FROM students WHERE id = $1 AND college_code = $2', [id, admin.college_code]);
+                return res.status(200).json({ message: 'Deleted' });
+            }
+        }
+
+        else if (action === "update-geofence" || action === "updateCampus") {
+            const admin = await protectAdmin(req);
+            if (!admin) return res.status(401).json({ error: "Unauthorized" });
+
+            if (req.method !== "POST") {
+                return res.status(405).json({ error: "Method not allowed" });
+            }
+
+            const {
+                latitude,
+                longitude,
+                radius,
+                attendance_start_time,
+                attendance_end_time
+            } = req.body;
+
+            if (!latitude || !longitude || !radius) {
+                return res.status(400).json({ error: "Missing required fields" });
+            }
+
+            try {
+                const result = await query(`
+                    INSERT INTO campus_setup 
+                    (college_code, latitude, longitude, radius, attendance_start_time, attendance_end_time)
+                    VALUES ($1, $2, $3, $4, $5, $6)
+                    ON CONFLICT (college_code)
+                    DO UPDATE SET
+                        latitude = EXCLUDED.latitude,
+                        longitude = EXCLUDED.longitude,
+                        radius = EXCLUDED.radius,
+                        attendance_start_time = EXCLUDED.attendance_start_time,
+                        attendance_end_time = EXCLUDED.attendance_end_time
+                    RETURNING *
+                `, [
+                    admin.college_code,
+                    latitude,
+                    longitude,
+                    radius,
+                    attendance_start_time,
+                    attendance_end_time
+                ]);
+
+                return res.status(200).json({
+                    success: true,
+                    message: "Geofence updated successfully",
+                    data: result.rows[0]
+                });
+
+            } catch (error) {
+                console.error("Geofence Update Error:", error);
+                return res.status(500).json({ error: error.message });
+            }
         }
 
         else {
