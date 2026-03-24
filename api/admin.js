@@ -31,12 +31,12 @@ export default async function handler(req, res) {
                 return res.status(200).json({
                     _id: geofence.id, 
                     name: geofence.name, 
-                    latitude: geofence.latitude, 
-                    longitude: geofence.longitude, 
-                    radius: geofence.radius, 
-                    collegeCode: geofence.college_code,
-                    attendanceStartTime: geofence.attendance_start_time,
-                    attendanceEndTime: geofence.attendance_end_time
+                    latitude: Number(geofence.latitude), 
+                    longitude: Number(geofence.longitude), 
+                    radius: Number(geofence.radius), 
+                    college_code: geofence.college_code,
+                    attendance_start_time: geofence.attendance_start_time,
+                    attendance_end_time: geofence.attendance_end_time
                 });
             } else {
                 return res.status(200).json({});
@@ -45,8 +45,13 @@ export default async function handler(req, res) {
 
         if (action === 'saveCampusSetup' && req.method === 'POST') {
             const { name, collegeName, collegeCode, latitude, longitude, radius, attendanceStartTime, attendanceEndTime } = req.body;
-            if (!latitude || !longitude || !radius) {
-                return res.status(400).json({ message: 'Please provide all geofence details' });
+            
+            const nLat = Number(latitude);
+            const nLng = Number(longitude);
+            const nRad = Number(radius);
+
+            if (isNaN(nLat) || isNaN(nLng) || isNaN(nRad)) {
+                return res.status(400).json({ message: 'Invalid GPS or radius data. Must be numbers.' });
             }
 
             // If the admin doesn't have a college code yet, update their profile
@@ -78,12 +83,12 @@ export default async function handler(req, res) {
                     const currentGeofence = geofenceCheck.rows[0];
                     geofenceResult = await query(
                         'UPDATE campus_setup SET name = $1, latitude = $2, longitude = $3, radius = $4, attendance_start_time = $5, attendance_end_time = $6 WHERE college_code = $7 RETURNING *',
-                        [name || currentGeofence.name, latitude, longitude, radius, startT, endT, adminCollegeCode]
+                        [name || currentGeofence.name, nLat, nLng, nRad, startT, endT, adminCollegeCode]
                     );
                 } else {
                     geofenceResult = await query(
                         'INSERT INTO campus_setup (name, latitude, longitude, radius, college_code, attendance_start_time, attendance_end_time) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-                        [name || 'Main Campus', latitude, longitude, radius, adminCollegeCode, startT, endT]
+                        [name || 'Main Campus', nLat, nLng, nRad, adminCollegeCode, startT, endT]
                     );
                 }
             } catch (err) {
@@ -113,12 +118,12 @@ export default async function handler(req, res) {
                 geofence: { 
                     _id: geofence.id, 
                     name: geofence.name, 
-                    latitude: geofence.latitude, 
-                    longitude: geofence.longitude, 
-                    radius: geofence.radius, 
-                    collegeCode: geofence.college_code,
-                    attendanceStartTime: geofence.attendance_start_time,
-                    attendanceEndTime: geofence.attendance_end_time
+                    latitude: Number(geofence.latitude), 
+                    longitude: Number(geofence.longitude), 
+                    radius: Number(geofence.radius), 
+                    college_code: geofence.college_code,
+                    attendance_start_time: geofence.attendance_start_time,
+                    attendance_end_time: geofence.attendance_end_time
                 }
             });
         }
