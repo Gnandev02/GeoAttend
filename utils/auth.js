@@ -1,9 +1,11 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 
-const generateToken = (id, collegeCode) => {
-    return jwt.sign({ id, collegeCode }, process.env.JWT_SECRET || 'geoattend_secret_key', {
-        expiresIn: '30d',
+const SECRET = process.env.JWT_SECRET || "geoattend_secret_key";
+
+const generateToken = (id, college_code) => {
+    return jwt.sign({ id, college_code }, SECRET, {
+        expiresIn: '1d',
     });
 };
 
@@ -32,26 +34,35 @@ const authenticateRequest = async (req, tableName) => {
     }
 
     const token = authHeader.split(' ')[1];
-    const secret = process.env.JWT_SECRET || 'geoattend_secret_key';
     
     try {
-        const decoded = jwt.verify(token, secret);
+        const decoded = jwt.verify(token, SECRET);
         
-        // Populate req.admin or req.student as requested
+        // Ensure snake_case college_code in payload
+        const college_code = decoded.college_code || decoded.collegeCode;
+        
         if (tableName === 'admins') {
-            req.admin = decoded;
+            req.admin = { id: decoded.id, college_code };
         } else {
-            req.student = decoded;
+            req.student = { id: decoded.id, college_code };
         }
 
         // Return the user object for existing logic in main.js
         const { query } = require('./db.js');
         const userQuery = await query(`SELECT * FROM ${tableName} WHERE id = $1`, [decoded.id]);
+        const user = userQuery.rows[0];
 
-        return userQuery.rows[0] || null;
+        if (!user) return null;
+
+        // Ensure user object also has snake_case college_code
+        if (!user.college_code && user.collegeCode) {
+            user.college_code = user.collegeCode;
+        }
+
+        return user;
 
     } catch (error) {
-        console.error(`[Auth] ${tableName} verification failed for token:`, token.substring(0, 10) + "...", error.message);
+        console.error(`[Auth] ${tableName} verification failed:`, error.message);
         return null;
     }
 };
