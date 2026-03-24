@@ -114,17 +114,22 @@ export default async function handler(req, res) {
             let apiAction = "none";
             let updatedAttendance = todayRecord;
 
-            // ATTENDANCE LOGIC (TASK 4)
+            // ATTENDANCE LOGIC
             if (inside) {
                 // AUTO CHECK-IN
                 if (!todayRecord) {
-                    const result = await query(
-                        `INSERT INTO attendance (student_id, college_code, attendance_date, check_in_time, status, distance_at_checkin, latitude, longitude, session_name) 
-                         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-                        [student.id, student.college_code, today, currentTime, 'Present', Math.round(distance), latitude, longitude, 'Campus Check-in']
-                    );
-                    updatedAttendance = result.rows[0];
-                    apiAction = "checked-in";
+                    try {
+                        const result = await query(
+                            `INSERT INTO attendance (student_id, college_code, attendance_date, check_in_time, status) 
+                             VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+                            [student.id, student.college_code, today, currentTime, 'Present']
+                        );
+                        updatedAttendance = result.rows[0];
+                        apiAction = "checked-in";
+                    } catch (dbErr) {
+                        console.error("Check-in DB error:", dbErr.message);
+                        return res.status(500).json({ message: "Database error on check-in: " + dbErr.message });
+                    }
                 }
             } else {
                 // AUTO CHECK-OUT

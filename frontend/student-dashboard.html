@@ -257,7 +257,12 @@
                     })
                 });
                 const data = await res.json();
-                if (data.message) showAlert(data.message, res.ok);
+                console.log("Attendance response:", data);
+                if (!res.ok) {
+                    showAlert(data.message || data.error || "Attendance failed", false);
+                } else if (data.action && data.action !== "none") {
+                    showAlert(data.action === "checked-in" ? "✅ Checked In!" : "📤 Checked Out", true);
+                }
                 fetchTodayStats();
             } catch (err) {
                 console.error("Mark attendance error:", err);
