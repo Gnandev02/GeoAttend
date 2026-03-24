@@ -304,7 +304,7 @@
                 successMsg.classList.add('hidden');
 
                 try {
-                    const response = await fetch('/api/auth?action=adminSignup', {
+                    const response = await fetch('/api/main?action=adminSignup', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ name, email, password, otp: otpValue })
@@ -353,7 +353,7 @@
             successMsg.classList.add('hidden');
 
             try {
-                const response = await fetch('/api/auth?action=sendAdminOtp', {
+                const response = await fetch('/api/main?action=sendAdminOtp', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name, email, password })
@@ -444,7 +444,7 @@
             resendBtn.textContent = 'Sending...';
 
             try {
-                const response = await fetch('/api/auth?action=sendAdminOtp', {
+                const response = await fetch('/api/main?action=sendAdminOtp', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name, email, password })

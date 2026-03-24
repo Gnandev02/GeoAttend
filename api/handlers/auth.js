@@ -1,6 +1,6 @@
 const { query } = require('../utils/db');
-const { comparePassword, hashPassword, generateToken } = require('./utils/auth');
-const { sendVerificationEmail, sendResetEmail } = require('./utils/email');
+const { comparePassword, hashPassword, generateToken } = require('../utils/auth');
+const { sendVerificationEmail, sendResetEmail } = require('../utils/email');
 
 export default async function handler(req, res) {
     // Explicit CORS Headers for Vercel Serverless

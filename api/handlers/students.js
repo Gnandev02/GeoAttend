@@ -1,6 +1,6 @@
 const { query } = require('../utils/db');
-const { protectAdmin, protectStudent, hashPassword, comparePassword } = require('./utils/auth');
-const { sendOnboardingEmail } = require('./utils/email');
+const { protectAdmin, protectStudent, hashPassword, comparePassword } = require('../utils/auth');
+const { sendOnboardingEmail } = require('../utils/email');
 const bcrypt = require('bcryptjs'); // Still kept for any direct needs if any, but hashing will use utility
 
 export default async function handler(req, res) {

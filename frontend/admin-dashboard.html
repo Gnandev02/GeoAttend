@@ -668,7 +668,7 @@
                 let l = await fetch('/api/admin?action=getDashboardStats', { headers: { 'Authorization': `Bearer ${token}` } });
                 const statsData = await l.json();
                 
-                let a = await fetch('/api/attendance?action=getAttendanceLogs', { headers: { 'Authorization': `Bearer ${token}` } });
+                let a = await fetch('/api/main?action=getAttendanceLogs', { headers: { 'Authorization': `Bearer ${token}` } });
                 allLogs = await a.json();
 
                 // Campus/Geofence
@@ -1084,7 +1084,7 @@
             btn.textContent = 'Submitting...';
 
             try {
-                const res = await fetch('/api/attendance?action=manualMark', {
+                const res = await fetch('/api/main?action=manualMark', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                     body: JSON.stringify(payload)

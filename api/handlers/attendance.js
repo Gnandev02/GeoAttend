@@ -1,6 +1,6 @@
 const { query } = require('../utils/db');
-const { protectAdmin, protectStudent } = require('./utils/auth');
-const { calculateDistance } = require('./utils/geoHelper');
+const { protectAdmin, protectStudent } = require('../utils/auth');
+const { calculateDistance } = require('../utils/geoHelper');
 
 // Helper to convert "10:00:00 AM" or "09:30 AM" to total minutes
 function timeStringToMinutes(timeStr) {

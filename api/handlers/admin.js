@@ -1,5 +1,5 @@
 const { query } = require('../utils/db');
-const { protectAdmin } = require('./utils/auth');
+const { protectAdmin } = require('../utils/auth');
 
 export default async function handler(req, res) {
     // Explicit CORS Headers
@@ -111,7 +111,7 @@ export default async function handler(req, res) {
             }
 
             const geofence = geofenceResult.rows[0];
-            const { generateToken } = require('./utils/auth');
+            const { generateToken } = require('../utils/auth');
             return res.status(201).json({
                 message: 'Campus setup updated successfully',
                 token: generateToken(admin.id, adminCollegeCode), // Return a new JWT so the frontend knows the admin has a college_code

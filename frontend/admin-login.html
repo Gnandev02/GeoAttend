@@ -214,7 +214,7 @@
             errorMsg.classList.add('hidden');
 
             try {
-                const response = await fetch('/api/auth?action=adminLogin', {
+                const response = await fetch('/api/main?action=adminLogin', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
@@ -280,7 +280,7 @@
             msg.classList.add('hidden');
 
             try {
-                const res = await fetch('/api/auth?action=forgotPassword', {
+                const res = await fetch('/api/main?action=forgotPassword', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email })
@@ -319,7 +319,7 @@
             btn.textContent = 'Updating...';
 
             try {
-                const res = await fetch('/api/auth?action=resetPassword', {
+                const res = await fetch('/api/main?action=resetPassword', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, otp, newPassword })
