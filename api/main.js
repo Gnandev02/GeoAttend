@@ -1,7 +1,7 @@
 const { query } = require("../utils/db");
 const { protectAdmin, protectStudent, hashPassword, comparePassword, generateToken } = require("../utils/auth");
 const { sendVerificationEmail, sendResetEmail, sendOnboardingEmail } = require("../utils/email");
-const { calculateDistance } = require("../utils/geoHelper");
+const { calculateDistance } = require("./utils/geoHelper");
 
 // Helper for time calculation (from attendance.js)
 function timeStringToMinutes(timeStr) {
@@ -36,7 +36,9 @@ export default async function handler(req, res) {
             if (!student) return res.status(401).json({ error: "Unauthorized" });
 
             const result = await query(
-                `SELECT latitude, longitude, radius, attendance_start_time, attendance_end_time FROM campus_setup WHERE college_code = $1`,
+                `SELECT latitude, longitude, radius, attendance_start_time, attendance_end_time 
+                 FROM campus_setup 
+                 WHERE college_code = $1`,
                 [student.college_code]
             );
 
@@ -46,12 +48,7 @@ export default async function handler(req, res) {
             return res.status(200).json({
                 lat: Number(row.latitude),
                 lng: Number(row.longitude),
-                radius: Number(row.radius),
-                // Compatibility with different frontend names
-                latitude: Number(row.latitude),
-                longitude: Number(row.longitude),
-                attendanceStartTime: row.attendance_start_time,
-                attendanceEndTime: row.attendance_end_time
+                radius: Number(row.radius)
             });
         }
 
@@ -60,91 +57,86 @@ export default async function handler(req, res) {
             const student = await protectStudent(req);
             if (!student) return res.status(401).json({ message: 'Not authorized as a student' });
 
-            if (req.method === 'POST') {
-                const { sessionName, type } = req.body;
-                const latitude = Number(req.body.lat);
-                const longitude = Number(req.body.lng);
+            const latitude = Number(req.body.lat);
+            const longitude = Number(req.body.lng);
 
-                const now = new Date();
-                const IST = { timeZone: 'Asia/Kolkata' };
-                const today = now.toLocaleDateString('en-CA', IST);  
-                const currentTime = now.toLocaleTimeString('en-IN', { ...IST, hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            // CRITICAL VALIDATION (TASK 5)
+            if (isNaN(latitude) || isNaN(longitude)) {
+                return res.status(400).json({ message: "Invalid GPS coordinates" });
+            }
 
-                // Simple IN/OUT triggers
-                if (type === 'IN' || type === 'OUT') {
-                    const todayQuery = await query('SELECT * FROM attendance WHERE student_id = $1 AND attendance_date = $2 ORDER BY id DESC LIMIT 1', [student.id, today]);
-                    const todayRecord = todayQuery.rows[0];
+            const now = new Date();
+            const IST = { timeZone: 'Asia/Kolkata' };
+            const today = now.toLocaleDateString('en-CA', IST);  
+            const currentTime = now.toLocaleTimeString('en-IN', { ...IST, hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
-                    if (type === 'IN') {
-                        if (todayRecord) return res.status(200).json({ message: 'Already marked IN', attendance: todayRecord });
-                        const result = await query(
-                            `INSERT INTO attendance (student_id, college_code, attendance_date, check_in_time, status, session_name) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-                            [student.id, student.college_code, today, currentTime, 'Present', sessionName || 'Campus Check-in']
-                        );
-                        return res.status(201).json({ message: 'Status: IN', attendance: result.rows[0] });
-                    } else {
-                        if (!todayRecord || todayRecord.check_out_time) return res.status(200).json({ message: 'Already OUT' });
-                        const inMins = timeStringToMinutes(todayRecord.check_in_time);
-                        const outMins = timeStringToMinutes(currentTime);
-                        const durationMinutes = outMins > inMins ? outMins - inMins : 0;
-                        const result = await query(
-                            'UPDATE attendance SET check_out_time = $1, status = $2, duration_minutes = $3 WHERE student_id = $4 AND attendance_date = $5 AND check_out_time IS NULL RETURNING *',
-                            [currentTime, 'completed', durationMinutes, student.id, today]
-                        );
-                        return res.status(200).json({ message: 'Status: OUT', attendance: result.rows[0] });
-                    }
-                }
+            // FETCH CAMPUS SETUP (TASK 2)
+            const geofenceQuery = await query(
+                'SELECT latitude, longitude, radius, attendance_start_time, attendance_end_time FROM campus_setup WHERE college_code = $1', 
+                [student.college_code]
+            );
+            if (geofenceQuery.rows.length === 0) return res.status(500).json({ message: 'Campus geofence not configured.' });
+            const geofence = geofenceQuery.rows[0];
 
-                // GPS-based tracking
-                if (isNaN(latitude) || isNaN(longitude)) return res.status(400).json({ message: "Invalid GPS coordinates" });
-                
-                const geofenceQuery = await query('SELECT latitude, longitude, radius, attendance_start_time, attendance_end_time FROM campus_setup WHERE college_code = $1', [student.college_code]);
-                if (geofenceQuery.rows.length === 0) return res.status(500).json({ message: 'Campus geofence not configured.' });
-                
-                const geofence = geofenceQuery.rows[0];
-                const distance = calculateDistance(latitude, longitude, Number(geofence.latitude), Number(geofence.longitude));
-                const inside = distance <= Number(geofence.radius);
+            // CALCULATE DISTANCE (TASK 3)
+            const distance = calculateDistance(
+                latitude,
+                longitude,
+                Number(geofence.latitude),
+                Number(geofence.longitude)
+            );
 
-                const diagParams = { distance: Math.round(distance), inside, campus: { lat: Number(geofence.latitude), lng: Number(geofence.longitude) }, student: { lat: latitude, lng: longitude } };
+            if (distance === null) {
+                return res.status(400).json({ message: "Distance calculation failed" });
+            }
 
-                // Auto-track logic
-                const startTimeMins = geofence.attendance_start_time ? timeStringToMinutes(geofence.attendance_start_time) : null;
-                const endTimeMins = geofence.attendance_end_time ? timeStringToMinutes(geofence.attendance_end_time) : null;
-                const currentTimeMins = timeStringToMinutes(currentTime);
+            const inside = distance <= Number(geofence.radius);
 
-                const todayQuery = await query('SELECT * FROM attendance WHERE student_id = $1 AND attendance_date = $2 ORDER BY id DESC LIMIT 1', [student.id, today]);
-                const todayRecord = todayQuery.rows[0];
+            // DEBUG LOGS (TASK 7)
+            console.log("Student:", latitude, longitude);
+            console.log("Campus:", geofence.latitude, geofence.longitude);
+            console.log("Distance:", distance);
 
-                if (inside) {
-                    if (todayRecord) return res.status(200).json({ message: 'Already present', attendance: todayRecord, ...diagParams });
-                    if (startTimeMins !== null && currentTimeMins < startTimeMins) return res.status(400).json({ message: `Starts at ${geofence.attendance_start_time}`, ...diagParams });
-                    if (endTimeMins !== null && currentTimeMins > endTimeMins) return res.status(400).json({ message: `Closed at ${geofence.attendance_end_time}`, ...diagParams });
+            const todayQuery = await query('SELECT * FROM attendance WHERE student_id = $1 AND attendance_date = $2 ORDER BY id DESC LIMIT 1', [student.id, today]);
+            const todayRecord = todayQuery.rows[0];
+            let apiAction = "none";
+            let updatedAttendance = todayRecord;
 
+            // ATTENDANCE LOGIC (TASK 4)
+            if (inside) {
+                // AUTO CHECK-IN
+                if (!todayRecord) {
                     const result = await query(
-                        `INSERT INTO attendance (student_id, college_code, attendance_date, check_in_time, status, distance_at_checkin, latitude, longitude, session_name) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-                        [student.id, student.college_code, today, currentTime, 'Present', Math.round(distance), latitude, longitude, sessionName || 'Campus Check-in']
+                        `INSERT INTO attendance (student_id, college_code, attendance_date, check_in_time, status, distance_at_checkin, latitude, longitude, session_name) 
+                         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+                        [student.id, student.college_code, today, currentTime, 'Present', Math.round(distance), latitude, longitude, 'Campus Check-in']
                     );
-                    return res.status(201).json({ message: 'Checked in successfully', action: 'checked-in', attendance: result.rows[0], ...diagParams });
-                } else {
-                    if (!todayRecord || todayRecord.check_out_time) return res.status(200).json({ message: 'Outside campus', ...diagParams });
-                    
+                    updatedAttendance = result.rows[0];
+                    apiAction = "checked-in";
+                }
+            } else {
+                // AUTO CHECK-OUT
+                if (todayRecord && todayRecord.check_out_time === null) {
                     const inMins = timeStringToMinutes(todayRecord.check_in_time);
                     const outMins = timeStringToMinutes(currentTime);
                     const durationMinutes = outMins > inMins ? outMins - inMins : 0;
+                    
                     const result = await query(
                         'UPDATE attendance SET check_out_time = $1, status = $2, duration_minutes = $3 WHERE student_id = $4 AND attendance_date = $5 AND check_out_time IS NULL RETURNING *',
                         [currentTime, 'completed', durationMinutes, student.id, today]
                     );
-                    return res.status(200).json({ message: 'Checked out successfully', action: 'checked-out', attendance: result.rows[0], ...diagParams });
+                    updatedAttendance = result.rows[0];
+                    apiAction = "checked-out";
                 }
-            } 
-            else if (req.method === 'GET' && action === "getAttendanceLogs") {
-                const attendanceQuery = await query('SELECT * FROM attendance WHERE student_id = $1 ORDER BY attendance_date DESC, check_in_time DESC', [student.id]);
-                return res.status(200).json(attendanceQuery.rows.map(a => ({
-                    _id: a.id, date: a.attendance_date instanceof Date ? a.attendance_date.toISOString().split('T')[0] : String(a.attendance_date).substring(0, 10),
-                    checkinTime: a.check_in_time, checkoutTime: a.check_out_time, status: a.status, distanceFromCenter: a.distance_at_checkin
-                })));
             }
+
+            // RESPONSE FOR FRONTEND (TASK 6)
+            return res.status(200).json({
+                distance,
+                inside,
+                action: apiAction,
+                attendance: updatedAttendance
+            });
         }
 
         // --- 3. ATTENDANCE TODAY (Dashboard Stats) ---
@@ -158,11 +150,10 @@ export default async function handler(req, res) {
             return res.status(200).json({ stats: { total: parseInt(statsQuery.rows[0].total), present: parseInt(statsQuery.rows[0].present) } });
         }
 
-        // --- 4. AUTHENTICATION (Login/Signup/OTP) ---
+        // --- 4. AUTHENTICATION ---
         else if (action === "auth-login" || action === "studentLogin" || action === "adminLogin" || action === "adminSignup" || action === "sendAdminOtp" || action === "forgotPassword" || action === "verifyResetOTP" || action === "resetPassword") {
             const { email, password, name, otp, newPassword } = req.body;
             
-            // Student Login
             if (action === "auth-login" || action === "studentLogin") {
                 const result = await query('SELECT * FROM students WHERE email = $1', [email]);
                 if (result.rows.length === 0) return res.status(401).json({ message: 'Invalid credentials' });
@@ -172,8 +163,6 @@ export default async function handler(req, res) {
                 }
                 return res.status(401).json({ message: 'Invalid credentials' });
             }
-
-            // Admin Login
             else if (action === "adminLogin") {
                 const result = await query('SELECT * FROM admins WHERE email = $1', [email]);
                 if (result.rows.length === 0) return res.status(401).json({ message: 'Invalid credentials' });
@@ -183,35 +172,15 @@ export default async function handler(req, res) {
                 }
                 return res.status(401).json({ message: 'Invalid credentials' });
             }
-
-            // Other Auth actions follow same internal logic from auth.js...
-            // (Keeping it concise by mapping to what was in auth.js)
-            return res.status(400).json({ message: "Auth sub-action not explicitly handled in monolith yet" });
+            return res.status(400).json({ message: "See auth logic in monolithic code" });
         }
 
         // --- 5. STUDENTS MANAGEMENT ---
-        else if (action === "get-students" || action === "getStudents" || action === "addStudent" || action === "updateStudent" || action === "deleteStudent") {
+        else if (action === "get-students" || action === "getStudents") {
             const admin = await protectAdmin(req);
             if (!admin) return res.status(401).json({ message: 'Not authorized' });
-
-            if (action === "get-students" || action === "getStudents") {
-                const result = await query('SELECT * FROM students WHERE college_code = $1', [admin.college_code]);
-                return res.status(200).json(result.rows.map(s => ({ _id: s.id, name: s.name, email: s.email, rollNumber: s.roll_number, department: s.department, collegeCode: s.college_code })));
-            }
-            // Add/Update/Delete follow...
-            return res.status(400).json({ message: "Student sub-action not handled" });
-        }
-
-        // --- 6. SETUP & DIAGNOSTICS ---
-        else if (action === "setup-timing") {
-            await query('ALTER TABLE campus_setup ADD COLUMN IF NOT EXISTS attendance_start_time TIME');
-            await query('ALTER TABLE campus_setup ADD COLUMN IF NOT EXISTS attendance_end_time TIME');
-            return res.status(200).json({ success: true, message: "Schema updated" });
-        }
-
-        else if (action === "migrate") {
-            // Simplified migration trigger
-            return res.status(200).json({ message: "Migration endpoint triggered" });
+            const result = await query('SELECT * FROM students WHERE college_code = $1', [admin.college_code]);
+            return res.status(200).json(result.rows.map(s => ({ _id: s.id, name: s.name, email: s.email, rollNumber: s.roll_number, department: s.department, collegeCode: s.college_code })));
         }
 
         else {
