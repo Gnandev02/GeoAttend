@@ -159,7 +159,17 @@ export default async function handler(req, res) {
                 if (result.rows.length === 0) return res.status(401).json({ message: 'Invalid credentials' });
                 const student = result.rows[0];
                 if (await comparePassword(password, student.password)) {
-                    return res.status(200).json({ _id: student.id, name: student.name, email: student.email, rollNumber: student.roll_number, role: 'student', collegeCode: student.college_code, token: generateToken(student.id, student.college_code) });
+                    const token = generateToken(student.id, student.college_code);
+                    return res.status(200).json({ 
+                        success: true,
+                        token,
+                        _id: student.id, 
+                        name: student.name, 
+                        email: student.email, 
+                        rollNumber: student.roll_number, 
+                        role: 'student', 
+                        collegeCode: student.college_code 
+                    });
                 }
                 return res.status(401).json({ message: 'Invalid credentials' });
             }
@@ -168,7 +178,16 @@ export default async function handler(req, res) {
                 if (result.rows.length === 0) return res.status(401).json({ message: 'Invalid credentials' });
                 const admin = result.rows[0];
                 if (await comparePassword(password, admin.password)) {
-                    return res.status(200).json({ _id: admin.id, name: admin.name, email: admin.email, role: 'admin', collegeCode: admin.college_code, token: generateToken(admin.id, admin.college_code) });
+                    const token = generateToken(admin.id, admin.college_code);
+                    return res.status(200).json({ 
+                        success: true,
+                        token,
+                        _id: admin.id, 
+                        name: admin.name, 
+                        email: admin.email, 
+                        role: 'admin', 
+                        collegeCode: admin.college_code 
+                    });
                 }
                 return res.status(401).json({ message: 'Invalid credentials' });
             }
