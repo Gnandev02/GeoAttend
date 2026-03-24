@@ -50,6 +50,7 @@
 
         <div class="flex-1 space-y-6">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Summary Cards -->
                 <div class="saas-card p-6 flex items-center gap-5">
                     <div class="relative w-16 h-16 flex items-center justify-center">
                         <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
@@ -89,8 +90,8 @@
                 <h3 class="font-bold text-slate-900 mb-4 flex items-center gap-2"><i data-lucide="map" class="w-5 h-5 text-[#0284c7]"></i> Live Geofence Radar</h3>
                 <div id="student-map" class="flex-1 rounded-xl bg-slate-50 border flex items-center justify-center text-slate-400">Initializing Tracking...</div>
                 <div class="mt-4 p-3 bg-slate-50 rounded-lg border grid grid-cols-2 gap-4">
-                    <div><p class="text-[10px] font-bold text-slate-400 uppercase">Your GPS</p><p id="diag-student-coords" class="text-xs font-mono font-bold text-slate-700">--</p></div>
-                    <div><p class="text-[10px] font-bold text-slate-400 uppercase">Campus Center</p><p id="diag-campus-coords" class="text-xs font-mono font-bold text-slate-700">--</p></div>
+                    <div><p class="text-[10px] font-bold text-slate-400 uppercase">Your GPS</p><p id="your-gps" class="text-xs font-mono font-bold text-slate-700">--</p></div>
+                    <div><p class="text-[10px] font-bold text-slate-400 uppercase">Campus Center</p><p id="campus-center" class="text-xs font-mono font-bold text-slate-700">--</p></div>
                 </div>
             </div>
 
@@ -117,6 +118,31 @@
 
         let studentMap, campusMarker, studentMarker, geofenceCircle, watchId;
 
+        function updateStudentLocation(lat, lng) {
+            const newPosition = { lat: lat, lng: lng };
+            console.log("Live location:", lat, lng);
+
+            // Move marker
+            if (studentMarker) {
+                studentMarker.setPosition(newPosition);
+            } else if (studentMap) {
+                studentMarker = new google.maps.Marker({
+                    position: newPosition,
+                    map: studentMap,
+                    title: "Your Location",
+                    icon: "http://maps.google.com/mapfiles/ms/icons/green-dot.png"
+                });
+            }
+
+            // Smooth center map
+            if (studentMap) {
+                studentMap.panTo(newPosition);
+            }
+
+            // Update UI
+            document.getElementById("your-gps").innerText = lat.toFixed(6) + ", " + lng.toFixed(6);
+        }
+
         function startTracking() {
             if (watchId) return;
             
@@ -140,7 +166,8 @@
                     const lat = pos.coords.latitude;
                     const lng = pos.coords.longitude;
                     
-                    console.log("[FRONTEND DEBUG] Current Position:", lat, lng);
+                    // Live Update Map & UI
+                    updateStudentLocation(lat, lng);
 
                     try {
                         const res = await fetch("/api/attendance", {
@@ -153,23 +180,35 @@
                         });
                         
                         const data = await res.json();
-                        console.log("[FRONTEND DEBUG] API Response:", data);
+                        
+                        if (!res.ok) return;
 
-                        if (!res.ok) {
-                            console.error("[FRONTEND DEBUG] API Error:", data.message);
-                            return;
-                        }
-
-                        // Update Dashboard Metrics (Robust Data Binding)
+                        // Update Dashboard Metrics
                         const rawDistance = Number(data.distance);
                         document.getElementById("distance-val").innerText = isNaN(rawDistance) ? "--" : Math.round(rawDistance);
                         
                         if (data.campus && typeof data.campus.lat === 'number') {
-                            document.getElementById("diag-campus-coords").textContent = `${data.campus.lat.toFixed(6)}, ${data.campus.lng.toFixed(6)}`;
-                        }
-                        
-                        if (data.student && typeof data.student.lat === 'number') {
-                            document.getElementById("diag-student-coords").textContent = `${data.student.lat.toFixed(6)}, ${data.student.lng.toFixed(6)}`;
+                            const cPos = { lat: data.campus.lat, lng: data.campus.lng };
+                            document.getElementById("campus-center").textContent = `${cPos.lat.toFixed(6)}, ${cPos.lng.toFixed(6)}`;
+                            
+                            // Ensure campus marker exists
+                            if (!campusMarker && studentMap) {
+                                campusMarker = new google.maps.Marker({
+                                    position: cPos,
+                                    map: studentMap,
+                                    icon: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png"
+                                });
+                            } else if (campusMarker) {
+                                campusMarker.setPosition(cPos);
+                            }
+
+                            if (!geofenceCircle && studentMap) {
+                                geofenceCircle = new google.maps.Circle({ 
+                                    map: studentMap, center: cPos, radius: 100, 
+                                    fillColor: "#0284c7", fillOpacity: 0.15, 
+                                    strokeColor: "#0284c7", strokeWeight: 2 
+                                });
+                            }
                         }
 
                         const badge = document.getElementById('presence-badge');
@@ -186,45 +225,12 @@
                             fetchLogs();
                         }
 
-                        // Update Map markers
-                        if (studentMap && data.campus && data.student) {
-                            const campusPos = { lat: Number(data.campus.lat), lng: Number(data.campus.lng) };
-                            const studentPos = { lat: Number(data.student.lat), lng: Number(data.student.lng) };
-
-                            if (!studentMarker) {
-                                studentMarker = new google.maps.Marker({ position: studentPos, map: studentMap, icon: "http://maps.google.com/mapfiles/ms/icons/green-dot.png" });
-                            } else {
-                                studentMarker.setPosition(studentPos);
-                            }
-
-                            if (!campusMarker) {
-                                campusMarker = new google.maps.Marker({ position: campusPos, map: studentMap, icon: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png" });
-                            } else {
-                                campusMarker.setPosition(campusPos);
-                            }
-
-                            if (!geofenceCircle) {
-                                geofenceCircle = new google.maps.Circle({ 
-                                    map: studentMap, center: campusPos, radius: 100, 
-                                    fillColor: "#0284c7", fillOpacity: 0.15, 
-                                    strokeColor: "#0284c7", strokeWeight: 2 
-                                });
-                            }
-                            
-                            const bounds = new google.maps.LatLngBounds();
-                            bounds.extend(studentPos); bounds.extend(campusPos);
-                            studentMap.fitBounds(bounds);
-                        }
-
-                    } catch (err) { 
-                        console.error("[FRONTEND DEBUG] Fetch Error:", err); 
-                    }
+                    } catch (err) { console.error("Tracking error:", err); }
                 },
                 (err) => {
-                    console.error("[FRONTEND DEBUG] Geolocation Error:", err);
+                    console.error("GPS error:", err);
                     let msg = "GPS Error";
                     if (err.code === err.PERMISSION_DENIED) msg = "Please Enable GPS Permission";
-                    else if (err.code === err.TIMEOUT) msg = "GPS Timeout";
                     showAlert(msg, false);
                 },
                 geoOptions
@@ -260,16 +266,15 @@
 
         function showAlert(msg, success) {
             const box = document.getElementById('alert-box');
-            box.innerText = msg; 
-            box.className = `p-4 rounded-xl border mb-4 ${success ? 'bg-green-50 text-green-800 border-green-200' : 'bg-red-50 text-red-800 border-red-200'}`;
+            box.innerText = msg; box.className = `p-4 rounded-xl border mb-4 ${success ? 'bg-green-50 text-green-800 border-green-200' : 'bg-red-50 text-red-800 border-red-200'}`;
             box.classList.remove('hidden');
             setTimeout(() => box.classList.add('hidden'), 5000);
         }
 
         window.initMap = () => { 
             studentMap = new google.maps.Map(document.getElementById('student-map'), { 
-                center: { lat: 0, lng: 0 }, 
-                zoom: 2, 
+                center: { lat: 15, lng: 75 }, 
+                zoom: 15, 
                 disableDefaultUI: true 
             }); 
         };
