@@ -563,11 +563,19 @@
             box.classList.remove('hidden');
         }
 
+        let trackingInterval = null;
+        let currentStudentLat = null;
+        let currentStudentLng = null;
+
         function startTracking() {
             // --- STOP TRACKING ---
             if (watchId) {
                 navigator.geolocation.clearWatch(watchId);
                 watchId = null;
+                if (trackingInterval) {
+                    clearInterval(trackingInterval);
+                    trackingInterval = null;
+                }
                 document.getElementById('markText').textContent = "Start Tracking";
                 document.getElementById('tracking-status').textContent = "Automatic Arrival Detection";
                 document.getElementById('startTrackingBtn').classList.replace('bg-green-500', 'bg-white');
@@ -601,16 +609,18 @@
                             console.log(`[Tracking] Initial position obtained: (${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)})`);
                         }
 
-                        const lat = position.coords.latitude;
-                        const lng = position.coords.longitude;
+                        currentStudentLat = position.coords.latitude;
+                        currentStudentLng = position.coords.longitude;
                         
                         // ensure campus config is loaded cleanly without await
-                        if (!campusConfig) {
+                        if (!campusConfig && !trackingInterval) {
                             fetchCampusConfig().then(() => {
-                                if (campusConfig) processTrackingFix(lat, lng);
+                                if (campusConfig) {
+                                    startPolling();
+                                }
                             }).catch(err => console.error(err));
-                        } else {
-                            processTrackingFix(lat, lng);
+                        } else if (campusConfig && !trackingInterval) {
+                            startPolling();
                         }
                     } catch (err) {
                         console.error("Tracking error:", err);
@@ -645,113 +655,115 @@
                     if (watchId) {
                         navigator.geolocation.clearWatch(watchId);
                         watchId = null;
+                        if (trackingInterval) {
+                            clearInterval(trackingInterval);
+                            trackingInterval = null;
+                        }
                     }
                 },
                 { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
             );
         }
 
-        function processTrackingFix(studentLat, studentLng) {
-            if (!campusConfig || campusLat === null || campusLng === null) {
-                console.warn("[Tracking] Campus data not loaded, blocking tracking processing.");
+        function startPolling() {
+            if (trackingInterval) return;
+            processTrackingFix(); // Do an immediate check
+            trackingInterval = setInterval(() => {
+                if (currentStudentLat !== null && currentStudentLng !== null) {
+                    processTrackingFix();
+                }
+            }, 3000);
+            console.log("Started 3-second continual API polling");
+        }
+
+        function processTrackingFix() {
+            if (!campusConfig || campusLat === null || campusLng === null || currentStudentLat === null || currentStudentLng === null) {
                 return;
             }
 
-            const distance = getDistance(studentLat, studentLng, campusLat, campusLng);
             const radius = campusConfig.radius;
-            
-            console.log("=== DEBUG: TRACKING UPDATE ===");
-            console.log(`Student Location: (${studentLat}, ${studentLng})`);
-            console.log(`Campus Center: (${campusLat}, ${campusLng})`);
-            console.log(`Distance: ${distance} meters`);
-            console.log(`Required Radius: ${radius} meters`);
-
-            updateStudentLocationOnMap(studentLat, studentLng);
-
-            lastDistance = Math.round(distance);
-            document.getElementById('current-distance').textContent = lastDistance;
+            updateStudentLocationOnMap(currentStudentLat, currentStudentLng);
 
             const today = new Date().toISOString().split('T')[0];
             const todayRecord = attendanceData.find(r => r.date === today);
 
-            // Live UI Badge Update
-            const presenceBadge = document.getElementById('presence-badge');
-            if (presenceBadge && !checkedOut) {
-                if (distance <= radius) {
-                    presenceBadge.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700';
-                    presenceBadge.textContent = '✅ Inside Campus';
-                } else {
-                    presenceBadge.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700';
-                    presenceBadge.textContent = '❌ Outside Campus';
-                }
-            }
-
-            // Universal Attendance Tracking POST API
+            // Universal Attendance Tracking POST API (Polling every 3 seconds)
             if (!checkInAttempted || (todayRecord && todayRecord.checkinTime && !checkedOut)) {
-                // If not checked in, or checked-in but not explicitly checked-out
-                if (distance <= radius && !todayRecord && !checkInAttempted) {
-                    checkInAttempted = true; // Lock check-in to prevent redundant spam
-                } else if (distance > radius && todayRecord && todayRecord.checkinTime && !checkedOut) {
-                    checkedOut = true; // Lock check-out
-                }
-
-                console.log(`[API CALL] POST /api/attendance | Payload: { lat: ${studentLat}, lng: ${studentLng}, distance: ${distance} }`);
                 fetch('/api/attendance', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify({ lat: studentLat, lng: studentLng, distance: distance })
+                    body: JSON.stringify({ lat: currentStudentLat, lng: currentStudentLng })
                 })
                 .then(res => res.json().then(data => ({ status: res.status, ok: res.ok, data })))
                 .then(({ ok, data }) => {
-                    console.log("[API RESPONSE]", data);
+                    // 1. Process Distance from Backend
+                    if (data.distance !== undefined) {
+                        const distance = data.distance;
+                        lastDistance = Math.round(distance);
+                        document.getElementById('current-distance').textContent = lastDistance;
+
+                        // Live UI Badge Update
+                        const presenceBadge = document.getElementById('presence-badge');
+                        if (presenceBadge && !checkedOut) {
+                            if (distance <= radius) {
+                                presenceBadge.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700';
+                                presenceBadge.textContent = '✅ Inside Campus';
+                            } else {
+                                presenceBadge.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700';
+                                presenceBadge.textContent = '❌ Outside Campus';
+                            }
+                        }
+
+                        // Local lock updates to prevent duplicate toasts
+                        if (distance <= radius && !todayRecord && !checkInAttempted && ok && data.action === 'checked-in') {
+                            checkInAttempted = true; 
+                        } else if (distance > radius && todayRecord && todayRecord.checkinTime && !checkedOut && ok && data.action === 'checked-out') {
+                            checkedOut = true;
+                        }
+                    }
+
+                    // 2. Process Actions
                     if (ok) {
                         if (data.attendance) updateCheckInOutUI(data.attendance);
                         if (data.action === 'checked-in') {
+                            checkInAttempted = true;
                             showAlert(`✅ Automatic Arrival Detected: Checked In!`, true);
                         } else if (data.action === 'checked-out') {
+                            checkedOut = true;
                             showAlert(`🚪 Automatic Departure Detected: Checked Out!`, true);
                             const markBtn = document.getElementById('startTrackingBtn');
                             if (markBtn) document.getElementById('tracking-status').textContent = "Live Monitoring Active (Checked Out)";
                         }
                         
                         // Force refresh logs if it successfully mutated state
-                        if (data.action) fetchDashboardData().catch(e => console.error(e));
+                        if (data.action && data.action !== 'none') {
+                            fetchDashboardData().catch(e => console.error(e));
+                        }
                     } else {
                         // Unset locks if it failed legitimately 
                         if (data.message && data.message.toLowerCase().includes('already')) {
                             // Already handled, keep locks
                         } else {
-                            if (distance <= radius) checkInAttempted = false;
-                            if (distance > radius) checkedOut = false;
-                            
-                            if (distance <= radius && data.message && (data.message.toLowerCase().includes('after') || data.message.toLowerCase().includes('window'))) {
-                                const startTime = campusConfig.attendance_start_time ? formatTime(campusConfig.attendance_start_time) : 'allowed time';
-                                document.getElementById('tracking-status').textContent = `Waiting for ${startTime} Check-In window...`;
-                                showAlert('⏰ ' + data.message, false);
+                            if (data.distance !== undefined) {
+                                if (data.distance <= radius) checkInAttempted = false;
+                                if (data.distance > radius) checkedOut = false;
+                                
+                                if (data.distance <= radius && data.message && (data.message.toLowerCase().includes('after') || data.message.toLowerCase().includes('window'))) {
+                                    const startTime = campusConfig.attendance_start_time ? formatTime(campusConfig.attendance_start_time) : 'allowed time';
+                                    document.getElementById('tracking-status').textContent = `Waiting for ${startTime} Check-In window...`;
+                                    showAlert('⏰ ' + data.message, false);
+                                }
                             }
                         }
                     }
                 })
                 .catch(err => {
                     console.error('[API Tracking Error]:', err);
-                    if (distance <= radius) checkInAttempted = false;
-                    if (distance > radius) checkedOut = false;
                 });
             }
         }
 
-        function getDistance(lat1, lng1, lat2, lng2) {
-            const R = 6371e3; // metres
-            const φ1 = lat1 * Math.PI/180;
-            const φ2 = lat2 * Math.PI/180;
-            const Δφ = (lat2-lat1) * Math.PI/180;
-            const Δλ = (lon2-lon1) * Math.PI/180;
-            const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-                      Math.cos(φ1) * Math.cos(φ2) *
-                      Math.sin(Δλ/2) * Math.sin(Δλ/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            return R * c;
-        }
+
 
         function switchTab(tabId) {
             ['overview'].forEach(id => {

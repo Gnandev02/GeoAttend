@@ -34,7 +34,6 @@ module.exports = async (req, res) => {
             // Parse coordinates as floats — JSON may send them as strings
             const latitude = parseFloat(req.body.lat !== undefined ? req.body.lat : req.body.latitude);
             const longitude = parseFloat(req.body.lng !== undefined ? req.body.lng : req.body.longitude);
-            const distance = parseFloat(req.body.distance);
             const now = new Date();
 
             // CRITICAL: Vercel serverless runs in UTC. Must specify timeZone explicitly.
@@ -44,8 +43,8 @@ module.exports = async (req, res) => {
             const currentTime = now.toLocaleTimeString('en-IN', { ...IST, hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
             const currentHour = parseInt(now.toLocaleTimeString('en-IN', { ...IST, hour12: false, hour: '2-digit' }), 10);
             if (!action || action === 'track') {
-                if (latitude === undefined || longitude === undefined || distance === undefined) {
-                    return res.status(400).json({ message: 'Missing location data (lat, lng, distance).' });
+                if (latitude === undefined || longitude === undefined || isNaN(latitude)) {
+                    return res.status(400).json({ message: 'Missing location data (lat, lng).' });
                 }
 
                 // Check geofence and timings
@@ -54,6 +53,21 @@ module.exports = async (req, res) => {
                 
                 const geofence = geofenceQuery.rows[0];
                 const campusRadius = parseFloat(geofence.radius);
+                const campusLat = parseFloat(geofence.latitude);
+                const campusLng = parseFloat(geofence.longitude);
+
+                const distance = calculateDistance(
+                    latitude,
+                    longitude,
+                    campusLat,
+                    campusLng
+                );
+
+                console.log("Student:", latitude, longitude);
+                console.log("Campus:", campusLat, campusLng);
+                console.log("Distance:", distance);
+                console.log("Radius:", campusRadius);
+
                 const startTimeMins = geofence.attendance_start_time ? timeStringToMinutes(geofence.attendance_start_time) : null;
                 const endTimeMins = geofence.attendance_end_time ? timeStringToMinutes(geofence.attendance_end_time) : null;
                 const currentTimeMins = timeStringToMinutes(currentTime);
@@ -65,14 +79,14 @@ module.exports = async (req, res) => {
                 if (distance <= campusRadius) {
                     // Inside Radius -> Check-in
                     if (todayRecord) {
-                        return res.status(200).json({ message: 'Already checked in', attendance: todayRecord, action: "none" });
+                        return res.status(200).json({ message: 'Already checked in', attendance: todayRecord, action: "none", distance });
                     }
 
                     // VALIDATION: Start Time (if set)
                     if (startTimeMins !== null && currentTimeMins < startTimeMins) {
                         const displayStart = geofence.attendance_start_time.substring(0, 5);
                         const isPM = geofence.attendance_start_time.toLowerCase().includes('pm') || parseInt(geofence.attendance_start_time.split(':')[0]) >= 12;
-                        return res.status(400).json({ message: `Attendance allowed only after ${displayStart} ${isPM ? 'PM' : 'AM'}` });
+                        return res.status(400).json({ message: `Attendance allowed only after ${displayStart} ${isPM ? 'PM' : 'AM'}`, distance });
                     }
 
                     // VALIDATION: End Time (if set) -> mark as Late
@@ -87,10 +101,11 @@ module.exports = async (req, res) => {
                         return res.status(201).json({
                             message: 'Checked in successfully',
                             action: 'checked-in',
-                            attendance: result.rows[0]
+                            attendance: result.rows[0],
+                            distance
                         });
                     } catch (e) {
-                        if (e.code === '23505') return res.status(400).json({ message: 'Already checked in for today' });
+                        if (e.code === '23505') return res.status(400).json({ message: 'Already checked in for today', distance });
                         throw e;
                     }
 
@@ -98,11 +113,11 @@ module.exports = async (req, res) => {
                     // Outside Radius -> Check-out
                     if (!todayRecord) {
                         // Not checked in, nothing to do
-                        return res.status(200).json({ message: 'Outside campus', action: 'none' });
+                        return res.status(200).json({ message: 'Outside campus', action: 'none', distance });
                     }
                     if (todayRecord.check_out_time !== null) {
                         // Already checked out
-                        return res.status(200).json({ message: 'Already checked out', attendance: todayRecord, action: 'none' });
+                        return res.status(200).json({ message: 'Already checked out', attendance: todayRecord, action: 'none', distance });
                     }
 
                     // Perform checkout update where check_out_time IS NULL
@@ -121,11 +136,12 @@ module.exports = async (req, res) => {
                         [currentTime, 'completed', durationMinutes, student.id, today]
                     );
 
-                    if (result.rows.length === 0) return res.status(400).json({ message: 'Checkout collision or record missing' });
+                    if (result.rows.length === 0) return res.status(400).json({ message: 'Checkout collision or record missing', distance });
                     return res.status(200).json({
                         message: 'Checked out successfully',
                         action: 'checked-out',
-                        attendance: result.rows[0]
+                        attendance: result.rows[0],
+                        distance
                     });
                 }
             } else if (action === 'markAttendance') {
