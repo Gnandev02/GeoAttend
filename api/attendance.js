@@ -31,8 +31,8 @@ module.exports = async (req, res) => {
             if (!student) return res.status(401).json({ message: 'Not authorized as a student' });
 
             const { sessionName } = req.body;
-            const latitude = parseFloat(req.body.lat);
-            const longitude = parseFloat(req.body.lng);
+            const latitude = Number(req.body.lat);
+            const longitude = Number(req.body.lng);
 
             const now = new Date();
 
@@ -41,7 +41,6 @@ module.exports = async (req, res) => {
             const today = now.toLocaleDateString('en-CA', IST);  // YYYY-MM-DD in IST
             // Store exact IST time in 12-hour AM/PM format: "10:00:49 AM"
             const currentTime = now.toLocaleTimeString('en-IN', { ...IST, hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            const currentHour = parseInt(now.toLocaleTimeString('en-IN', { ...IST, hour12: false, hour: '2-digit' }), 10);
             
             if (!action || action === 'track') {
                 if (!latitude || !longitude) {
@@ -56,8 +55,8 @@ module.exports = async (req, res) => {
                 const distance = calculateDistance(
                     latitude,
                     longitude,
-                    parseFloat(geofence.latitude),
-                    parseFloat(geofence.longitude)
+                    Number(geofence.latitude),
+                    Number(geofence.longitude)
                 );
 
                 console.log("GPS:", latitude, longitude);
@@ -79,15 +78,17 @@ module.exports = async (req, res) => {
                         return res.status(200).json({ message: 'Already checked in', attendance: todayRecord, action: "none", distance });
                     }
 
-                    // VALIDATION: Start Time (if set)
+                    // VALIDATION: Start Time
                     if (startTimeMins !== null && currentTimeMins < startTimeMins) {
-                        const displayStart = geofence.attendance_start_time.substring(0, 5);
-                        const isPM = geofence.attendance_start_time.toLowerCase().includes('pm') || parseInt(geofence.attendance_start_time.split(':')[0]) >= 12;
-                        return res.status(400).json({ message: `Attendance allowed only after ${displayStart} ${isPM ? 'PM' : 'AM'}`, distance });
+                        return res.status(400).json({ message: `Attendance window hasn't opened yet. Starts at ${geofence.attendance_start_time}`, distance });
                     }
 
-                    // VALIDATION: End Time (if set) -> mark as Late
-                    const status = (endTimeMins !== null && currentTimeMins >= endTimeMins) ? 'Late' : 'Present';
+                    // VALIDATION: End Time (Block if window closed)
+                    if (endTimeMins !== null && currentTimeMins > endTimeMins) {
+                        return res.status(400).json({ message: `Attendance window closed at ${geofence.attendance_end_time}`, distance });
+                    }
+
+                    const status = 'Present'; // Windows are open, so mark as Present
 
                     try {
                         const result = await query(
@@ -144,8 +145,8 @@ module.exports = async (req, res) => {
             } else if (action === 'markAttendance') {
                 const geofenceQuery = await query('SELECT * FROM campus_setup WHERE college_code = $1', [student.college_code]);
                 const geofence = geofenceQuery.rows[0];
-                const distance = calculateDistance(latitude, longitude, geofence.latitude, geofence.longitude);
-                const status = distance <= geofence.radius ? 'Present' : 'Outside Zone';
+                const distance = calculateDistance(latitude, longitude, Number(geofence.latitude), Number(geofence.longitude));
+                const status = distance <= Number(geofence.radius) ? 'Present' : 'Outside Zone';
 
                 const result = await query(
                     `INSERT INTO attendance (student_id, college_code, attendance_date, check_in_time, status, distance_at_checkin, latitude, longitude, session_name)
