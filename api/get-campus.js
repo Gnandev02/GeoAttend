@@ -1,32 +1,26 @@
-const { query } = require('./utils/db');
-const { protectStudent } = require('./utils/auth');
+const { query } = require("./utils/db");
 
-module.exports = async (req, res) => {
-    if (req.method !== 'GET') return res.status(405).json({ message: 'Method Not Allowed' });
+export default async function handler(req, res) {
+  try {
+    const result = await query(`
+      SELECT latitude, longitude, radius_m 
+      FROM campus_setup 
+      LIMIT 1
+    `);
 
-    try {
-        const student = await protectStudent(req);
-        if (!student) return res.status(401).json({ message: 'Not authorized' });
-
-        const campusQuery = await query(
-            'SELECT latitude, longitude, radius, attendance_start_time, attendance_end_time FROM campus_setup WHERE college_code = $1',
-            [student.college_code]
-        );
-
-        if (campusQuery.rows.length === 0) {
-            return res.status(404).json({ message: 'Campus geofence not found' });
-        }
-
-        const campus = campusQuery.rows[0];
-        return res.status(200).json({
-            lat: Number(campus.latitude),
-            lng: Number(campus.longitude),
-            radius: Number(campus.radius),
-            start_time: campus.attendance_start_time,
-            end_time: campus.attendance_end_time
-        });
-    } catch (error) {
-        console.error("Fetch Campus Error:", error);
-        return res.status(500).json({ message: 'Server Error' });
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "No campus data found" });
     }
-};
+
+    const row = result.rows[0];
+
+    res.status(200).json({
+      lat: row.latitude,
+      lng: row.longitude,
+      radius: row.radius_m
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
