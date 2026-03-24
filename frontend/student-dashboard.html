@@ -117,6 +117,7 @@
         document.getElementById('user-info').textContent = `${user.rollNumber || ''} • ${user.email}`;
 
         let map, marker, radius, campusCenter, lastStatus;
+        let currentLat = 0, currentLng = 0;
 
         // STEP 1: FETCH CAMPUS DATA FROM BACKEND
         async function initDashboard() {
@@ -125,10 +126,10 @@
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.message);
 
-                campusCenter = { lat: data.lat, lng: data.lng };
+                campusCenter = { lat: data.latitude, lng: data.longitude };
                 radius = data.radius;
 
-                document.getElementById("campus-center").innerText = `${data.lat.toFixed(6)}, ${data.lng.toFixed(6)}`;
+                document.getElementById("campus-center").innerText = `${data.latitude.toFixed(6)}, ${data.longitude.toFixed(6)}`;
 
                 // STEP 2: INITIALIZE MAP CORRECTLY
                 map = new google.maps.Map(document.getElementById("student-map"), {
@@ -162,9 +163,9 @@
 
             navigator.geolocation.watchPosition(
                 (pos) => {
-                    const lat = pos.coords.latitude;
-                    const lng = pos.coords.longitude;
-                    updateLocation(lat, lng);
+                    currentLat = pos.coords.latitude;
+                    currentLng = pos.coords.longitude;
+                    updateLocation(currentLat, currentLng);
                 },
                 (err) => {
                     console.error(err);
@@ -249,7 +250,11 @@
                         "Content-Type": "application/json",
                         "Authorization": "Bearer " + token
                     },
-                    body: JSON.stringify({ type })
+                    body: JSON.stringify({ 
+                        type,
+                        lat: currentLat,
+                        lng: currentLng
+                    })
                 });
                 const data = await res.json();
                 if (data.message) showAlert(data.message, res.ok);

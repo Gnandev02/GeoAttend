@@ -53,6 +53,8 @@ export default async function handler(req, res) {
 
             return res.status(200).json({
                 name: row.name,
+                lat: Number(row.latitude), // Backward compatibility
+                lng: Number(row.longitude), // Backward compatibility
                 latitude: Number(row.latitude),
                 longitude: Number(row.longitude),
                 radius: Number(row.radius),
