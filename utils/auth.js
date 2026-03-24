@@ -48,7 +48,7 @@ const authenticateRequest = async (req, tableName) => {
         }
 
         // Return the user object for existing logic in main.js
-        const { query } = require('./db.js');
+        const { query } = require('../api/utils/db.js');
         const userQuery = await query(`SELECT * FROM ${tableName} WHERE id = $1`, [decoded.id]);
         const user = userQuery.rows[0];
 
