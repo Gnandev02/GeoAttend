@@ -175,7 +175,7 @@
             errorMsg.classList.add('hidden');
 
             try {
-                const response = await fetch('/api/main?action=studentLogin', {
+                const response = await fetch('/api/main?action=auth-login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })

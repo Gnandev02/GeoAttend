@@ -661,7 +661,7 @@
             }
             try {
                 // Students
-                const s = await fetch('/api/students?action=getStudents', { headers: { 'Authorization': `Bearer ${token}` } });
+                const s = await fetch('/api/students?action=get-students', { headers: { 'Authorization': `Bearer ${token}` } });
                 const studentsData = await s.json();
 
                 // Logs
