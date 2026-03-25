@@ -123,13 +123,17 @@
         async function initDashboard() {
             try {
                 const res = await fetch("/api/main?action=get-campus", { headers: { "Authorization": "Bearer " + token } });
-                const data = await res.json();
+                if (res.status === 401) {
+                    alert("Session expired or account not found. Logging out...");
+                    logout();
+                    return;
+                }
                 if (!res.ok) throw new Error(data.message);
 
                 campusCenter = { lat: data.latitude, lng: data.longitude };
                 radius = data.radius;
 
-                document.getElementById("campus-center").innerText = `${data.latitude.toFixed(6)}, ${data.longitude.toFixed(6)}`;
+                document.getElementById("campus-center").innerText = `${data.latitude?.toFixed(6) || '--'}, ${data.longitude?.toFixed(6) || '--'}`;
 
                 // STEP 2: INITIALIZE MAP CORRECTLY
                 map = new google.maps.Map(document.getElementById("student-map"), {
@@ -151,7 +155,7 @@
                 fetchTodayStats();
             } catch (err) {
                 console.error("Initialization error:", err);
-                showAlert("Could not load campus data.", false);
+                showAlert(err.message || "Could not load campus data.", false);
             }
         }
 
@@ -258,6 +262,11 @@
                 });
                 const data = await res.json();
                 console.log("Attendance response:", data);
+                if (res.status === 401) {
+                    showAlert("Account not found. Please relogin.", false);
+                    setTimeout(logout, 3000);
+                    return;
+                }
                 if (!res.ok) {
                     showAlert(data.message || data.error || "Attendance failed", false);
                 } else if (data.action && data.action !== "none") {
@@ -275,16 +284,19 @@
                 const res = await fetch("/api/main?action=attendance-today", { headers: { "Authorization": "Bearer " + token } });
                 const data = await res.json();
                 
-                document.getElementById('attendance-present').textContent = data.stats.present;
-                document.getElementById('attendance-total').textContent = data.stats.total;
+                document.getElementById('attendance-present').textContent = data.stats?.present || 0;
+                document.getElementById('attendance-total').textContent = data.stats?.total || 0;
                 
-                const pct = data.stats.total ? Math.round((data.stats.present / data.stats.total) * 100) : 0;
+                const pct = data.stats?.total ? Math.round((data.stats.present / data.stats.total) * 100) : 0;
                 document.getElementById('attendance-percent').textContent = pct + '%';
                 document.getElementById('attendance-circle').setAttribute('stroke-dasharray', `${pct}, 100`);
 
                 if (data.today) {
                     document.getElementById('display-checkin').textContent = data.today.check_in_time || '--:--';
                     document.getElementById('display-checkout').textContent = data.today.check_out_time || '--:--';
+                } else {
+                    document.getElementById('display-checkin').textContent = '--:--';
+                    document.getElementById('display-checkout').textContent = '--:--';
                 }
 
                 // Also fetch full logs

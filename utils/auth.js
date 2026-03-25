@@ -1,9 +1,9 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 
-const generateToken = (id, college_code) => {
+const generateToken = (id, email, college_code) => {
     const secret = process.env.JWT_SECRET || "geoattend_secret_key";
-    return jwt.sign({ id, college_code }, secret, {
+    return jwt.sign({ id, email, college_code }, secret, {
         expiresIn: '1d',
     });
 };
@@ -41,18 +41,26 @@ const authenticateRequest = async (req, tableName) => {
         // Normalize college_code from either naming convention
         const college_code = decoded.college_code || decoded.collegeCode || '';
         const userId = decoded.id;
+        const email = decoded.email || '';
 
         // Set request context regardless of DB result
         if (tableName === 'admins') {
-            req.admin = { id: userId, college_code };
+            req.admin = { id: userId, email, college_code };
         } else {
-            req.student = { id: userId, college_code };
+            req.student = { id: userId, email, college_code };
         }
 
-        // Try DB lookup to get full user row (e.g. for password checks)
+        // Try DB lookup by ID
         try {
             const { query } = require('../api/utils/db.js');
-            const userQuery = await query(`SELECT * FROM ${tableName} WHERE id = $1`, [userId]);
+            let userQuery = await query(`SELECT * FROM ${tableName} WHERE id = $1`, [userId]);
+            
+            // Fallback to Email if ID lookup fails (for students who were re-added)
+            if (!userQuery.rows[0] && email) {
+                console.warn(`[Auth] ID lookup failed for ${tableName} id=${userId}, trying email=${email}`);
+                userQuery = await query(`SELECT * FROM ${tableName} WHERE email = $1`, [email]);
+            }
+
             if (userQuery.rows[0]) {
                 const user = userQuery.rows[0];
                 // Ensure snake_case college_code
@@ -64,9 +72,8 @@ const authenticateRequest = async (req, tableName) => {
         }
 
         // Fallback: return user object constructed from token payload alone
-        // This allows the app to work even if DB lookup fails
         console.warn(`[Auth] Returning token-only user for ${tableName} id=${userId}`);
-        return { id: userId, college_code, _fromToken: true };
+        return { id: userId, email, college_code, _fromToken: true };
 
     } catch (error) {
         console.error(`[Auth] ${tableName} JWT verification failed:`, error.message);

@@ -82,6 +82,13 @@ export default async function handler(req, res) {
                 ? (await query('SELECT * FROM students WHERE id = $1', [student.id])).rows[0]
                 : student;
             
+            // Extra fallback: If ID lookup failed, try Email (if available in token)
+            if (!studentRow && student.email) {
+                console.warn(`[Attendance] ID lookup failed for student id=${student.id}, trying email=${student.email}`);
+                const emailLookup = await query('SELECT * FROM students WHERE email = $1', [student.email]);
+                studentRow = emailLookup.rows[0];
+            }
+
             if (!studentRow) {
                 return res.status(401).json({ message: 'Student account not found. Please ask your admin or re-register.' });
             }
@@ -273,7 +280,7 @@ export default async function handler(req, res) {
                 if (result.rows.length === 0) return res.status(401).json({ message: 'Invalid credentials' });
                 const student = result.rows[0];
                 if (await comparePassword(password, student.password)) {
-                    const token = generateToken(student.id, student.college_code);
+                    const token = generateToken(student.id, student.email, student.college_code);
                     return res.status(200).json({ 
                         success: true,
                         token,
@@ -292,7 +299,7 @@ export default async function handler(req, res) {
                 if (result.rows.length === 0) return res.status(401).json({ message: 'Invalid credentials' });
                 const admin = result.rows[0];
                 if (await comparePassword(password, admin.password)) {
-                    const token = generateToken(admin.id, admin.college_code);
+                    const token = generateToken(admin.id, admin.email, admin.college_code);
                     return res.status(200).json({ 
                         success: true,
                         token,
