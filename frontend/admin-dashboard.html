@@ -426,6 +426,7 @@
                         <div id="admin-map" class="w-full h-96 rounded-2xl border border-slate-200 shadow-sm z-0 relative bg-slate-100 flex items-center justify-center text-slate-400 font-medium">Loading Interactive Map...</div>
                     </div>
                     <form id="geofence-form" class="p-8 space-y-8">
+                        <fieldset id="geofence-fieldset" disabled class="space-y-8 disabled:opacity-75 disabled:cursor-not-allowed">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                             <div class="space-y-2">
                                 <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">College Name</label>
@@ -469,9 +470,12 @@
                                 <p class="text-[10px] text-slate-400 font-medium">Leave blank for anytime</p>
                             </div>
                         </div>
+                        </fieldset>
 
-                        <div class="pt-6 border-t border-slate-50 flex justify-end">
-                            <button type="submit" class="btn-indigo px-10 py-4 rounded-xl shadow-lg shadow-indigo-100">Update Geofence</button>
+                        <div class="pt-6 border-t border-slate-50 flex justify-end gap-4">
+                            <button type="button" id="geo-edit-btn" onclick="toggleGeofenceEdit()" class="btn-indigo px-10 py-4 rounded-xl shadow-lg shadow-indigo-100 bg-slate-600 hover:bg-slate-700">Edit Geofence</button>
+                            <button type="button" id="geo-cancel-btn" onclick="cancelGeofenceEdit()" class="px-8 py-4 rounded-xl font-bold tracking-widest text-slate-500 hover:bg-slate-100 uppercase text-xs hidden">Cancel</button>
+                            <button type="submit" id="geo-submit-btn" class="btn-indigo px-10 py-4 rounded-xl shadow-lg shadow-indigo-100 hidden">Update Geofence</button>
                         </div>
                     </form>
                 </div>
@@ -881,7 +885,17 @@
                 if (mainCampus.attendance_start_time) document.getElementById('geo-start-time').value = mainCampus.attendance_start_time;
                 if (mainCampus.attendance_end_time) document.getElementById('geo-end-time').value = mainCampus.attendance_end_time;
                 
-                if (window.adminMap && mainCampus.latitude) {
+                const fieldset = document.getElementById('geofence-fieldset');
+                if (fieldset) fieldset.disabled = true;
+                
+                const editBtn = document.getElementById('geo-edit-btn');
+                if (editBtn) {
+                    editBtn.classList.remove('hidden');
+                    document.getElementById('geo-submit-btn').classList.add('hidden');
+                    document.getElementById('geo-cancel-btn').classList.add('hidden');
+                }
+
+                if (typeof adminMap !== 'undefined' && adminMap && mainCampus.latitude) {
                     const pos = { lat: parseFloat(mainCampus.latitude), lng: parseFloat(mainCampus.longitude) };
                     adminMap.setCenter(pos);
                     if(adminMarker) adminMarker.setPosition(pos);
@@ -890,7 +904,28 @@
                         adminCircle.setRadius(parseFloat(mainCampus.radius) || 500);
                     }
                 }
+            } else {
+                const fieldset = document.getElementById('geofence-fieldset');
+                if (fieldset) fieldset.disabled = false;
+                
+                const editBtn = document.getElementById('geo-edit-btn');
+                if (editBtn) {
+                    editBtn.classList.add('hidden');
+                    document.getElementById('geo-submit-btn').classList.remove('hidden');
+                    document.getElementById('geo-cancel-btn').classList.add('hidden');
+                }
             }
+        }
+
+        function toggleGeofenceEdit() {
+            document.getElementById('geofence-fieldset').disabled = false;
+            document.getElementById('geo-edit-btn').classList.add('hidden');
+            document.getElementById('geo-submit-btn').classList.remove('hidden');
+            document.getElementById('geo-cancel-btn').classList.remove('hidden');
+        }
+
+        function cancelGeofenceEdit() {
+            fetchAdminData();
         }
 
         document.getElementById('geofence-form').addEventListener('submit', async (e) => {
