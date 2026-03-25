@@ -296,6 +296,80 @@ export default async function handler(req, res) {
                 }
                 return res.status(401).json({ message: 'Invalid credentials' });
             }
+            else if (action === "sendAdminOtp") {
+                const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+                await query(
+                    `INSERT INTO otps (email, otp, created_at) VALUES ($1, $2, CURRENT_TIMESTAMP)
+                     ON CONFLICT (email) DO UPDATE SET otp = EXCLUDED.otp, created_at = CURRENT_TIMESTAMP`,
+                    [email, generatedOtp]
+                );
+                await sendVerificationEmail(email, generatedOtp);
+                return res.status(200).json({ success: true, message: 'OTP sent to email' });
+            }
+            else if (action === "adminSignup") {
+                const otpRecord = await query('SELECT * FROM otps WHERE email = $1 AND otp = $2', [email, otp]);
+                if (otpRecord.rows.length === 0) {
+                    return res.status(400).json({ message: "Invalid or expired OTP" });
+                }
+                const hashedPassword = await hashPassword(password);
+                try {
+                    const result = await query(
+                        'INSERT INTO admins (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email',
+                        [name, email, hashedPassword]
+                    );
+                    await query('DELETE FROM otps WHERE email = $1', [email]);
+                    return res.status(201).json({ success: true, data: result.rows[0] });
+                } catch (e) {
+                    return res.status(400).json({ message: "Email may already exist" });
+                }
+            }
+            else if (action === "forgotPassword") {
+                let userRecord = null;
+                const adminCheck = await query('SELECT * FROM admins WHERE email = $1', [email]);
+                if (adminCheck.rows.length > 0) userRecord = adminCheck.rows[0];
+                else {
+                    const studentCheck = await query('SELECT * FROM students WHERE email = $1', [email]);
+                    if (studentCheck.rows.length > 0) userRecord = studentCheck.rows[0];
+                }
+                
+                if (!userRecord) {
+                    return res.status(400).json({ message: "Account not found" });
+                }
+                
+                const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+                await query(
+                    `INSERT INTO otps (email, otp, created_at) VALUES ($1, $2, CURRENT_TIMESTAMP)
+                     ON CONFLICT (email) DO UPDATE SET otp = EXCLUDED.otp, created_at = CURRENT_TIMESTAMP`,
+                    [email, generatedOtp]
+                );
+                
+                await sendResetEmail(email, generatedOtp);
+                return res.status(200).json({ success: true, message: 'OTP sent' });
+            }
+            else if (action === "verifyResetOTP" || action === "resetPassword") {
+                const otpRecord = await query('SELECT * FROM otps WHERE email = $1 AND otp = $2', [email, otp]);
+                if (otpRecord.rows.length === 0) {
+                    return res.status(400).json({ message: "Invalid or expired OTP" });
+                }
+                
+                if (action === "verifyResetOTP") {
+                    return res.status(200).json({ success: true, message: 'OTP verified' });
+                }
+                
+                if (action === "resetPassword") {
+                    const hashedPassword = await hashPassword(newPassword);
+                    let updateRes = await query('UPDATE admins SET password = $1 WHERE email = $2', [hashedPassword, email]);
+                    if (updateRes.rowCount === 0) {
+                        updateRes = await query('UPDATE students SET password = $1 WHERE email = $2', [hashedPassword, email]);
+                    }
+                    if (updateRes.rowCount === 0) {
+                        return res.status(400).json({ message: "User not found" });
+                    }
+                    
+                    await query('DELETE FROM otps WHERE email = $1', [email]);
+                    return res.status(200).json({ success: true, message: "Password updated successfully" });
+                }
+            }
             return res.status(400).json({ message: "See auth logic in monolithic code" });
         }
 
@@ -413,6 +487,22 @@ export default async function handler(req, res) {
                 });
             }
         }
+        else if (action === "sendChangePasswordOtp") {
+            const student = await protectStudent(req);
+            const user = student || await protectAdmin(req);
+            if (!user) return res.status(401).json({ error: "Unauthorized", message: "Authentication failed. Please login again." });
+            if (!user.email) return res.status(400).json({ error: "User email not found" });
+
+            const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+            await query(
+                `INSERT INTO otps (email, otp, created_at) VALUES ($1, $2, CURRENT_TIMESTAMP)
+                 ON CONFLICT (email) DO UPDATE SET otp = EXCLUDED.otp, created_at = CURRENT_TIMESTAMP`,
+                [user.email, generatedOtp]
+            );
+            
+            await sendVerificationEmail(user.email, generatedOtp);
+            return res.status(200).json({ success: true, message: 'OTP sent to email' });
+        }
         else if (action === "change-password") {
             const student = await protectStudent(req);
             const user = student || await protectAdmin(req);
@@ -422,9 +512,14 @@ export default async function handler(req, res) {
                 message: "Authentication failed. Please login again." 
             });
 
-            const { oldPassword, newPassword } = req.body;
-            if (!oldPassword || !newPassword) {
-                return res.status(400).json({ error: "Missing password fields" });
+            const { oldPassword, newPassword, otp } = req.body;
+            if (!oldPassword || !newPassword || !otp) {
+                return res.status(400).json({ error: "Missing password or OTP fields" });
+            }
+
+            const otpRecord = await query('SELECT * FROM otps WHERE email = $1 AND otp = $2', [user.email, otp]);
+            if (otpRecord.rows.length === 0) {
+                return res.status(400).json({ error: "Invalid or expired OTP" });
             }
 
             const tableName = student ? 'students' : 'admins';
@@ -434,6 +529,8 @@ export default async function handler(req, res) {
 
             const hashedPassword = await hashPassword(newPassword);
             await query(`UPDATE ${tableName} SET password = $1 WHERE id = $2`, [hashedPassword, user.id]);
+
+            await query('DELETE FROM otps WHERE email = $1', [user.email]);
 
             return res.status(200).json({ message: "Password updated successfully" });
         }
