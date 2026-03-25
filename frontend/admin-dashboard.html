@@ -438,10 +438,7 @@
                             </div>
                         </div>
 
-                        <div class="space-y-2">
-                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Location Name</label>
-                            <input id="geo-name" required class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all" placeholder="e.g. Main High Tech Campus" />
-                        </div>
+
 
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div class="space-y-2">
@@ -874,7 +871,6 @@
         function renderGeofence(c) {
             const mainCampus = Array.isArray(c) ? c[0] : c;
             if (mainCampus && mainCampus.name) {
-                document.getElementById('geo-name').value = mainCampus.name || '';
                 document.getElementById('geo-college-name').value = mainCampus.college_name || user.collegeName || '';
                 document.getElementById('geo-college-code').value = user.collegeCode || '';
                 
@@ -946,7 +942,7 @@
             }
 
             const payload = {
-                name: document.getElementById('geo-name').value,
+                name: document.getElementById('geo-college-name').value,
                 collegeName: document.getElementById('geo-college-name').value,
                 collegeCode: document.getElementById('geo-college-code').value,
                 latitude: parseFloat(document.getElementById('geo-lat').value),
