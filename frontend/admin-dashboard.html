@@ -632,6 +632,7 @@
         }
 
         let allLogs = [];
+        let isEditingGeofence = false;
 
         async function fetchAdminData() {
             if (isDemo) {
@@ -892,6 +893,7 @@
         }
 
         function renderGeofence(c) {
+            if (isEditingGeofence) return;
             const mainCampus = Array.isArray(c) ? c[0] : c;
             if (mainCampus && (mainCampus.name || mainCampus.college_name)) {
                 // Support both college_name and name (campus name) as fallback
@@ -938,6 +940,7 @@
         }
 
         function toggleGeofenceEdit() {
+            isEditingGeofence = true;
             document.getElementById('geofence-fieldset').disabled = false;
             document.getElementById('geo-edit-btn').classList.add('hidden');
             document.getElementById('geo-submit-btn').classList.remove('hidden');
@@ -945,6 +948,7 @@
         }
 
         function cancelGeofenceEdit() {
+            isEditingGeofence = false;
             fetchAdminData();
         }
 
@@ -989,6 +993,7 @@
                 
                 if (res.ok) {
                     alert('Geofence updated successfully!');
+                    isEditingGeofence = false;
                     fetchAdminData();
                 } else {
                     const data = await res.json();
