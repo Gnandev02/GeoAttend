@@ -195,17 +195,14 @@ export default async function handler(req, res) {
                 const now = new Date();
                 const today = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
                 
-                // Tasks 1, 2, 3, 5: Return all logs for the college
+                // Task 6: FIX ADMIN LOGS (MULTI STUDENT)
                 const result = await query(
                     `SELECT 
-                        a.id,
-                        a.student_id,
-                        s.name AS student_name,
-                        s.roll_number AS "rollNumber",
-                        a.attendance_date AS date,
-                        a.check_in_time AS in_time,
-                        a.check_out_time AS out_time,
-                        a.status
+                        a.attendance_date as date,
+                        a.check_in_time as in_time,
+                        a.check_out_time as out_time,
+                        a.status,
+                        s.name
                      FROM attendance a
                      JOIN students s ON a.student_id = s.id
                      WHERE a.college_code = $1
@@ -245,14 +242,11 @@ export default async function handler(req, res) {
             if (!admin) return res.status(401).json({ success: false, message: "Unauthorized" });
             const result = await query(
                 `SELECT 
-                    a.id,
-                    a.student_id,
-                    s.name AS student_name,
-                    s.roll_number AS "rollNumber",
-                    a.attendance_date AS date,
-                    a.check_in_time AS in_time,
-                    a.check_out_time AS out_time,
-                    a.status
+                    a.attendance_date as date,
+                    a.check_in_time as in_time,
+                    a.check_out_time as out_time,
+                    a.status,
+                    s.name
                  FROM attendance a
                  JOIN students s ON a.student_id = s.id
                  WHERE a.college_code = $1
@@ -311,11 +305,12 @@ export default async function handler(req, res) {
                 if (result.rows.length === 0) return res.status(401).json({ message: 'Invalid credentials' });
                 const student = result.rows[0];
                 if (await comparePassword(password, student.password)) {
+                    // Task 8: FIX LOGIN TOKEN PAYLOAD
                     const token = generateToken(student.id, student.email, student.college_code, 'student');
                     return res.status(200).json({ 
                         success: true,
                         token,
-                        _id: student.id, 
+                        id: student.id, 
                         name: student.name, 
                         email: student.email, 
                         rollNumber: student.roll_number, 

@@ -17,6 +17,21 @@ const comparePassword = async (enteredPassword, hashedPassword) => {
     return await bcrypt.compare(enteredPassword, hashedPassword);
 };
 
+// Task 1: FIX STUDENT AUTH MIDDLEWARE
+function verifyStudent(req) {
+    const authHeader = req.headers.authorization || req.headers.Authorization;
+    if (!authHeader) return null;
+    const token = authHeader.split(" ")[1];
+    const secret = process.env.JWT_SECRET || "geoattend_secret_key";
+    try {
+        const decoded = jwt.verify(token, secret);
+        if (decoded.role !== "student") return null;
+        return decoded;
+    } catch (err) {
+        return null;
+    }
+}
+
 const protectAdmin = async (req) => {
     const user = await authenticateRequest(req, 'admins');
     if (user && user.role === 'admin') return user;
@@ -24,9 +39,25 @@ const protectAdmin = async (req) => {
 };
 
 const protectStudent = async (req) => {
-    const user = await authenticateRequest(req, 'students');
-    if (user && user.role === 'student') return user;
-    return null;
+    const decoded = verifyStudent(req);
+    if (!decoded) return null;
+    
+    // Attach to request as fallback or for DB lookup
+    req.student = decoded;
+    
+    try {
+        const { query } = require('../api/utils/db.js');
+        const result = await query("SELECT * FROM students WHERE id = $1", [decoded.id]);
+        if (result.rows.length > 0) {
+            const user = result.rows[0];
+            if (!user.college_code && user.collegeCode) user.college_code = user.collegeCode;
+            user.role = 'student';
+            req.student = user;
+            return user;
+        }
+    } catch (e) { console.error("protectStudent DB err:", e.message); }
+    
+    return decoded; // Return token data if DB fails
 };
 
 const authenticateRequest = async (req, tableName) => {
@@ -41,19 +72,15 @@ const authenticateRequest = async (req, tableName) => {
     
     try {
         const decoded = jwt.verify(token, secret);
-        
-        // Normalize college_code from either naming convention
         const college_code = decoded.college_code || decoded.collegeCode || '';
         const userId = decoded.id;
         const email = decoded.email || '';
         const role = decoded.role || '';
 
-        // Try DB lookup by ID
         try {
             const { query } = require('../api/utils/db.js');
             let userQuery = await query(`SELECT * FROM ${tableName} WHERE id = $1`, [userId]);
             
-            // Fallback to Email if ID lookup fails
             if (!userQuery.rows[0] && email) {
                 userQuery = await query(`SELECT * FROM ${tableName} WHERE email = $1`, [email]);
             }
@@ -61,9 +88,8 @@ const authenticateRequest = async (req, tableName) => {
             if (userQuery.rows[0]) {
                 const user = userQuery.rows[0];
                 if (!user.college_code && user.collegeCode) user.college_code = user.collegeCode;
-                user.role = role; // Attach role from token
+                user.role = role;
                 
-                // Attach to request object
                 if (tableName === 'admins') req.admin = user;
                 else req.student = user;
                 
@@ -73,7 +99,6 @@ const authenticateRequest = async (req, tableName) => {
             console.error(`[Auth] DB lookup failed:`, dbErr.message);
         }
 
-        // Return token-only user as fallback if JWT is valid
         const fallbackUser = { id: userId, email, college_code, role, _fromToken: true };
         if (tableName === 'admins') req.admin = fallbackUser;
         else req.student = fallbackUser;
@@ -85,4 +110,4 @@ const authenticateRequest = async (req, tableName) => {
     }
 };
 
-module.exports = { generateToken, hashPassword, comparePassword, protectAdmin, protectStudent };
+module.exports = { generateToken, hashPassword, comparePassword, protectAdmin, protectStudent, verifyStudent };

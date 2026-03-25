@@ -152,13 +152,10 @@
                 // Start tracking immediately (TASK 1)
                 startTracking();
                 
-                // Real-time update (TASK 7)
+                // Real-time update (TASK 7 & 9)
                 setInterval(() => {
                     fetchTodayStats();
-                    if (currentLat && currentLng) {
-                        markAttendance("track"); // Periodic sync
-                    }
-                }, 10000); // 10s as requested
+                }, 5000); 
             } catch (err) {
                 console.error("Initialization error:", err);
                 showAlert("Could not load campus data.", false);
@@ -247,7 +244,7 @@
         // STEP 7: CALL BACKEND FOR ATTENDANCE
         async function markAttendance(type) {
             try {
-                const res = await fetch("/api/main?action=mark-attendance", {
+                const res = await fetch("/api/attendance", {
                     method: "POST",
                     headers: { 
                         "Content-Type": "application/json",
@@ -275,45 +272,36 @@
         // STEP 8: REMOVE HARDCODED UI & FETCH FROM BACKEND
         async function fetchTodayStats() {
             try {
-                const res = await fetch("/api/main?action=attendance-today", { headers: { "Authorization": "Bearer " + token } });
+                const res = await fetch("/api/attendance-today", { headers: { "Authorization": "Bearer " + token } });
                 const data = await res.json();
                 
-                document.getElementById('attendance-present').textContent = data.stats.present;
-                document.getElementById('attendance-total').textContent = data.stats.total;
-                
-                const pct = data.stats.total ? Math.round((data.stats.present / data.stats.total) * 100) : 0;
-                document.getElementById('attendance-percent').textContent = pct + '%';
-                document.getElementById('attendance-circle').setAttribute('stroke-dasharray', `${pct}, 100`);
+                if (data.stats) {
+                    document.getElementById('attendance-present').textContent = data.stats.present;
+                    document.getElementById('attendance-total').textContent = data.stats.total;
+                    
+                    const pct = data.stats.total ? Math.round((data.stats.present / data.stats.total) * 100) : 0;
+                    document.getElementById('attendance-percent').textContent = pct + '%';
+                    document.getElementById('attendance-circle').setAttribute('stroke-dasharray', `${pct}, 100`);
+                }
 
                 if (data.today) {
                     document.getElementById('display-checkin').textContent = data.today.check_in_time || '--:--';
                     document.getElementById('display-checkout').textContent = data.today.check_out_time || '--:--';
                 }
 
-                // Also fetch full logs
-                fetchLogs();
+                // Use logs from the same response (Task 5)
+                if (data.logs) {
+                    const logs = data.logs;
+                    const container = document.getElementById('logs-container');
+                    container.innerHTML = logs.map(l => `
+                        <div class="p-4 flex justify-between items-center text-sm">
+                            <div><p class="font-bold text-slate-900">${l.date}</p><p class="text-slate-400">${l.in_time} - ${l.out_time || '...'}</p></div>
+                            <span class="${l.status === 'Present' || l.status === 'completed' ? 'badge-success' : 'badge-danger'}">${l.status}</span>
+                        </div>`).join('');
+                }
             } catch (err) {
                 console.error("Fetch stats error:", err);
             }
-        }
-
-        async function fetchLogs() {
-            try {
-                const res = await fetch(`/api/main?action=getAttendanceLogs`, { 
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}` 
-                    } 
-                });
-                const data = await res.json();
-                const logs = data.logs || [];
-                const container = document.getElementById('logs-container');
-                container.innerHTML = logs.map(l => `
-                    <div class="p-4 flex justify-between items-center text-sm">
-                        <div><p class="font-bold text-slate-900">${l.date}</p><p class="text-slate-400">${l.checkinTime} - ${l.checkoutTime || '...'}</p></div>
-                        <span class="${l.status === 'Present' || l.status === 'completed' ? 'badge-success' : 'badge-danger'}">${l.status}</span>
-                    </div>`).join('');
-            } catch (err) { console.error(err); }
         }
 
         function showAlert(msg, success) {
