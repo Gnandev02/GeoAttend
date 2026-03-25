@@ -299,11 +299,16 @@
                 const res = await fetch(`/api/main?action=getAttendanceLogs`, { headers: { 'Authorization': `Bearer ${token}` } });
                 const logs = await res.json();
                 const container = document.getElementById('logs-container');
-                container.innerHTML = logs.map(l => `
+                container.innerHTML = logs.map(l => {
+                    const dateStr = String(l.date).substring(0, 10);
+                    const checkin = String(l.checkinTime);
+                    const checkout = l.checkoutTime ? String(l.checkoutTime) : '...';
+                    return `
                     <div class="p-4 flex justify-between items-center text-sm">
-                        <div><p class="font-bold text-slate-900">${l.date}</p><p class="text-slate-400">${l.checkinTime} - ${l.checkoutTime || '...'}</p></div>
+                        <div><p class="font-bold text-slate-900">${dateStr}</p><p class="text-slate-400">${checkin} - ${checkout}</p></div>
                         <span class="${l.status === 'Present' || l.status === 'completed' ? 'badge-success' : 'badge-danger'}">${l.status}</span>
-                    </div>`).join('');
+                    </div>`;
+                }).join('');
             } catch (err) { console.error(err); }
         }
 

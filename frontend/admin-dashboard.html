@@ -811,9 +811,10 @@
 
         function fmtTime(t) {
             if (!t) return '--:--';
-            if (/am|pm/i.test(t)) return t.trim();
-            const p = t.split(':');
-            if (p.length < 2) return t;
+            const str = String(t).trim();
+            if (/am|pm/i.test(str)) return str;
+            const p = str.split(':');
+            if (p.length < 2) return str;
             let h = parseInt(p[0], 10);
             const m = p[1].padStart(2, '0');
             const s = p[2] ? p[2].substring(0, 2).padStart(2, '0') : null;
@@ -824,7 +825,8 @@
 
         function fmtDate(d) {
             if (!d) return '--';
-            return new Date(d.substring(0, 10) + 'T00:00:00')
+            const str = String(d).substring(0, 10);
+            return new Date(str + 'T00:00:00')
                 .toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
         }
 

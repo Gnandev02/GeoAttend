@@ -6,7 +6,8 @@ const { calculateDistance } = require("../utils/geoHelper");
 // Helper for time calculation (from attendance.js)
 function timeStringToMinutes(timeStr) {
     if (!timeStr) return 0;
-    const match = timeStr.trim().match(/(\d+):(\d+):?(\d+)?\s*(AM|PM|am|pm)?/);
+    const str = String(timeStr).trim();
+    const match = str.match(/(\d+):(\d+):?(\d+)?\s*(AM|PM|am|pm)?/);
     if (!match) return 0;
     let [ , h, m, , ampm ] = match;
     h = parseInt(h);
@@ -96,7 +97,8 @@ export default async function handler(req, res) {
             const now = new Date();
             const IST = { timeZone: 'Asia/Kolkata' };
             const today = now.toLocaleDateString('en-CA', IST);  
-            const currentTime = now.toLocaleTimeString('en-IN', { ...IST, hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            // Use 12h format for display/storage consistency if that's what's intended, but ensure it's a string
+            const currentTime = now.toLocaleTimeString('en-US', { ...IST, hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
             // FETCH CAMPUS SETUP (TASK 2)
             const geofenceQuery = await query(
