@@ -165,7 +165,6 @@
         }
         .sidebar-item.active .nav-indicator { display: block; }
     </style>
-
 </head>
 
 <body>
@@ -879,9 +878,8 @@
         function renderGeofence(c) {
             const mainCampus = Array.isArray(c) ? c[0] : c;
             if (mainCampus && (mainCampus.name || mainCampus.college_name)) {
-                document.getElementById('geo-name').value = mainCampus.name || '';
-                document.getElementById('geo-college-name').value = mainCampus.college_name || mainCampus.name || user.collegeName || '';
-                document.getElementById('geo-college-code').value = mainCampus.college_code || user.collegeCode || '';
+                if (document.getElementById('geo-college-name')) document.getElementById('geo-college-name').value = mainCampus.college_name || mainCampus.name || user.collegeName || '';
+                if (document.getElementById('geo-college-code')) document.getElementById('geo-college-code').value = mainCampus.college_code || user.collegeCode || '';
                 
                 document.getElementById('geo-lat').value = mainCampus.latitude || '';
                 document.getElementById('geo-lng').value = mainCampus.longitude || '';
