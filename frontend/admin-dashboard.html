@@ -1218,8 +1218,8 @@
             google.maps.event.addListener(adminMarker, 'dragend', function(event) {
                 const newLat = event.latLng.lat();
                 const newLng = event.latLng.lng();
-                latInput.value = newLat.toFixed(6);
-                lngInput.value = newLng.toFixed(6);
+                document.getElementById('geo-lat').value = newLat.toFixed(6);
+                document.getElementById('geo-lng').value = newLng.toFixed(6);
                 adminCircle.setCenter({ lat: newLat, lng: newLng });
             });
 
@@ -1228,8 +1228,8 @@
                 const newLng = e.latLng.lng();
                 adminMarker.setPosition({ lat: newLat, lng: newLng });
                 adminCircle.setCenter({ lat: newLat, lng: newLng });
-                latInput.value = newLat.toFixed(6);
-                lngInput.value = newLng.toFixed(6);
+                document.getElementById('geo-lat').value = newLat.toFixed(6);
+                document.getElementById('geo-lng').value = newLng.toFixed(6);
             });
 
             radiusInput.addEventListener('input', (e) => {
@@ -1239,8 +1239,10 @@
             
             // Allow manual keyboard entry for lat/lng to move map
             const updateFromInputs = () => {
-                const nLat = parseFloat(latInput.value) || 0;
-                const nLng = parseFloat(lngInput.value) || 0;
+                const geoLatNode = document.getElementById('geo-lat');
+                const geoLngNode = document.getElementById('geo-lng');
+                const nLat = parseFloat(geoLatNode.value) || 0;
+                const nLng = parseFloat(geoLngNode.value) || 0;
                 if (nLat && nLng) {
                     const pos = { lat: nLat, lng: nLng };
                     adminMap.setCenter(pos);
@@ -1248,8 +1250,8 @@
                     adminCircle.setCenter(pos);
                 }
             };
-            latInput.addEventListener('input', updateFromInputs);
-            lngInput.addEventListener('input', updateFromInputs);
+            document.getElementById('geo-lat').addEventListener('input', updateFromInputs);
+            document.getElementById('geo-lng').addEventListener('input', updateFromInputs);
         };
     </script>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAtcv3jZIS7M7bmf4Mwirbhd1qVulafbvk&callback=initAdminMap" async defer></script>
