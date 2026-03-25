@@ -661,24 +661,20 @@
                 return;
             }
             try {
+                // Logs & Stats (Task 4)
+                let l = await fetch('/api/main?action=attendance-today', { 
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } 
+                });
+                const aData = await l.json();
+                allLogs = aData.data || []; 
+                const statsData = aData.overall || {}; 
+
                 // Students
                 const s = await fetch('/api/main?action=get-students', { 
                     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } 
                 });
                 const sData = await s.json();
                 const studentsData = sData.students || [];
-
-                // Logs
-                let l = await fetch('/api/main?action=attendance-today', { 
-                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } 
-                });
-                const statsData = await l.json();
-                
-                let a = await fetch('/api/main?action=getAttendanceLogs', { 
-                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } 
-                });
-                const aData = await a.json();
-                allLogs = aData.logs || [];
 
                 // Campus/Geofence
                 let c = await fetch('/api/main?action=get-campus', { 
@@ -697,7 +693,7 @@
                     }
                 }
 
-                renderOverview(studentsData, statsData, campusData);
+                renderOverview(studentsData, { overall: statsData }, campusData); 
                 renderStudents(studentsData);
                 renderLogs(allLogs);
                 renderGeofence(campusData);
@@ -706,6 +702,9 @@
                 console.error("Fetch DB Error", e);
             }
         }
+
+        // Task 7: Auto Refresh every 5s
+        setInterval(fetchAdminData, 5000);
 
         function renderOverview(s, stats, c) {
             document.getElementById('dash-students-count').textContent = stats.overall?.totalStudents || 0;
@@ -860,11 +859,12 @@
 
         function renderLogs(l) {
             document.getElementById('table-logs-body').innerHTML = (l || []).map(log => {
-                const dur = log.durationMinutes || (log.checkinTime && log.checkoutTime ? calculateMins(log.checkinTime, log.checkoutTime) : 0);
+                // Task 6: Loop through record and show student_name, in_time, out_time
+                const dur = log.durationMinutes || (log.in_time && log.out_time ? calculateMins(log.in_time, log.out_time) : 0);
                 const durationText = dur ? `${dur} mins` : '--';
                 const dateDisplay = fmtDate(log.date);
-                const checkinDisplay = fmtTime(log.checkinTime);
-                const checkoutDisplay = log.checkoutTime ? fmtTime(log.checkoutTime) : '--:--';
+                const checkinDisplay = fmtTime(log.in_time);
+                const checkoutDisplay = log.out_time ? fmtTime(log.out_time) : '--:--';
                 
                 let badgeClass = "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ";
                 if(log.status === 'Present' || log.status === 'completed') badgeClass += "bg-emerald-50 text-emerald-600 border border-emerald-100";
@@ -874,8 +874,8 @@
                     <tr class="hover:bg-slate-50/50 transition-colors">
                         <td class="py-4 px-8 text-sm font-bold text-slate-800">${dateDisplay}</td>
                         <td class="py-4 px-8">
-                            <div class="font-bold text-slate-900 text-sm">${log.studentId?.name || 'Unknown'}</div>
-                            <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">${log.studentId?.rollNumber || ''}</div>
+                            <div class="font-bold text-slate-900 text-sm">${log.student_name || 'Unknown'}</div>
+                            <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">${log.rollNumber || ''}</div>
                         </td>
                         <td class="py-4 px-8 text-sm font-bold text-emerald-600">${checkinDisplay}</td>
                         <td class="py-4 px-8 text-sm font-bold text-slate-400">${checkoutDisplay}</td>

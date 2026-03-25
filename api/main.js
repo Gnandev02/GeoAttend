@@ -114,8 +114,8 @@ export default async function handler(req, res) {
             
             // Check for today's last record
             const todayQuery = await query(
-                'SELECT * FROM attendance WHERE student_id = $1 AND attendance_date = $2 ORDER BY id DESC LIMIT 1', 
-                [student.id, today]
+                'SELECT * FROM attendance WHERE student_id = $1 AND attendance_date = CURRENT_DATE ORDER BY id DESC LIMIT 1', 
+                [student.id]
             );
             const todayRecord = todayQuery.rows[0];
 
@@ -124,8 +124,8 @@ export default async function handler(req, res) {
                 if (!todayRecord) {
                     await query(
                         `INSERT INTO attendance (student_id, college_code, attendance_date, check_in_time, status) 
-                         VALUES ($1, $2, $3, $4, $5)`,
-                        [student.id, student.college_code, today, currentTime, 'Present']
+                         VALUES ($1, $2, CURRENT_DATE, NOW(), $3)`,
+                        [student.id, student.college_code, 'Present']
                     );
                     apiAction = "checked-in";
                 }
@@ -162,7 +162,7 @@ export default async function handler(req, res) {
 
                 // Today's check-in/out record
                 const todayQ = await query(
-                    `SELECT * FROM attendance WHERE student_id = $1 AND attendance_date = $2 ORDER BY id DESC LIMIT 1`,
+                    `SELECT * FROM attendance WHERE student_id = $1 AND attendance_date = $2 ORDER BY id DESC`,
                     [student.id, today]
                 );
                 const todayRecord = todayQ.rows[0] || null;
@@ -188,24 +188,40 @@ export default async function handler(req, res) {
                     } : null
                 });
             } else {
-                // Admin dashboard: school-wide counts
+                // Admin dashboard: school-wide counts and logs
                 const admin = await protectAdmin(req);
+                if (!admin) return res.status(401).json({ success: false, message: "Unauthorized as Admin" });
+
                 const now = new Date();
                 const today = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
-                const whereClause = admin ? 'AND college_code = $2' : '';
-                const params = admin ? [today, admin.college_code] : [today];
-                const statsQuery = await query(`
-                    SELECT COUNT(DISTINCT student_id) as present
-                    FROM attendance 
-                    WHERE attendance_date = $1 AND (status = 'Present' OR status = 'completed') ${whereClause}
-                `, params);
-                const totalQ = admin
-                    ? await query('SELECT COUNT(*) as total FROM students WHERE college_code = $1', [admin.college_code])
-                    : await query('SELECT COUNT(*) as total FROM students');
+                
+                // Tasks 1, 2, 3, 5: Return all logs for the college
+                const result = await query(
+                    `SELECT 
+                        a.id,
+                        a.student_id,
+                        s.name AS student_name,
+                        s.roll_number AS "rollNumber",
+                        a.attendance_date AS date,
+                        a.check_in_time AS in_time,
+                        a.check_out_time AS out_time,
+                        a.status
+                     FROM attendance a
+                     JOIN students s ON a.student_id = s.id
+                     WHERE a.college_code = $1
+                     ORDER BY a.attendance_date DESC`,
+                    [admin.college_code]
+                );
+
+                const totalQ = await query('SELECT COUNT(*) as total FROM students WHERE college_code = $1', [admin.college_code]);
+                const presentToday = result.rows.filter(r => r.date && r.date.toISOString().substring(0,10) === today).length;
+
                 return res.status(200).json({ 
+                    success: true,
+                    data: result.rows,
                     overall: { 
                         totalStudents: parseInt(totalQ.rows[0].total) || 0, 
-                        Present: parseInt(statsQuery.rows[0].present) || 0 
+                        Present: presentToday
                     } 
                 });
             }
@@ -228,18 +244,22 @@ export default async function handler(req, res) {
             const admin = await protectAdmin(req);
             if (!admin) return res.status(401).json({ success: false, message: "Unauthorized" });
             const result = await query(
-                `SELECT a.attendance_date as date, s.name, s.roll_number as "rollNumber",
-                        a.check_in_time as "checkinTime", a.check_out_time as "checkoutTime",
-                        a.status, a.duration_minutes as "durationMinutes",
-                        json_build_object('name', s.name, 'rollNumber', s.roll_number) as "studentId"
+                `SELECT 
+                    a.id,
+                    a.student_id,
+                    s.name AS student_name,
+                    s.roll_number AS "rollNumber",
+                    a.attendance_date AS date,
+                    a.check_in_time AS in_time,
+                    a.check_out_time AS out_time,
+                    a.status
                  FROM attendance a
-                 JOIN students s ON s.id = a.student_id
+                 JOIN students s ON a.student_id = s.id
                  WHERE a.college_code = $1
-                 ORDER BY a.attendance_date DESC, a.id DESC
-                 LIMIT 200`,
+                 ORDER BY a.attendance_date DESC`,
                 [admin.college_code]
             );
-            return res.status(200).json({ success: true, logs: result.rows });
+            return res.status(200).json({ success: true, data: result.rows });
         }
 
         // --- 3c. MANUAL ATTENDANCE MARK (Admin Only) ---
@@ -291,7 +311,7 @@ export default async function handler(req, res) {
                 if (result.rows.length === 0) return res.status(401).json({ message: 'Invalid credentials' });
                 const student = result.rows[0];
                 if (await comparePassword(password, student.password)) {
-                    const token = generateToken(student.id, student.email, student.college_code);
+                    const token = generateToken(student.id, student.email, student.college_code, 'student');
                     return res.status(200).json({ 
                         success: true,
                         token,
@@ -310,7 +330,7 @@ export default async function handler(req, res) {
                 if (result.rows.length === 0) return res.status(401).json({ message: 'Invalid credentials' });
                 const admin = result.rows[0];
                 if (await comparePassword(password, admin.password)) {
-                    const token = generateToken(admin.id, admin.email, admin.college_code);
+                    const token = generateToken(admin.id, admin.email, admin.college_code, 'admin');
                     return res.status(200).json({ 
                         success: true,
                         token,
