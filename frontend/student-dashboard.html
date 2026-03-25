@@ -200,23 +200,16 @@
         function calculateDistance(lat, lng) {
             if (!campusCenter) return;
 
-            const R = 6371000;
-            const dLat = (lat - campusCenter.lat) * Math.PI / 180;
-            const dLng = (lng - campusCenter.lng) * Math.PI / 180;
-
-            const a =
-                Math.sin(dLat/2) * Math.sin(dLat/2) +
-                Math.cos(campusCenter.lat * Math.PI/180) *
-                Math.cos(lat * Math.PI/180) *
-                Math.sin(dLng/2) * Math.sin(dLng/2);
-
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            const distance = R * c;
+            const userPos = new google.maps.LatLng(lat, lng);
+            const campusPos = new google.maps.LatLng(campusCenter.lat, campusCenter.lng);
+            
+            // Use Google Maps official geometry library for maximum accuracy
+            const distance = google.maps.geometry.spherical.computeDistanceBetween(userPos, campusPos);
 
             document.getElementById("distance").innerText = Math.round(distance) + " meters";
 
             // STEP 6: FIX ATTENDANCE LOGIC
-            const currentStatus = distance <= radius ? "IN" : "OUT";
+            const currentStatus = distance <= Number(radius) ? "IN" : "OUT";
             
             const badge = document.getElementById('presence-badge');
             if (currentStatus === "IN") {
@@ -317,6 +310,6 @@
         window.initMap = initDashboard;
         function logout() { localStorage.clear(); window.location.href = 'index.html'; }
     </script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAtcv3jZIS7M7bmf4Mwirbhd1qVulafbvk&callback=initMap" async defer></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAtcv3jZIS7M7bmf4Mwirbhd1qVulafbvk&libraries=geometry&callback=initMap" async defer></script>
 </body>
 </html>
