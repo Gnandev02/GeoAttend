@@ -675,6 +675,17 @@
                 let c = await fetch('/api/main?action=get-campus', { headers: { 'Authorization': `Bearer ${token}` } });
                 const campusData = await c.json();
 
+                // Update local user object if college name is returned
+                if (campusData && campusData.college_name) {
+                    user.collegeName = campusData.college_name;
+                    localStorage.setItem('geoattend_user', JSON.stringify(user));
+                    
+                    // Update sidebar display
+                    if (document.getElementById('brand-college-name')) {
+                        document.getElementById('brand-college-name').textContent = user.collegeName;
+                    }
+                }
+
                 renderOverview(studentsData, statsData, campusData);
                 renderStudents(studentsData);
                 renderLogs(allLogs);
@@ -869,10 +880,10 @@
 
         function renderGeofence(c) {
             const mainCampus = Array.isArray(c) ? c[0] : c;
-            if (mainCampus && mainCampus.name) {
+            if (mainCampus && (mainCampus.name || mainCampus.college_name)) {
                 document.getElementById('geo-name').value = mainCampus.name || '';
-                document.getElementById('geo-college-name').value = user.collegeName || '';
-                document.getElementById('geo-college-code').value = user.collegeCode || '';
+                document.getElementById('geo-college-name').value = mainCampus.college_name || user.collegeName || '';
+                document.getElementById('geo-college-code').value = mainCampus.college_code || user.collegeCode || '';
                 
                 document.getElementById('geo-lat').value = mainCampus.latitude || '';
                 document.getElementById('geo-lng').value = mainCampus.longitude || '';

@@ -298,7 +298,8 @@ export default async function handler(req, res) {
                         name: admin.name, 
                         email: admin.email, 
                         role: 'admin', 
-                        collegeCode: admin.college_code 
+                        collegeCode: admin.college_code,
+                        collegeName: admin.college_name
                     });
                 }
                 return res.status(401).json({ message: 'Invalid credentials' });
