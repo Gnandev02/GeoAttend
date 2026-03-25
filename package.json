@@ -4,7 +4,7 @@
   "description": "GeoAttend is a modern, mathematically secure, and highly scalable attendance management system. Built on the MERN stack, it eliminates proxy attendance through real-time GPS validation and Haversine geofence calculations.",
   "main": "index.js",
   "scripts": {
-    "dev": "vercel dev",
+    "start": "vercel dev",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

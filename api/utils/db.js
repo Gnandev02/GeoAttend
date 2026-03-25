@@ -4,7 +4,7 @@ let pool;
 
 if (!global.pool) {
   global.pool = new Pool({
-    connectionString: process.env.DATABASE_URL || "postgresql://neondb_owner:npg_oIY1DNxfVGk8@ep-falling-frog-a11339mt-pooler.ap-southeast-1.aws.neon.tech/GeoAttend?sslmode=require",
+    connectionString: process.env.DATABASE_URL,
     ssl: {
       rejectUnauthorized: false,
     },
