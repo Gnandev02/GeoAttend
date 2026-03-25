@@ -875,7 +875,7 @@
             const mainCampus = Array.isArray(c) ? c[0] : c;
             if (mainCampus && mainCampus.name) {
                 document.getElementById('geo-name').value = mainCampus.name || '';
-                document.getElementById('geo-college-name').value = user.collegeName || '';
+                document.getElementById('geo-college-name').value = mainCampus.college_name || user.collegeName || '';
                 document.getElementById('geo-college-code').value = user.collegeCode || '';
                 
                 document.getElementById('geo-lat').value = mainCampus.latitude || '';

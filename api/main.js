@@ -51,6 +51,12 @@ export default async function handler(req, res) {
             if (result.rows.length === 0) return res.status(200).json({}); // Return empty for new setup
             const row = result.rows[0];
 
+            let collegeName = null;
+            if (admin) {
+                const adminRecord = await query('SELECT college_name FROM admins WHERE id = $1', [admin.id]);
+                if (adminRecord.rows.length > 0) collegeName = adminRecord.rows[0].college_name;
+            }
+
             return res.status(200).json({
                 name: row.name,
                 lat: Number(row.latitude), // Backward compatibility
@@ -60,7 +66,8 @@ export default async function handler(req, res) {
                 radius: Number(row.radius),
                 attendance_start_time: row.attendance_start_time,
                 attendance_end_time: row.attendance_end_time,
-                college_code: row.college_code
+                college_code: row.college_code,
+                college_name: collegeName
             });
         }
 
@@ -471,6 +478,10 @@ export default async function handler(req, res) {
                     attendance_start_time || null,
                     attendance_end_time || null
                 ]);
+
+                if (req.body.collegeName) {
+                    await query('UPDATE admins SET college_name = $1 WHERE id = $2', [req.body.collegeName, admin.id]);
+                }
 
                 return res.status(200).json({
                     success: true,
