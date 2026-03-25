@@ -53,7 +53,7 @@ export default async function handler(req, res) {
 
             let collegeName = null;
             if (admin) {
-                const adminRecord = await query('SELECT college_name FROM admins WHERE id = $1', [admin.id]);
+                const adminRecord = await query('SELECT college_name FROM admins WHERE id = $1 OR college_code = $2 LIMIT 1', [admin.id, admin.college_code]);
                 if (adminRecord.rows.length > 0) collegeName = adminRecord.rows[0].college_name;
             }
 

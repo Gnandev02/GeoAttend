@@ -882,7 +882,7 @@
             const mainCampus = Array.isArray(c) ? c[0] : c;
             if (mainCampus && (mainCampus.name || mainCampus.college_name)) {
                 document.getElementById('geo-name').value = mainCampus.name || '';
-                document.getElementById('geo-college-name').value = mainCampus.college_name || user.collegeName || '';
+                document.getElementById('geo-college-name').value = mainCampus.college_name || mainCampus.name || user.collegeName || '';
                 document.getElementById('geo-college-code').value = mainCampus.college_code || user.collegeCode || '';
                 
                 document.getElementById('geo-lat').value = mainCampus.latitude || '';
