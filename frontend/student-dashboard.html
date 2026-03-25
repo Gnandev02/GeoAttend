@@ -110,7 +110,7 @@
     <script>
         lucide.createIcons();
         const token = localStorage.getItem('token');
-        const user = JSON.parse(localStorage.getItem('geoattend_user') || '{}');
+        const user = JSON.parse(localStorage.getItem('student') || '{}');
         if (!token) window.location.href = 'student-login.html';
 
         document.getElementById('user-name').textContent = user.name || 'Student';
@@ -149,6 +149,16 @@
                 });
 
                 fetchTodayStats();
+                // Start tracking immediately (TASK 1)
+                startTracking();
+                
+                // Real-time update (TASK 7)
+                setInterval(() => {
+                    fetchTodayStats();
+                    if (currentLat && currentLng) {
+                        markAttendance("track"); // Periodic sync
+                    }
+                }, 10000); // 10s as requested
             } catch (err) {
                 console.error("Initialization error:", err);
                 showAlert("Could not load campus data.", false);
@@ -171,7 +181,7 @@
                     console.error(err);
                     showAlert("Please Enable GPS Permission", false);
                 },
-                { enableHighAccuracy: true }
+                { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
             );
         }
 
@@ -206,7 +216,7 @@
             // Use Google Maps official geometry library for maximum accuracy
             const distance = google.maps.geometry.spherical.computeDistanceBetween(userPos, campusPos);
 
-            document.getElementById("distance").innerText = Math.round(distance) + " meters";
+            document.getElementById("distance").innerText = distance.toFixed(2) + " meters";
 
             // STEP 6: FIX ATTENDANCE LOGIC
             const currentStatus = distance <= Number(radius) ? "IN" : "OUT";
@@ -237,14 +247,14 @@
         // STEP 7: CALL BACKEND FOR ATTENDANCE
         async function markAttendance(type) {
             try {
-                const res = await fetch("/api/main?action=attendance", {
+                const res = await fetch("/api/main?action=mark-attendance", {
                     method: "POST",
                     headers: { 
                         "Content-Type": "application/json",
+                        "Accept": "application/json",
                         "Authorization": "Bearer " + token
                     },
                     body: JSON.stringify({ 
-                        type,
                         lat: currentLat,
                         lng: currentLng
                     })
@@ -289,8 +299,14 @@
 
         async function fetchLogs() {
             try {
-                const res = await fetch(`/api/main?action=getAttendanceLogs`, { headers: { 'Authorization': `Bearer ${token}` } });
-                const logs = await res.json();
+                const res = await fetch(`/api/main?action=getAttendanceLogs`, { 
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}` 
+                    } 
+                });
+                const data = await res.json();
+                const logs = data.logs || [];
                 const container = document.getElementById('logs-container');
                 container.innerHTML = logs.map(l => `
                     <div class="p-4 flex justify-between items-center text-sm">

@@ -199,7 +199,7 @@
                     role: data.role,
                     collegeCode: data.collegeCode
                 };
-                localStorage.setItem('geoattend_user', JSON.stringify(userObj));
+                localStorage.setItem('student', JSON.stringify(userObj));
 
                 if (data.role === 'admin') {
                     window.location.href = 'admin-dashboard.html';

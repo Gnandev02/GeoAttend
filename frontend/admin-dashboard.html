@@ -603,7 +603,7 @@
         const isDemo = urlParams.get('demo') === 'true';
 
         const token = localStorage.getItem('token');
-        const userStr = localStorage.getItem('geoattend_user');
+        const userStr = localStorage.getItem('student');
         
         let user = {};
 
@@ -662,24 +662,34 @@
             }
             try {
                 // Students
-                const s = await fetch('/api/main?action=get-students', { headers: { 'Authorization': `Bearer ${token}` } });
-                const studentsData = await s.json();
+                const s = await fetch('/api/main?action=get-students', { 
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } 
+                });
+                const sData = await s.json();
+                const studentsData = sData.students || [];
 
                 // Logs
-                let l = await fetch('/api/main?action=attendance-today', { headers: { 'Authorization': `Bearer ${token}` } });
+                let l = await fetch('/api/main?action=attendance-today', { 
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } 
+                });
                 const statsData = await l.json();
                 
-                let a = await fetch('/api/main?action=getAttendanceLogs', { headers: { 'Authorization': `Bearer ${token}` } });
-                allLogs = await a.json();
+                let a = await fetch('/api/main?action=getAttendanceLogs', { 
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } 
+                });
+                const aData = await a.json();
+                allLogs = aData.logs || [];
 
                 // Campus/Geofence
-                let c = await fetch('/api/main?action=get-campus', { headers: { 'Authorization': `Bearer ${token}` } });
+                let c = await fetch('/api/main?action=get-campus', { 
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } 
+                });
                 const campusData = await c.json();
 
                 // Update local user object if college name is returned
                 if (campusData && campusData.college_name) {
                     user.collegeName = campusData.college_name;
-                    localStorage.setItem('geoattend_user', JSON.stringify(user));
+                    localStorage.setItem('student', JSON.stringify(user));
                     
                     // Update sidebar display
                     if (document.getElementById('brand-college-name')) {

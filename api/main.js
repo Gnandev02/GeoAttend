@@ -75,47 +75,27 @@ export default async function handler(req, res) {
         // --- 2. ATTENDANCE MARKING (Student Dashboard) ---
         else if (action === "mark-attendance" || action === "attendance" || action === "track") {
             const student = await protectStudent(req);
-            if (!student) return res.status(401).json({ message: 'Not authorized as a student' });
-
-            // Always re-validate student from DB to avoid FK violations from token-fallback IDs
-            let studentRow = student._fromToken
-                ? (await query('SELECT * FROM students WHERE id = $1', [student.id])).rows[0]
-                : student;
-            
-            // Extra fallback: If ID lookup failed, try Email (if available in token)
-            if (!studentRow && student.email) {
-                console.warn(`[Attendance] ID lookup failed for student id=${student.id}, trying email=${student.email}`);
-                const emailLookup = await query('SELECT * FROM students WHERE email = $1', [student.email]);
-                studentRow = emailLookup.rows[0];
-            }
-
-            if (!studentRow) {
-                return res.status(401).json({ message: 'Student account not found. Please ask your admin or re-register.' });
-            }
+            if (!student) return res.status(401).json({ success: false, message: 'Not authorized as a student' });
 
             const latitude = Number(req.body.lat);
             const longitude = Number(req.body.lng);
 
-            // CRITICAL VALIDATION (TASK 5)
             if (isNaN(latitude) || isNaN(longitude)) {
-                return res.status(400).json({ message: "Invalid GPS coordinates" });
+                return res.status(400).json({ success: false, message: "Invalid GPS coordinates" });
             }
 
             const now = new Date();
             const IST = { timeZone: 'Asia/Kolkata' };
             const today = now.toLocaleDateString('en-CA', IST);  
-            // Use 12h format for display/storage consistency if that's what's intended, but ensure it's a string
             const currentTime = now.toLocaleTimeString('en-US', { ...IST, hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
-            // FETCH CAMPUS SETUP (TASK 2)
             const geofenceQuery = await query(
-                'SELECT latitude, longitude, radius, attendance_start_time, attendance_end_time FROM campus_setup WHERE college_code = $1', 
-                [studentRow.college_code]
+                'SELECT latitude, longitude, radius FROM campus_setup WHERE college_code = $1', 
+                [student.college_code]
             );
-            if (geofenceQuery.rows.length === 0) return res.status(500).json({ message: 'Campus geofence not configured.' });
+            if (geofenceQuery.rows.length === 0) return res.status(500).json({ success: false, message: 'Campus geofence not configured.' });
             const geofence = geofenceQuery.rows[0];
 
-            // CALCULATE DISTANCE (TASK 3)
             const distance = calculateDistance(
                 latitude,
                 longitude,
@@ -124,60 +104,51 @@ export default async function handler(req, res) {
             );
 
             if (distance === null) {
-                return res.status(400).json({ message: "Distance calculation failed" });
+                return res.status(400).json({ success: false, message: "Distance calculation failed" });
             }
 
-            const inside = distance <= Number(geofence.radius);
+            const radius = Number(geofence.radius);
+            const inside = distance <= radius;
 
-            // DEBUG LOGS (TASK 7)
-            console.log("Student:", latitude, longitude);
-            console.log("Campus:", geofence.latitude, geofence.longitude);
-            console.log("Distance:", distance);
-
-            const todayQuery = await query('SELECT * FROM attendance WHERE student_id = $1 AND attendance_date = $2 ORDER BY id DESC LIMIT 1', [studentRow.id, today]);
-            const todayRecord = todayQuery.rows[0];
             let apiAction = "none";
-            let updatedAttendance = todayRecord;
+            
+            // Check for today's last record
+            const todayQuery = await query(
+                'SELECT * FROM attendance WHERE student_id = $1 AND attendance_date = $2 ORDER BY id DESC LIMIT 1', 
+                [student.id, today]
+            );
+            const todayRecord = todayQuery.rows[0];
 
-            // ATTENDANCE LOGIC
             if (inside) {
-                // AUTO CHECK-IN
+                // IN LOGIC: If no record yet, create one. If record exists, stay "Present".
                 if (!todayRecord) {
-                    try {
-                        const result = await query(
-                            `INSERT INTO attendance (student_id, college_code, attendance_date, check_in_time, status) 
-                             VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-                            [studentRow.id, studentRow.college_code, today, currentTime, 'Present']
-                        );
-                        updatedAttendance = result.rows[0];
-                        apiAction = "checked-in";
-                    } catch (dbErr) {
-                        console.error("Check-in DB error:", dbErr.message);
-                        return res.status(500).json({ message: "Database error on check-in: " + dbErr.message });
-                    }
+                    await query(
+                        `INSERT INTO attendance (student_id, college_code, attendance_date, check_in_time, status) 
+                         VALUES ($1, $2, $3, $4, $5)`,
+                        [student.id, student.college_code, today, currentTime, 'Present']
+                    );
+                    apiAction = "checked-in";
                 }
             } else {
-                // AUTO CHECK-OUT
+                // OUT LOGIC: If checked-in today and no check-out yet, mark OUT.
                 if (todayRecord && todayRecord.check_out_time === null) {
                     const inMins = timeStringToMinutes(todayRecord.check_in_time);
                     const outMins = timeStringToMinutes(currentTime);
                     const durationMinutes = outMins > inMins ? outMins - inMins : 0;
                     
-                    const result = await query(
-                        'UPDATE attendance SET check_out_time = $1, status = $2, duration_minutes = $3 WHERE student_id = $4 AND attendance_date = $5 AND check_out_time IS NULL RETURNING *',
-                        [currentTime, 'completed', durationMinutes, studentRow.id, today]
+                    await query(
+                        'UPDATE attendance SET check_out_time = $1, status = $2, duration_minutes = $3 WHERE id = $4',
+                        [currentTime, 'completed', durationMinutes, todayRecord.id]
                     );
-                    updatedAttendance = result.rows[0];
                     apiAction = "checked-out";
                 }
             }
 
-            // RESPONSE FOR FRONTEND (TASK 6)
             return res.status(200).json({
-                distance,
+                success: true,
+                distance: parseFloat(distance.toFixed(2)),
                 inside,
-                action: apiAction,
-                attendance: updatedAttendance
+                action: apiAction
             });
         }
 
@@ -250,12 +221,12 @@ export default async function handler(req, res) {
                      FROM attendance WHERE student_id = $1 ORDER BY attendance_date DESC LIMIT 30`,
                     [student.id]
                 );
-                return res.status(200).json(result.rows);
+                return res.status(200).json({ success: true, logs: result.rows });
             }
 
             // Admin: all logs for their college
             const admin = await protectAdmin(req);
-            if (!admin) return res.status(401).json({ error: "Unauthorized" });
+            if (!admin) return res.status(401).json({ success: false, message: "Unauthorized" });
             const result = await query(
                 `SELECT a.attendance_date as date, s.name, s.roll_number as "rollNumber",
                         a.check_in_time as "checkinTime", a.check_out_time as "checkoutTime",
@@ -268,7 +239,47 @@ export default async function handler(req, res) {
                  LIMIT 200`,
                 [admin.college_code]
             );
-            return res.status(200).json(result.rows);
+            return res.status(200).json({ success: true, logs: result.rows });
+        }
+
+        // --- 3c. MANUAL ATTENDANCE MARK (Admin Only) ---
+        else if (action === "manualMark") {
+            const admin = await protectAdmin(req);
+            if (!admin) return res.status(401).json({ success: false, message: "Unauthorized Admin" });
+
+            const { studentId, date, checkInTime, checkOutTime } = req.body;
+            if (!studentId || !date) return res.status(400).json({ success: false, message: "Student ID and Date are required" });
+
+            // Verify student belongs to same college
+            const checkStudent = await query('SELECT college_code FROM students WHERE id = $1', [studentId]);
+            if (checkStudent.rows.length === 0) {
+                return res.status(404).json({ success: false, message: "Student not found" });
+            }
+            const student_college_code = checkStudent.rows[0].college_code;
+            if (student_college_code !== admin.college_code) {
+                return res.status(403).json({ success: false, message: "Permission Denied: Student not in your college" });
+            }
+
+            let duration = 0;
+            if (checkInTime && checkOutTime) {
+                try {
+                    duration = timeStringToMinutes(checkOutTime) - timeStringToMinutes(checkInTime);
+                    if (duration < 0) duration = 0;
+                } catch (e) { duration = 0; }
+            }
+
+            await query(
+                `INSERT INTO attendance (student_id, college_code, attendance_date, check_in_time, check_out_time, status, duration_minutes)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7)
+                 ON CONFLICT (student_id, attendance_date) DO UPDATE SET
+                    check_in_time = EXCLUDED.check_in_time,
+                    check_out_time = EXCLUDED.check_out_time,
+                    status = EXCLUDED.status,
+                    duration_minutes = EXCLUDED.duration_minutes`,
+                [studentId, admin.college_code, date, checkInTime, checkOutTime, 'Present', duration]
+            );
+
+            return res.status(200).json({ success: true, message: "Attendance marked successfully" });
         }
 
         // --- 4. AUTHENTICATION ---
@@ -397,7 +408,7 @@ export default async function handler(req, res) {
 
             if (action === "get-students" || action === "getStudents") {
                 const result = await query('SELECT * FROM students WHERE college_code = $1', [admin.college_code]);
-                return res.status(200).json(result.rows.map(s => ({ _id: s.id, name: s.name, email: s.email, rollNumber: s.roll_number, department: s.department, collegeCode: s.college_code, userId: { name: s.name, email: s.email } })));
+                return res.status(200).json({ success: true, students: result.rows.map(s => ({ _id: s.id, name: s.name, email: s.email, rollNumber: s.roll_number, department: s.department, collegeCode: s.college_code, userId: { name: s.name, email: s.email } })) });
             }
 
             if (action === "addStudent") {
@@ -411,7 +422,7 @@ export default async function handler(req, res) {
                 try {
                     await sendOnboardingEmail(email, name, tempPassword, `${req.headers.origin}/student-login.html`);
                 } catch (e) { console.error("Email fail:", e); }
-                return res.status(201).json({ message: 'Student added', student: result.rows[0] });
+                return res.status(201).json({ success: true, message: 'Student added', student: result.rows[0] });
             }
 
             if (action === "updateStudent") {
@@ -420,13 +431,13 @@ export default async function handler(req, res) {
                     'UPDATE students SET name = $1, email = $2, roll_number = $3, department = $4 WHERE id = $5 AND college_code = $6 RETURNING *',
                     [name, email, rollNumber, department, id, admin.college_code]
                 );
-                return res.status(200).json({ message: 'Updated', student: result.rows[0] });
+                return res.status(200).json({ success: true, message: 'Updated', student: result.rows[0] });
             }
 
             if (action === "deleteStudent") {
                 const { id } = req.body;
                 await query('DELETE FROM students WHERE id = $1 AND college_code = $2', [id, admin.college_code]);
-                return res.status(200).json({ message: 'Deleted' });
+                return res.status(200).json({ success: true, message: 'Deleted' });
             }
         }
 
