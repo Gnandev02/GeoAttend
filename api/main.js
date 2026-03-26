@@ -186,9 +186,15 @@ export default async function handler(req, res) {
                     return rDate === todayIST;
                 }).length;
 
+                // Task: Transform status for UI (Present/completed -> Present)
+                const transformedLogs = result.rows.map(log => ({
+                    ...log,
+                    status: (log.status === 'completed' || log.status === 'Present') ? 'Present' : log.status
+                }));
+
                 return res.status(200).json({ 
                     success: true,
-                    data: result.rows,
+                    data: transformedLogs,
                     overall: { 
                         totalStudents: parseInt(totalQ.rows[0].total) || 0, 
                         Present: presentToday
@@ -217,17 +223,28 @@ export default async function handler(req, res) {
                 );
                 const stats = statsQ.rows[0];
 
+                // Task: Transform status for UI (Present/completed -> Present)
+                const transformedLogs = logsQ.rows.map(log => ({
+                    ...log,
+                    status: (log.status === 'completed' || log.status === 'Present') ? 'Present' : log.status
+                }));
+
+                const transformedToday = todayRecord ? {
+                    ...todayRecord,
+                    status: (todayRecord.status === 'completed' || todayRecord.status === 'Present') ? 'Present' : todayRecord.status
+                } : null;
+
                 return res.status(200).json({
                     success: true,
-                    logs: logsQ.rows,
+                    logs: transformedLogs,
                     stats: { 
                         total: parseInt(stats.total) || 0, 
                         present: parseInt(stats.present) || 0 
                     },
-                    today: todayRecord ? {
-                        check_in_time: todayRecord.check_in_time,
-                        check_out_time: todayRecord.check_out_time,
-                        status: todayRecord.status
+                    today: transformedToday ? {
+                        check_in_time: transformedToday.check_in_time,
+                        check_out_time: transformedToday.check_out_time,
+                        status: transformedToday.status
                     } : null
                 });
             } else {
