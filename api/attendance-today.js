@@ -10,14 +10,13 @@ export default async function handler(req, res) {
     }
 
     try {
+        const studentId = student.id;
         const studentCheck = await query(
             "SELECT * FROM students WHERE id = $1",
-            [student.id]
+            [studentId]
         );
 
-        if (studentCheck.rows.length === 0) {
-            return res.status(404).json({ error: "Student not found" });
-        }
+        const isActuallyStudent = studentCheck.rows.length > 0;
 
         // Student's own logs (Task 5)
         const logs = await query(`
@@ -26,14 +25,14 @@ export default async function handler(req, res) {
             WHERE student_id = $1
             ORDER BY attendance_date DESC
             LIMIT 5
-        `, [student.id]);
+        `, [studentId]);
 
         // Overall stats
         const statsQ = await query(
             `SELECT COUNT(*) as total,
                     SUM(CASE WHEN status = 'Present' OR status = 'completed' THEN 1 ELSE 0 END) as present
              FROM attendance WHERE student_id = $1`,
-            [student.id]
+            [studentId]
         );
         const stats = statsQ.rows[0];
 
@@ -42,7 +41,7 @@ export default async function handler(req, res) {
         const today = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
         const todayQ = await query(
           `SELECT * FROM attendance WHERE student_id = $1 AND attendance_date = $2`,
-          [student.id, today]
+          [studentId, today]
         );
 
         return res.status(200).json({

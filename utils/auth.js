@@ -25,7 +25,8 @@ function verifyStudent(req) {
     const secret = process.env.JWT_SECRET || "geoattend_secret_key";
     try {
         const decoded = jwt.verify(token, secret);
-        if (decoded.role !== "student") return null;
+        // Allow both students and admins to view student dash if they have a token
+        if (decoded.role !== "student" && decoded.role !== "admin") return null;
         return decoded;
     } catch (err) {
         return null;

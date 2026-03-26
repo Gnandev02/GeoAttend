@@ -301,23 +301,45 @@ export default async function handler(req, res) {
             const { email, password, name, otp, newPassword } = req.body;
             
             if (action === "auth-login" || action === "studentLogin") {
-                const result = await query('SELECT * FROM students WHERE email = $1', [email]);
-                if (result.rows.length === 0) return res.status(401).json({ message: 'Invalid credentials' });
-                const student = result.rows[0];
-                if (await comparePassword(password, student.password)) {
-                    // Task 8: FIX LOGIN TOKEN PAYLOAD
-                    const token = generateToken(student.id, student.email, student.college_code, 'student');
-                    return res.status(200).json({ 
-                        success: true,
-                        token,
-                        id: student.id, 
-                        name: student.name, 
-                        email: student.email, 
-                        rollNumber: student.roll_number, 
-                        role: 'student', 
-                        collegeCode: student.college_code 
-                    });
+                // Try Student Table
+                let result = await query('SELECT * FROM students WHERE email = $1', [email]);
+                if (result.rows.length > 0) {
+                    const student = result.rows[0];
+                    if (await comparePassword(password, student.password)) {
+                        const token = generateToken(student.id, student.email, student.college_code, 'student');
+                        return res.status(200).json({ 
+                            success: true,
+                            token,
+                            id: student.id, 
+                            name: student.name, 
+                            email: student.email, 
+                            rollNumber: student.roll_number, 
+                            role: 'student', 
+                            collegeCode: student.college_code 
+                        });
+                    }
                 }
+                
+                // Fallback to Admin Table for auth-login
+                if (action === "auth-login") {
+                    result = await query('SELECT * FROM admins WHERE email = $1', [email]);
+                    if (result.rows.length > 0) {
+                        const admin = result.rows[0];
+                        if (await comparePassword(password, admin.password)) {
+                            const token = generateToken(admin.id, admin.email, admin.college_code, 'admin');
+                            return res.status(200).json({ 
+                                success: true,
+                                token,
+                                id: admin.id, 
+                                name: admin.name, 
+                                email: admin.email, 
+                                role: 'admin', 
+                                collegeCode: admin.college_code 
+                            });
+                        }
+                    }
+                }
+                
                 return res.status(401).json({ message: 'Invalid credentials' });
             }
             else if (action === "adminLogin") {
