@@ -244,7 +244,7 @@
         // STEP 7: CALL BACKEND FOR ATTENDANCE
         async function markAttendance(type) {
             try {
-                const res = await fetch("/api/attendance", {
+                const res = await fetch("/api/main?action=track", {
                     method: "POST",
                     headers: { 
                         "Content-Type": "application/json",
@@ -272,7 +272,7 @@
         // STEP 8: REMOVE HARDCODED UI & FETCH FROM BACKEND
         async function fetchTodayStats() {
             try {
-                const res = await fetch("/api/attendance-today", { headers: { "Authorization": "Bearer " + token } });
+                const res = await fetch("/api/main?action=attendance-today", { headers: { "Authorization": "Bearer " + token } });
                 const data = await res.json();
                 
                 if (data.stats) {

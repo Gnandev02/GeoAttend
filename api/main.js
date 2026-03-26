@@ -3,7 +3,15 @@ const { protectAdmin, protectStudent, hashPassword, comparePassword, generateTok
 const { sendVerificationEmail, sendResetEmail, sendOnboardingEmail } = require("./utils/email");
 const { calculateDistance } = require("../utils/geoHelper");
 
-// Helper for time calculation (from attendance.js)
+function getIST() {
+    const now = new Date();
+    const IST = { timeZone: 'Asia/Kolkata' };
+    const date = now.toLocaleDateString('en-CA', IST); // YYYY-MM-DD
+    const time = now.toLocaleTimeString('en-US', { ...IST, hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    return { date, time, raw: now };
+}
+
+// Helpers for time calculation
 function timeStringToMinutes(timeStr) {
     if (!timeStr) return 0;
     const str = String(timeStr).trim();
@@ -72,22 +80,20 @@ export default async function handler(req, res) {
             });
         }
 
-        // --- 2. ATTENDANCE MARKING (Student Dashboard) ---
-        else if (action === "mark-attendance" || action === "attendance" || action === "track") {
+        // --- 2. ATTENDANCE MARKING / TRACKING (Unified Action) ---
+        else if (action === "mark-attendance" || action === "track" || action === "attendance") {
             const student = await protectStudent(req);
             if (!student) return res.status(401).json({ success: false, message: 'Not authorized as a student' });
 
-            const latitude = Number(req.body.lat);
-            const longitude = Number(req.body.lng);
+            const { lat, lng } = req.body;
+            const latitude = Number(lat);
+            const longitude = Number(lng);
 
             if (isNaN(latitude) || isNaN(longitude)) {
                 return res.status(400).json({ success: false, message: "Invalid GPS coordinates" });
             }
 
-            const now = new Date();
-            const IST = { timeZone: 'Asia/Kolkata' };
-            const today = now.toLocaleDateString('en-CA', IST);  
-            const currentTime = now.toLocaleTimeString('en-US', { ...IST, hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const { date: todayIST, time: currentTime } = getIST();
 
             const geofenceQuery = await query(
                 'SELECT latitude, longitude, radius FROM campus_setup WHERE college_code = $1', 
@@ -96,42 +102,40 @@ export default async function handler(req, res) {
             if (geofenceQuery.rows.length === 0) return res.status(500).json({ success: false, message: 'Campus geofence not configured.' });
             const geofence = geofenceQuery.rows[0];
 
-            const distance = calculateDistance(
-                latitude,
-                longitude,
-                Number(geofence.latitude),
-                Number(geofence.longitude)
-            );
-
-            if (distance === null) {
-                return res.status(400).json({ success: false, message: "Distance calculation failed" });
-            }
+            const distance = calculateDistance(latitude, longitude, Number(geofence.latitude), Number(geofence.longitude));
+            if (distance === null) return res.status(400).json({ success: false, message: "Distance calculation failed" });
 
             const radius = Number(geofence.radius);
-            const inside = distance <= radius;
+            const isInside = distance <= radius;
 
             let apiAction = "none";
             
-            // Check for today's last record
-            const todayQuery = await query(
-                'SELECT * FROM attendance WHERE student_id = $1 AND attendance_date = CURRENT_DATE ORDER BY id DESC LIMIT 1', 
-                [student.id]
+            // Fetch today's record (Task 4: ensure only one per student per day)
+            const result = await query(
+                'SELECT * FROM attendance WHERE student_id = $1 AND attendance_date = $2 ORDER BY id DESC LIMIT 1', 
+                [student.id, todayIST]
             );
-            const todayRecord = todayQuery.rows[0];
+            const todayRecord = result.rows[0];
 
-            if (inside) {
-                // IN LOGIC: If no record yet, create one. If record exists, stay "Present".
+            if (isInside) {
+                // IN LOGIC: Create check-in if none exists. If already checked in and marked as completed, do nothing for today.
                 if (!todayRecord) {
                     await query(
                         `INSERT INTO attendance (student_id, college_code, attendance_date, check_in_time, status) 
-                         VALUES ($1, $2, CURRENT_DATE, NOW(), $3)`,
-                        [student.id, student.college_code, 'Present']
+                         VALUES ($1, $2, $3, $4, $5)`,
+                        [student.id, student.college_code, todayIST, currentTime, 'Present']
                     );
                     apiAction = "checked-in";
+                } else if (todayRecord.status === 'completed') {
+                    // Already checked out today, don't re-checkin unless user explicitly wants to? 
+                    // User requirements say "If already checked in -> do nothing".
+                    apiAction = "none";
+                } else {
+                    apiAction = "none"; // Already present
                 }
             } else {
-                // OUT LOGIC: If checked-in today and no check-out yet, mark OUT.
-                if (todayRecord && todayRecord.check_out_time === null) {
+                // OUT LOGIC: Update check_out_time if checked in and not already completed
+                if (todayRecord && todayRecord.status === 'Present' && todayRecord.check_out_time === null) {
                     const inMins = timeStringToMinutes(todayRecord.check_in_time);
                     const outMins = timeStringToMinutes(currentTime);
                     const durationMinutes = outMins > inMins ? outMins - inMins : 0;
@@ -147,7 +151,7 @@ export default async function handler(req, res) {
             return res.status(200).json({
                 success: true,
                 distance: parseFloat(distance.toFixed(2)),
-                inside,
+                inside: isInside,
                 action: apiAction
             });
         }
@@ -157,12 +161,9 @@ export default async function handler(req, res) {
             const admin = await protectAdmin(req);
             const student = await protectStudent(req);
 
-            // If it's an admin (and not viewing the student dashboard)
             if (admin && (!student || !req.headers.referer?.includes('student-dashboard'))) {
-                const now = new Date();
-                const today = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+                const { date: todayIST } = getIST();
                 
-                // Admin Logs (current day's activity across the college)
                 const result = await query(
                     `SELECT 
                         a.attendance_date as date,
@@ -179,9 +180,11 @@ export default async function handler(req, res) {
                 );
 
                 const totalQ = await query('SELECT COUNT(*) as total FROM students WHERE college_code = $1', [admin.college_code]);
-                const presentToday = result.rows.filter(r => r.date && r.date.toISOString().substring(0,10) === today).length;
-
-                console.info(`[Admin Stats] College: ${admin.college_code}, Total: ${totalQ.rows[0].total}, Today: ${presentToday}`);
+                // Ensure date comparison works with database date objects
+                const presentToday = result.rows.filter(r => {
+                    const rDate = r.date instanceof Date ? r.date.toISOString().substring(0, 10) : String(r.date).substring(0, 10);
+                    return rDate === todayIST;
+                }).length;
 
                 return res.status(200).json({ 
                     success: true,
@@ -192,18 +195,20 @@ export default async function handler(req, res) {
                     } 
                 });
             } else if (student) {
-                // Per-student stats for Student Dashboard
-                const now = new Date();
-                const today = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+                const { date: todayIST } = getIST();
 
-                // Today's check-in/out record
+                const logsQ = await query(
+                    `SELECT attendance_date as date, check_in_time as in_time, check_out_time as out_time, status
+                     FROM attendance WHERE student_id = $1 ORDER BY attendance_date DESC LIMIT 10`,
+                    [student.id]
+                );
+
                 const todayQ = await query(
-                    `SELECT * FROM attendance WHERE student_id = $1 AND attendance_date = $2 ORDER BY id DESC`,
-                    [student.id, today]
+                    `SELECT * FROM attendance WHERE student_id = $1 AND attendance_date = $2 ORDER BY id DESC LIMIT 1`,
+                    [student.id, todayIST]
                 );
                 const todayRecord = todayQ.rows[0] || null;
 
-                // Overall stats (total days present / total days recorded)
                 const statsQ = await query(
                     `SELECT COUNT(*) as total,
                             SUM(CASE WHEN status = 'Present' OR status = 'completed' THEN 1 ELSE 0 END) as present
@@ -213,6 +218,8 @@ export default async function handler(req, res) {
                 const stats = statsQ.rows[0];
 
                 return res.status(200).json({
+                    success: true,
+                    logs: logsQ.rows,
                     stats: { 
                         total: parseInt(stats.total) || 0, 
                         present: parseInt(stats.present) || 0 
