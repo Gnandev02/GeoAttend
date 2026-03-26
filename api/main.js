@@ -152,10 +152,46 @@ export default async function handler(req, res) {
             });
         }
 
-        // --- 3. ATTENDANCE TODAY (Student Dashboard Stats) ---
+        // --- 3. ATTENDANCE TODAY (Stats) ---
         else if (action === "attendance-today") {
+            const admin = await protectAdmin(req);
             const student = await protectStudent(req);
-            if (student) {
+
+            // If it's an admin (and not viewing the student dashboard)
+            if (admin && (!student || !req.headers.referer?.includes('student-dashboard'))) {
+                const now = new Date();
+                const today = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+                
+                // Admin Logs (current day's activity across the college)
+                const result = await query(
+                    `SELECT 
+                        a.attendance_date as date,
+                        a.check_in_time as in_time,
+                        a.check_out_time as out_time,
+                        a.status,
+                        s.name,
+                        s.roll_number
+                     FROM attendance a
+                     JOIN students s ON a.student_id = s.id
+                     WHERE a.college_code = $1
+                     ORDER BY a.attendance_date DESC, a.check_in_time DESC`,
+                    [admin.college_code]
+                );
+
+                const totalQ = await query('SELECT COUNT(*) as total FROM students WHERE college_code = $1', [admin.college_code]);
+                const presentToday = result.rows.filter(r => r.date && r.date.toISOString().substring(0,10) === today).length;
+
+                console.info(`[Admin Stats] College: ${admin.college_code}, Total: ${totalQ.rows[0].total}, Today: ${presentToday}`);
+
+                return res.status(200).json({ 
+                    success: true,
+                    data: result.rows,
+                    overall: { 
+                        totalStudents: parseInt(totalQ.rows[0].total) || 0, 
+                        Present: presentToday
+                    } 
+                });
+            } else if (student) {
                 // Per-student stats for Student Dashboard
                 const now = new Date();
                 const today = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
@@ -188,39 +224,7 @@ export default async function handler(req, res) {
                     } : null
                 });
             } else {
-                // Admin dashboard: school-wide counts and logs
-                const admin = await protectAdmin(req);
-                if (!admin) return res.status(401).json({ success: false, message: "Unauthorized as Admin" });
-
-                const now = new Date();
-                const today = now.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
-                
-                // Task 6: FIX ADMIN LOGS (MULTI STUDENT)
-                const result = await query(
-                    `SELECT 
-                        a.attendance_date as date,
-                        a.check_in_time as in_time,
-                        a.check_out_time as out_time,
-                        a.status,
-                        s.name
-                     FROM attendance a
-                     JOIN students s ON a.student_id = s.id
-                     WHERE a.college_code = $1
-                     ORDER BY a.attendance_date DESC`,
-                    [admin.college_code]
-                );
-
-                const totalQ = await query('SELECT COUNT(*) as total FROM students WHERE college_code = $1', [admin.college_code]);
-                const presentToday = result.rows.filter(r => r.date && r.date.toISOString().substring(0,10) === today).length;
-
-                return res.status(200).json({ 
-                    success: true,
-                    data: result.rows,
-                    overall: { 
-                        totalStudents: parseInt(totalQ.rows[0].total) || 0, 
-                        Present: presentToday
-                    } 
-                });
+                return res.status(401).json({ success: false, message: "Unauthorized" });
             }
         }
 
