@@ -366,7 +366,7 @@
                     container.innerHTML = logs.map(l => `
                         <div class="p-4 flex justify-between items-center text-sm">
                             <div><p class="font-bold text-slate-900">${l.date}</p><p class="text-slate-400">${l.in_time} - ${l.out_time || '...'}</p></div>
-                            <span class="${l.status === 'Present' || l.status === 'completed' ? 'badge-success' : 'badge-danger'}">${l.status}</span>
+                            <span class="${(l.status === 'Present' || l.status === 'completed') ? 'badge-success' : 'badge-danger'}">${l.status === 'completed' ? 'Present' : l.status}</span>
                         </div>`).join('');
                 }
             } catch (err) {

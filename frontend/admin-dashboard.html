@@ -869,8 +869,17 @@
                 const checkoutDisplay = log.out_time ? fmtTime(log.out_time) : '--:--';
                 
                 let badgeClass = "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ";
-                if(log.status === 'Present' || log.status === 'completed') badgeClass += "bg-emerald-50 text-emerald-600 border border-emerald-100";
-                else badgeClass += "bg-slate-50 text-slate-500 border border-slate-100";
+                let statusText = log.status || 'Unknown';
+                if(statusText === 'Present' || statusText === 'completed') {
+                    badgeClass += "bg-emerald-50 text-emerald-600 border border-emerald-100";
+                    statusText = 'Present';
+                }
+                else if(statusText === 'Absent') {
+                    badgeClass += "bg-red-50 text-red-600 border border-red-100";
+                }
+                else {
+                    badgeClass += "bg-slate-50 text-slate-500 border border-slate-100";
+                }
 
                 return `
                     <tr class="hover:bg-slate-50/50 transition-colors">
@@ -885,7 +894,7 @@
                             <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md">${durationText}</span>
                         </td>
                         <td class="py-4 px-8">
-                            <span class="${badgeClass}">${log.status || 'Student'}</span>
+                            <span class="${badgeClass}">${statusText}</span>
                         </td>
                     </tr>
                 `;

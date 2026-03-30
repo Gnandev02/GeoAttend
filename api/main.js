@@ -157,15 +157,11 @@ export default async function handler(req, res) {
                         [student.id, student.college_code, todayIST, currentTime, 'Present']
                     );
                     apiAction = "checked-in";
-                } else if (todayRecord.status === 'completed') {
-                    // Already checked out today, don't re-checkin unless user explicitly wants to? 
-                    // User requirements say "If already checked in -> do nothing".
-                    apiAction = "none";
                 } else {
                     apiAction = "none"; // Already present
                 }
             } else {
-                // OUT LOGIC: Update check_out_time if checked in and not already completed
+                // OUT LOGIC: Update check_out_time but maintain 'Present' status
                 if (todayRecord && todayRecord.status === 'Present' && todayRecord.check_out_time === null) {
                     const inMins = timeStringToMinutes(todayRecord.check_in_time);
                     const outMins = timeStringToMinutes(currentTime);
@@ -173,7 +169,7 @@ export default async function handler(req, res) {
                     
                     await query(
                         'UPDATE attendance SET check_out_time = $1, status = $2, duration_minutes = $3 WHERE id = $4',
-                        [currentTime, 'completed', durationMinutes, todayRecord.id]
+                        [currentTime, 'Present', durationMinutes, todayRecord.id]
                     );
                     apiAction = "checked-out";
                 }
@@ -248,7 +244,7 @@ export default async function handler(req, res) {
 
                 const statsQ = await query(
                     `SELECT COUNT(*) as total,
-                            SUM(CASE WHEN status = 'Present' OR status = 'completed' THEN 1 ELSE 0 END) as present
+                            SUM(CASE WHEN status = 'Present' THEN 1 ELSE 0 END) as present
                      FROM attendance WHERE student_id = $1`,
                     [student.id]
                 );
@@ -664,6 +660,39 @@ export default async function handler(req, res) {
             await query('DELETE FROM otps WHERE email = $1', [user.email]);
 
             return res.status(200).json({ message: "Password updated successfully" });
+        }
+        // --- 6. CRON AUTOMATION ---
+        else if (action === "cron-absent") {
+            const { date: todayIST } = getIST();
+            
+            // 1. Get all students
+            const studentsQ = await query('SELECT id, college_code FROM students');
+            const students = studentsQ.rows;
+
+            let markedCount = 0;
+
+            // 2. Loop through and check attendance for today
+            for (const student of students) {
+                const checkQ = await query(
+                    'SELECT id FROM attendance WHERE student_id = $1 AND attendance_date = $2',
+                    [student.id, todayIST]
+                );
+
+                // 3. Insert 'Absent' if no record exists
+                if (checkQ.rows.length === 0) {
+                    await query(
+                        `INSERT INTO attendance (student_id, college_code, attendance_date, status) 
+                         VALUES ($1, $2, $3, $4)`,
+                        [student.id, student.college_code, todayIST, 'Absent']
+                    );
+                    markedCount++;
+                }
+            }
+
+            return res.status(200).json({ 
+                success: true, 
+                message: `Cron executed successfully. Marked ${markedCount} students as Absent for ${todayIST}.` 
+            });
         }
         else {
             return res.status(400).json({ error: "Invalid action: " + action });
