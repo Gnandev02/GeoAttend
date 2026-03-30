@@ -661,39 +661,6 @@ export default async function handler(req, res) {
 
             return res.status(200).json({ message: "Password updated successfully" });
         }
-        // --- 6. CRON AUTOMATION ---
-        else if (action === "cron-absent") {
-            const { date: todayIST } = getIST();
-            
-            // 1. Get all students
-            const studentsQ = await query('SELECT id, college_code FROM students');
-            const students = studentsQ.rows;
-
-            let markedCount = 0;
-
-            // 2. Loop through and check attendance for today
-            for (const student of students) {
-                const checkQ = await query(
-                    'SELECT id FROM attendance WHERE student_id = $1 AND attendance_date = $2',
-                    [student.id, todayIST]
-                );
-
-                // 3. Insert 'Absent' if no record exists
-                if (checkQ.rows.length === 0) {
-                    await query(
-                        `INSERT INTO attendance (student_id, college_code, attendance_date, status) 
-                         VALUES ($1, $2, $3, $4)`,
-                        [student.id, student.college_code, todayIST, 'Absent']
-                    );
-                    markedCount++;
-                }
-            }
-
-            return res.status(200).json({ 
-                success: true, 
-                message: `Cron executed successfully. Marked ${markedCount} students as Absent for ${todayIST}.` 
-            });
-        }
         else {
             return res.status(400).json({ error: "Invalid action: " + action });
         }

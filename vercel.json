@@ -1,7 +1,7 @@
 {
     "crons": [
         {
-            "path": "/api/main?action=cron-absent",
+            "path": "/api/mark-absent",
             "schedule": "15 18 * * *"
         }
     ],
