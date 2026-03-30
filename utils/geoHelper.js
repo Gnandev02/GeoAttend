@@ -21,4 +21,22 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
     return R * c; // Distance in meters
 };
 
-module.exports = { calculateDistance };
+const isPointInPolygon = (lat, lng, polygon) => {
+    // Ray-casting algorithm
+    let x = Number(lng);
+    let y = Number(lat);
+
+    let inside = false;
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+        let xi = Number(polygon[i].lng), yi = Number(polygon[i].lat);
+        let xj = Number(polygon[j].lng), yj = Number(polygon[j].lat);
+
+        let intersect = ((yi > y) !== (yj > y))
+            && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+        if (intersect) inside = !inside;
+    }
+
+    return inside;
+};
+
+module.exports = { calculateDistance, isPointInPolygon };

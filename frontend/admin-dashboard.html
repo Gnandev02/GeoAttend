@@ -440,19 +440,20 @@
 
 
 
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div class="space-y-2">
-                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Latitude</label>
-                                <input id="geo-lat" required type="number" step="any" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-bold text-indigo-600 font-mono focus:ring-4 focus:ring-indigo-100 outline-none transition-all" />
+                        <!-- Hidden legacy inputs for compatibility -->
+                        <input id="geo-lat" type="hidden" value="0.0" />
+                        <input id="geo-lng" type="hidden" value="0.0" />
+                        <input id="geo-radius" type="hidden" value="500" />
+                        
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Polygon Boundary Points (Min 3)</label>
+                                <button type="button" onclick="addPolygonPoint()" class="px-3 py-1.5 text-xs font-bold text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors disabled:opacity-50">+ Add Point</button>
                             </div>
-                            <div class="space-y-2">
-                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Longitude</label>
-                                <input id="geo-lng" required type="number" step="any" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-bold text-indigo-600 font-mono focus:ring-4 focus:ring-indigo-100 outline-none transition-all" />
+                            <div id="polygon-points-container" class="space-y-3 max-h-64 overflow-y-auto pr-2">
+                                <!-- Points rendered via JS -->
                             </div>
-                            <div class="space-y-2">
-                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Radius (M)</label>
-                                <input id="geo-radius" required type="number" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-bold text-indigo-600 focus:ring-4 focus:ring-indigo-100 outline-none transition-all" />
-                            </div>
+                            <p class="text-[10px] font-medium text-slate-400">Clicking on the map adds a new point. You can drag the polygon corners to adjust the shape.</p>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -892,6 +893,44 @@
             lucide.createIcons();
         }
 
+        let currentPolygonPoints = [];
+
+        function renderPolygonInputs(skipMapUpdate = false) {
+            const container = document.getElementById('polygon-points-container');
+            if(!container) return;
+            container.innerHTML = currentPolygonPoints.map((pt, i) => `
+                <div class="flex items-center gap-3">
+                    <span class="text-xs font-bold text-slate-400 w-6">P${i+1}</span>
+                    <input type="number" step="any" value="${pt.lat}" onchange="updatePoint(${i}, 'lat', this.value)" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono text-indigo-600 focus:ring-2 focus:ring-indigo-100 outline-none" placeholder="Latitude" ${!isEditingGeofence ? 'disabled' : ''} />
+                    <input type="number" step="any" value="${pt.lng}" onchange="updatePoint(${i}, 'lng', this.value)" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-mono text-indigo-600 focus:ring-2 focus:ring-indigo-100 outline-none" placeholder="Longitude" ${!isEditingGeofence ? 'disabled' : ''} />
+                    ${isEditingGeofence ? `<button type="button" onclick="removePoint(${i})" class="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+                </div>
+            `).join('');
+            lucide.createIcons();
+            if(isEditingGeofence && !skipMapUpdate) drawPolygonOnMap();
+        }
+
+        function updatePoint(idx, key, val) {
+            currentPolygonPoints[idx][key] = parseFloat(val) || 0;
+            drawPolygonOnMap();
+        }
+
+        function removePoint(idx) {
+            currentPolygonPoints.splice(idx, 1);
+            renderPolygonInputs();
+        }
+
+        function addPolygonPoint(lat, lng) {
+            if(!isEditingGeofence) return;
+            let newPoint = { lat: lat || 0, lng: lng || 0 };
+            if(!lat && !lng && currentPolygonPoints.length > 0) {
+                const last = currentPolygonPoints[currentPolygonPoints.length - 1];
+                newPoint = { lat: last.lat + 0.0005, lng: last.lng + 0.0005 };
+            }
+            currentPolygonPoints.push(newPoint);
+            renderPolygonInputs();
+        }
+
         function renderGeofence(c) {
             if (isEditingGeofence) return;
             const mainCampus = Array.isArray(c) ? c[0] : c;
@@ -900,13 +939,29 @@
                 document.getElementById('geo-college-name').value = mainCampus.college_name || mainCampus.name || user.collegeName || '';
                 document.getElementById('geo-college-code').value = mainCampus.college_code || user.collegeCode || '';
                 
-                document.getElementById('geo-lat').value = mainCampus.latitude || '';
-                document.getElementById('geo-lng').value = mainCampus.longitude || '';
-                document.getElementById('geo-radius').value = mainCampus.radius || '';
+                document.getElementById('geo-lat').value = mainCampus.latitude || '0';
+                document.getElementById('geo-lng').value = mainCampus.longitude || '0';
+                document.getElementById('geo-radius').value = mainCampus.radius || '500';
                 
                 if (mainCampus.attendance_start_time) document.getElementById('geo-start-time').value = mainCampus.attendance_start_time;
                 if (mainCampus.attendance_end_time) document.getElementById('geo-end-time').value = mainCampus.attendance_end_time;
                 
+                // Polygon logic
+                currentPolygonPoints = [];
+                if (mainCampus.polygon_coordinates && mainCampus.polygon_coordinates.length >= 3) {
+                    currentPolygonPoints = [...mainCampus.polygon_coordinates];
+                } else if (mainCampus.latitude && mainCampus.longitude) {
+                    const lat = parseFloat(mainCampus.latitude);
+                    const lng = parseFloat(mainCampus.longitude);
+                    currentPolygonPoints = [
+                        {lat: lat + 0.002, lng: lng - 0.002},
+                        {lat: lat + 0.002, lng: lng + 0.002},
+                        {lat: lat - 0.002, lng: lng + 0.002},
+                        {lat: lat - 0.002, lng: lng - 0.002}
+                    ];
+                }
+                renderPolygonInputs();
+
                 const fieldset = document.getElementById('geofence-fieldset');
                 if (fieldset) fieldset.disabled = true;
                 
@@ -917,14 +972,10 @@
                     document.getElementById('geo-cancel-btn').classList.add('hidden');
                 }
 
-                if (typeof adminMap !== 'undefined' && adminMap && mainCampus.latitude) {
-                    const pos = { lat: parseFloat(mainCampus.latitude), lng: parseFloat(mainCampus.longitude) };
-                    adminMap.setCenter(pos);
-                    if(adminMarker) adminMarker.setPosition(pos);
-                    if(adminCircle) {
-                        adminCircle.setCenter(pos);
-                        adminCircle.setRadius(parseFloat(mainCampus.radius) || 500);
-                    }
+                if (typeof adminMap !== 'undefined' && adminMap && currentPolygonPoints.length > 0) {
+                    const center = currentPolygonPoints[0];
+                    adminMap.setCenter(center);
+                    drawPolygonOnMap();
                 }
             } else {
                 const fieldset = document.getElementById('geofence-fieldset');
@@ -945,10 +996,13 @@
             document.getElementById('geo-edit-btn').classList.add('hidden');
             document.getElementById('geo-submit-btn').classList.remove('hidden');
             document.getElementById('geo-cancel-btn').classList.remove('hidden');
+            renderPolygonInputs(); // To re-render with enabled inputs/buttons
+            if(adminMap) enableMapEditing();
         }
 
         function cancelGeofenceEdit() {
             isEditingGeofence = false;
+            if(adminPolygon) adminPolygon.setEditable(false);
             fetchAdminData();
         }
 
@@ -969,15 +1023,21 @@
                 }
             }
 
+            if (currentPolygonPoints.length < 3) {
+                alert("Please provide at least 3 points for the geofence boundary.");
+                return;
+            }
+
             const payload = {
                 name: document.getElementById('geo-college-name').value,
                 collegeName: document.getElementById('geo-college-name').value,
                 collegeCode: document.getElementById('geo-college-code').value,
-                latitude: parseFloat(document.getElementById('geo-lat').value),
-                longitude: parseFloat(document.getElementById('geo-lng').value),
-                radius: parseInt(document.getElementById('geo-radius').value),
+                latitude: currentPolygonPoints[0].lat,
+                longitude: currentPolygonPoints[0].lng,
+                radius: 500,
                 attendance_start_time: attendanceStartTime,
-                attendance_end_time: attendanceEndTime
+                attendance_end_time: attendanceEndTime,
+                polygonCoordinates: currentPolygonPoints
             };
 
             const btn = e.submitter;
@@ -1203,81 +1263,73 @@
     </script>
 
     <script>
-        let adminMap, adminMarker, adminCircle;
+        let adminPolygon;
         function initAdminMap() {
-            const latInput = document.getElementById('geo-lat');
-            const lngInput = document.getElementById('geo-lng');
-            const radiusInput = document.getElementById('geo-radius');
-
-            const lat = parseFloat(latInput.value) || 12.9716;
-            const lng = parseFloat(lngInput.value) || 77.5946;
-            const radius = parseFloat(radiusInput.value) || 500;
-
             adminMap = new google.maps.Map(document.getElementById('admin-map'), {
-                center: { lat, lng },
                 zoom: 16,
                 mapTypeId: 'roadmap',
                 mapTypeControl: false,
                 streetViewControl: false
             });
 
-            adminMarker = new google.maps.Marker({
-                position: { lat, lng },
-                map: adminMap,
-                draggable: true,
-                animation: google.maps.Animation.DROP,
-                title: "Campus Center"
+            adminMap.addListener('click', (e) => {
+                if(isEditingGeofence) {
+                    addPolygonPoint(e.latLng.lat(), e.latLng.lng());
+                }
             });
 
-            adminCircle = new google.maps.Circle({
+            drawPolygonOnMap();
+        }
+
+        function enableMapEditing() {
+            if(adminPolygon) {
+                adminPolygon.setEditable(true);
+            }
+        }
+
+        function drawPolygonOnMap() {
+            if(!adminMap) return;
+            if(adminPolygon) {
+                adminPolygon.setMap(null);
+            }
+            
+            if(currentPolygonPoints.length === 0) return;
+
+            const path = currentPolygonPoints.map(p => ({lat: p.lat, lng: p.lng}));
+            adminPolygon = new google.maps.Polygon({
+                paths: path,
                 strokeColor: "#4f46e5",
                 strokeOpacity: 0.8,
                 strokeWeight: 2,
                 fillColor: "#4f46e5",
                 fillOpacity: 0.15,
-                map: adminMap,
-                center: { lat, lng },
-                radius: radius
+                editable: isEditingGeofence,
+                map: adminMap
             });
 
-            google.maps.event.addListener(adminMarker, 'dragend', function(event) {
-                const newLat = event.latLng.lat();
-                const newLng = event.latLng.lng();
-                document.getElementById('geo-lat').value = newLat.toFixed(6);
-                document.getElementById('geo-lng').value = newLng.toFixed(6);
-                adminCircle.setCenter({ lat: newLat, lng: newLng });
-            });
+            if (currentPolygonPoints.length > 0 && !isEditingGeofence) {
+                const bounds = new google.maps.LatLngBounds();
+                path.forEach(p => bounds.extend(p));
+                adminMap.fitBounds(bounds);
+            }
 
-            adminMap.addListener('click', (e) => {
-                const newLat = e.latLng.lat();
-                const newLng = e.latLng.lng();
-                adminMarker.setPosition({ lat: newLat, lng: newLng });
-                adminCircle.setCenter({ lat: newLat, lng: newLng });
-                document.getElementById('geo-lat').value = newLat.toFixed(6);
-                document.getElementById('geo-lng').value = newLng.toFixed(6);
-            });
+            // Listen to edits on polygon visually
+            google.maps.event.addListener(adminPolygon.getPath(), 'set_at', updatePointsFromMap);
+            google.maps.event.addListener(adminPolygon.getPath(), 'insert_at', updatePointsFromMap);
+            google.maps.event.addListener(adminPolygon.getPath(), 'remove_at', updatePointsFromMap);
+        }
 
-            radiusInput.addEventListener('input', (e) => {
-                const r = parseFloat(e.target.value) || 0;
-                if(adminCircle) adminCircle.setRadius(r);
-            });
-            
-            // Allow manual keyboard entry for lat/lng to move map
-            const updateFromInputs = () => {
-                const geoLatNode = document.getElementById('geo-lat');
-                const geoLngNode = document.getElementById('geo-lng');
-                const nLat = parseFloat(geoLatNode.value) || 0;
-                const nLng = parseFloat(geoLngNode.value) || 0;
-                if (nLat && nLng) {
-                    const pos = { lat: nLat, lng: nLng };
-                    adminMap.setCenter(pos);
-                    adminMarker.setPosition(pos);
-                    adminCircle.setCenter(pos);
-                }
-            };
-            document.getElementById('geo-lat').addEventListener('input', updateFromInputs);
-            document.getElementById('geo-lng').addEventListener('input', updateFromInputs);
-        };
+        function updatePointsFromMap() {
+            if(!isEditingGeofence) return;
+            const path = adminPolygon.getPath();
+            const newPoints = [];
+            for (let i = 0; i < path.getLength(); i++) {
+                const xy = path.getAt(i);
+                newPoints.push({lat: xy.lat(), lng: xy.lng()});
+            }
+            currentPolygonPoints = newPoints;
+            renderPolygonInputs(true);
+        }
     </script>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAtcv3jZIS7M7bmf4Mwirbhd1qVulafbvk&callback=initAdminMap" async defer></script>
 </body>

@@ -116,7 +116,10 @@
         document.getElementById('user-name').textContent = user.name || 'Student';
         document.getElementById('user-info').textContent = `${user.rollNumber || ''} • ${user.email}`;
 
-        let map, marker, radius, campusCenter, lastStatus;
+        let map, marker, radius, campusCenter, campusPolygonData, campusPolygon;
+        let lastRealStatus = null;
+        let pendingStatus = null;
+        let consecutiveMatches = 0;
         let currentLat = 0, currentLng = 0;
 
         // STEP 1: FETCH CAMPUS DATA FROM BACKEND
@@ -138,15 +141,27 @@
                     disableDefaultUI: true
                 });
 
-                new google.maps.Circle({
-                    map,
-                    center: campusCenter,
-                    radius: radius,
-                    fillColor: "#4f46e5",
-                    fillOpacity: 0.2,
-                    strokeColor: "#4f46e5",
-                    strokeWeight: 2
-                });
+                if (data.polygon_coordinates && data.polygon_coordinates.length >= 3) {
+                    campusPolygonData = data.polygon_coordinates;
+                    campusPolygon = new google.maps.Polygon({
+                        paths: campusPolygonData,
+                        fillColor: "#4f46e5",
+                        fillOpacity: 0.2,
+                        strokeColor: "#4f46e5",
+                        strokeWeight: 2,
+                        map: map
+                    });
+                } else {
+                    new google.maps.Circle({
+                        map,
+                        center: campusCenter,
+                        radius: radius,
+                        fillColor: "#4f46e5",
+                        fillOpacity: 0.2,
+                        strokeColor: "#4f46e5",
+                        strokeWeight: 2
+                    });
+                }
 
                 fetchTodayStats();
                 // Wait for user to click 'Start Tracking'
@@ -208,18 +223,23 @@
             if (!campusCenter) return;
 
             const userPos = new google.maps.LatLng(lat, lng);
-            const campusPos = new google.maps.LatLng(campusCenter.lat, campusCenter.lng);
-            
-            // Use Google Maps official geometry library for maximum accuracy
-            const distance = google.maps.geometry.spherical.computeDistanceBetween(userPos, campusPos);
+            let isInside = false;
 
-            document.getElementById("distance").innerText = distance.toFixed(2) + " meters";
+            if (campusPolygon) {
+                isInside = google.maps.geometry.poly.containsLocation(userPos, campusPolygon);
+                document.getElementById("distance").innerText = isInside ? "Inside Polygon" : "Outside Polygon";
+            } else {
+                const campusPos = new google.maps.LatLng(campusCenter.lat, campusCenter.lng);
+                const distance = google.maps.geometry.spherical.computeDistanceBetween(userPos, campusPos);
+                document.getElementById("distance").innerText = distance.toFixed(2) + " meters";
+                isInside = distance <= Number(radius);
+            }
 
             // STEP 6: FIX ATTENDANCE LOGIC
-            const currentStatus = distance <= Number(radius) ? "IN" : "OUT";
+            const currentStatus = isInside ? "IN" : "OUT";
             
             const badge = document.getElementById('presence-badge');
-            if (currentStatus === "IN") {
+            if (isInside) {
                 badge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 inline-block';
                 badge.textContent = "✅ Inside Campus";
             } else {
@@ -227,17 +247,22 @@
                 badge.textContent = "❌ Outside Campus";
             }
 
-            if (lastStatus !== currentStatus) {
-                checkAttendance(distance);
-                lastStatus = currentStatus;
-            }
-        }
-
-        function checkAttendance(distance) {
-            if (distance <= radius) {
-                markAttendance("IN");
+            // Hysteresis logic
+            if (currentStatus !== lastRealStatus) {
+                if (currentStatus === pendingStatus) {
+                    consecutiveMatches++;
+                    if (consecutiveMatches >= 2) {
+                        lastRealStatus = currentStatus;
+                        markAttendance(currentStatus);
+                        consecutiveMatches = 0;
+                    }
+                } else {
+                    pendingStatus = currentStatus;
+                    consecutiveMatches = 1;
+                }
             } else {
-                markAttendance("OUT");
+                pendingStatus = null;
+                consecutiveMatches = 0;
             }
         }
 

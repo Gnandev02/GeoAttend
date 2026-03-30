@@ -1,7 +1,7 @@
 const { query } = require("./utils/db");
 const { protectAdmin, protectStudent, hashPassword, comparePassword, generateToken } = require("../utils/auth");
 const { sendVerificationEmail, sendResetEmail, sendOnboardingEmail } = require("./utils/email");
-const { calculateDistance } = require("../utils/geoHelper");
+const { calculateDistance, isPointInPolygon } = require("../utils/geoHelper");
 
 function getIST() {
     const now = new Date();
@@ -51,7 +51,7 @@ export default async function handler(req, res) {
             });
 
             const result = await query(
-                `SELECT name, latitude, longitude, radius, attendance_start_time, attendance_end_time, college_code 
+                `SELECT name, latitude, longitude, radius, attendance_start_time, attendance_end_time, college_code, polygon_coordinates 
                  FROM campus_setup 
                  WHERE college_code = $1`,
                 [user.college_code]
@@ -76,7 +76,8 @@ export default async function handler(req, res) {
                 attendance_start_time: row.attendance_start_time,
                 attendance_end_time: row.attendance_end_time,
                 college_code: row.college_code,
-                college_name: collegeName
+                college_name: collegeName,
+                polygon_coordinates: row.polygon_coordinates
             });
         }
 
@@ -96,17 +97,23 @@ export default async function handler(req, res) {
             const { date: todayIST, time: currentTime } = getIST();
 
             const geofenceQuery = await query(
-                'SELECT latitude, longitude, radius, attendance_start_time, attendance_end_time FROM campus_setup WHERE college_code = $1', 
+                'SELECT latitude, longitude, radius, attendance_start_time, attendance_end_time, polygon_coordinates FROM campus_setup WHERE college_code = $1', 
                 [student.college_code]
             );
             if (geofenceQuery.rows.length === 0) return res.status(500).json({ success: false, message: 'Campus geofence not configured.' });
             const geofence = geofenceQuery.rows[0];
 
-            const distance = calculateDistance(latitude, longitude, Number(geofence.latitude), Number(geofence.longitude));
-            if (distance === null) return res.status(400).json({ success: false, message: "Distance calculation failed" });
-
-            const radius = Number(geofence.radius);
-            const isInside = distance <= radius;
+            let isInside = false;
+            let distance = 0;
+            
+            if (geofence.polygon_coordinates && Array.isArray(geofence.polygon_coordinates) && geofence.polygon_coordinates.length >= 3) {
+                isInside = isPointInPolygon(latitude, longitude, geofence.polygon_coordinates);
+            } else {
+                distance = calculateDistance(latitude, longitude, Number(geofence.latitude), Number(geofence.longitude));
+                if (distance === null) return res.status(400).json({ success: false, message: "Distance calculation failed" });
+                const radius = Number(geofence.radius);
+                isInside = distance <= radius;
+            }
 
             if (geofence.attendance_start_time && geofence.attendance_end_time) {
                 const currMins = timeStringToMinutes(currentTime);
@@ -545,7 +552,8 @@ export default async function handler(req, res) {
                     longitude,
                     radius,
                     attendance_start_time,
-                    attendance_end_time
+                    attendance_end_time,
+                    polygonCoordinates
                 } = req.body;
 
                 console.log("Incoming Data:", req.body);
@@ -568,8 +576,8 @@ export default async function handler(req, res) {
 
                 const result = await query(`
                     INSERT INTO campus_setup 
-                    (college_code, name, latitude, longitude, radius, attendance_start_time, attendance_end_time)
-                    VALUES ($1,$2,$3,$4,$5,$6,$7)
+                    (college_code, name, latitude, longitude, radius, attendance_start_time, attendance_end_time, polygon_coordinates)
+                    VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
                     ON CONFLICT (college_code)
                     DO UPDATE SET
                         name = EXCLUDED.name,
@@ -577,7 +585,8 @@ export default async function handler(req, res) {
                         longitude = EXCLUDED.longitude,
                         radius = EXCLUDED.radius,
                         attendance_start_time = EXCLUDED.attendance_start_time,
-                        attendance_end_time = EXCLUDED.attendance_end_time
+                        attendance_end_time = EXCLUDED.attendance_end_time,
+                        polygon_coordinates = EXCLUDED.polygon_coordinates
                     RETURNING *
                 `, [
                     admin.college_code,
@@ -586,7 +595,8 @@ export default async function handler(req, res) {
                     lng,
                     rad,
                     attendance_start_time || null,
-                    attendance_end_time || null
+                    attendance_end_time || null,
+                    polygonCoordinates ? JSON.stringify(polygonCoordinates) : null
                 ]);
 
                 if (req.body.collegeName) {
