@@ -129,20 +129,29 @@
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.message);
 
-                campusCenter = { lat: data.latitude, lng: data.longitude };
-                radius = data.radius;
-
-                document.getElementById("campus-center").innerText = `${data.latitude.toFixed(6)}, ${data.longitude.toFixed(6)}`;
-
-                // STEP 2: INITIALIZE MAP CORRECTLY
-                map = new google.maps.Map(document.getElementById("student-map"), {
-                    center: campusCenter,
-                    zoom: 17,
-                    disableDefaultUI: true
-                });
-
                 if (data.polygon_coordinates && data.polygon_coordinates.length >= 3) {
                     campusPolygonData = data.polygon_coordinates;
+                    
+                    // Dynamically calculate campus center (centroid of polygon)
+                    let latSum = 0, lngSum = 0;
+                    campusPolygonData.forEach(p => { 
+                        latSum += parseFloat(p.lat); 
+                        lngSum += parseFloat(p.lng); 
+                    });
+                    campusCenter = { 
+                        lat: latSum / campusPolygonData.length, 
+                        lng: lngSum / campusPolygonData.length 
+                    };
+                    
+                    document.getElementById("campus-center").innerText = `${campusCenter.lat.toFixed(6)}, ${campusCenter.lng.toFixed(6)}`;
+
+                    // STEP 2: INITIALIZE MAP CORRECTLY (Polygon Center)
+                    map = new google.maps.Map(document.getElementById("student-map"), {
+                        center: campusCenter,
+                        zoom: 17,
+                        disableDefaultUI: true
+                    });
+
                     campusPolygon = new google.maps.Polygon({
                         paths: campusPolygonData,
                         fillColor: "#4f46e5",
@@ -151,11 +160,29 @@
                         strokeWeight: 2,
                         map: map
                     });
+
+                    // Fit map bounds to polygon
+                    const bounds = new google.maps.LatLngBounds();
+                    campusPolygonData.forEach(p => bounds.extend(p));
+                    map.fitBounds(bounds);
+
                 } else {
+                    campusCenter = { lat: parseFloat(data.latitude), lng: parseFloat(data.longitude) };
+                    radius = data.radius;
+
+                    document.getElementById("campus-center").innerText = `${campusCenter.lat.toFixed(6)}, ${campusCenter.lng.toFixed(6)}`;
+
+                    // STEP 2: INITIALIZE MAP CORRECTLY (Radius Center)
+                    map = new google.maps.Map(document.getElementById("student-map"), {
+                        center: campusCenter,
+                        zoom: 17,
+                        disableDefaultUI: true
+                    });
+
                     new google.maps.Circle({
                         map,
                         center: campusCenter,
-                        radius: radius,
+                        radius: parseFloat(radius),
                         fillColor: "#4f46e5",
                         fillOpacity: 0.2,
                         strokeColor: "#4f46e5",
@@ -227,7 +254,7 @@
 
             if (campusPolygon) {
                 isInside = google.maps.geometry.poly.containsLocation(userPos, campusPolygon);
-                document.getElementById("distance").innerText = isInside ? "Inside Polygon" : "Outside Polygon";
+                document.getElementById("distance").innerText = isInside ? "Inside Campus" : "Outside Campus";
             } else {
                 const campusPos = new google.maps.LatLng(campusCenter.lat, campusCenter.lng);
                 const distance = google.maps.geometry.spherical.computeDistanceBetween(userPos, campusPos);
