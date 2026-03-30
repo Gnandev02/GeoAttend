@@ -96,7 +96,7 @@ export default async function handler(req, res) {
             const { date: todayIST, time: currentTime } = getIST();
 
             const geofenceQuery = await query(
-                'SELECT latitude, longitude, radius FROM campus_setup WHERE college_code = $1', 
+                'SELECT latitude, longitude, radius, attendance_start_time, attendance_end_time FROM campus_setup WHERE college_code = $1', 
                 [student.college_code]
             );
             if (geofenceQuery.rows.length === 0) return res.status(500).json({ success: false, message: 'Campus geofence not configured.' });
@@ -107,6 +107,30 @@ export default async function handler(req, res) {
 
             const radius = Number(geofence.radius);
             const isInside = distance <= radius;
+
+            if (geofence.attendance_start_time && geofence.attendance_end_time) {
+                const currMins = timeStringToMinutes(currentTime);
+                const startMins = timeStringToMinutes(geofence.attendance_start_time);
+                const endMins = timeStringToMinutes(geofence.attendance_end_time);
+
+                let isTrackingHours = false;
+                if (startMins <= endMins) {
+                    isTrackingHours = currMins >= startMins && currMins <= endMins;
+                } else {
+                    isTrackingHours = currMins >= startMins || currMins <= endMins;
+                }
+
+                if (!isTrackingHours) {
+                    return res.status(200).json({
+                        success: true,
+                        distance: parseFloat(distance.toFixed(2)),
+                        inside: isInside,
+                        action: "none",
+                        tracking_inactive: true,
+                        message: "Outside of allowed tracking hours"
+                    });
+                }
+            }
 
             let apiAction = "none";
             

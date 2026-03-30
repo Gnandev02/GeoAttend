@@ -260,8 +260,26 @@
                 console.log("Attendance response:", data);
                 if (!res.ok) {
                     showAlert(data.message || data.error || "Attendance failed", false);
-                } else if (data.action && data.action !== "none") {
-                    showAlert(data.action === "checked-in" ? "✅ Checked In!" : "📤 Checked Out", true);
+                } else {
+                    if (data.tracking_inactive) {
+                        document.getElementById('tracking-status').textContent = "Inactive (Outside College Hours)";
+                        document.getElementById('tracking-status').classList.add('text-amber-300');
+                        document.getElementById('tracking-status').classList.remove('text-blue-100');
+                        document.getElementById('markText').textContent = "Tracking Paused";
+                        document.getElementById('startTrackingBtn').classList.add('bg-amber-600');
+                        document.getElementById('startTrackingBtn').classList.remove('bg-green-600', 'bg-blue-600');
+                    } else {
+                        document.getElementById('tracking-status').textContent = "Auto Attendance Detection";
+                        document.getElementById('tracking-status').classList.remove('text-amber-300');
+                        document.getElementById('tracking-status').classList.add('text-blue-100');
+                        document.getElementById('markText').textContent = "Tracking Active";
+                        document.getElementById('startTrackingBtn').classList.remove('bg-amber-600', 'bg-blue-600');
+                        document.getElementById('startTrackingBtn').classList.add('bg-green-600');
+                        
+                        if (data.action && data.action !== "none") {
+                            showAlert(data.action === "checked-in" ? "✅ Checked In!" : "📤 Checked Out", true);
+                        }
+                    }
                 }
                 fetchTodayStats();
             } catch (err) {
