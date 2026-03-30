@@ -2,7 +2,7 @@ const { query } = require("./api/utils/db");
 
 async function checkFinal() {
     try {
-        const a = await query("SELECT id, name, email, college_code FROM admins WHERE email = 'gnandevbonthu12@gmail.com'");
+        const a = await query("SELECT id, name, email, college_code FROM admins WHERE email = 'geoattend20@gmail.com'");
         console.log("Actual Admin:", a.rows);
         
         if (a.rows.length > 0) {
