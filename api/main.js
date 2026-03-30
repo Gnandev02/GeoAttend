@@ -27,6 +27,43 @@ function timeStringToMinutes(timeStr) {
     return h * 60 + m;
 }
 
+/* --- HELPER: ENFORCE ABSENCES INTERNALLY --- */
+async function enforceAbsences(collegeCode, studentId = null) {
+    try {
+        const { date: todayIST, time: currentTime } = getIST();
+        const currMins = timeStringToMinutes(currentTime);
+
+        const campusQ = await query('SELECT attendance_end_time FROM campus_setup WHERE college_code = $1', [collegeCode]);
+        if (campusQ.rows.length === 0) return;
+        const endMins = timeStringToMinutes(campusQ.rows[0].attendance_end_time);
+
+        // Execute only if the end time is passed
+        if (endMins > 0 && currMins > endMins) {
+            if (studentId) {
+                await query(`
+                    INSERT INTO attendance (student_id, college_code, attendance_date, status)
+                    SELECT $1, $2, $3, 'Absent'
+                    WHERE NOT EXISTS (
+                        SELECT 1 FROM attendance WHERE student_id = $1 AND attendance_date = $3
+                    )
+                `, [studentId, collegeCode, todayIST]);
+            } else {
+                await query(`
+                    INSERT INTO attendance (student_id, college_code, attendance_date, status)
+                    SELECT id, college_code, $1, 'Absent'
+                    FROM students
+                    WHERE college_code = $2
+                      AND NOT EXISTS (
+                        SELECT 1 FROM attendance a WHERE a.student_id = students.id AND a.attendance_date = $1
+                      )
+                `, [todayIST, collegeCode]);
+            }
+        }
+    } catch (err) {
+        console.error("Enforce absence error:", err);
+    }
+}
+
 export default async function handler(req, res) {
     // CORS Headers
     res.setHeader('Access-Control-Allow-Credentials', true);
@@ -128,6 +165,7 @@ export default async function handler(req, res) {
                 }
 
                 if (!isTrackingHours) {
+                    await enforceAbsences(student.college_code, student.id);
                     return res.status(200).json({
                         success: true,
                         distance: parseFloat(distance.toFixed(2)),
@@ -189,6 +227,7 @@ export default async function handler(req, res) {
             const student = await protectStudent(req);
 
             if (admin && (!student || !req.headers.referer?.includes('student-dashboard'))) {
+                await enforceAbsences(admin.college_code);
                 const { date: todayIST } = getIST();
                 
                 const result = await query(
@@ -228,6 +267,7 @@ export default async function handler(req, res) {
                     } 
                 });
             } else if (student) {
+                await enforceAbsences(student.college_code, student.id);
                 const { date: todayIST } = getIST();
 
                 const logsQ = await query(

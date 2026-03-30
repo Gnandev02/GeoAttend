@@ -1,10 +1,4 @@
 {
-    "crons": [
-        {
-            "path": "/api/mark-absent",
-            "schedule": "15 18 * * *"
-        }
-    ],
     "rewrites": [
         {
             "source": "/api/adminLogin",
