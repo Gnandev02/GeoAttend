@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Activity } from 'lucide-react';
@@ -7,6 +8,24 @@ const LandingPage = () => {
     const navigate = useNavigate();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [showRoleSelector, setShowRoleSelector] = useState(false);
+    const [totalVerified, setTotalVerified] = useState("...");
+
+    useEffect(() => {
+        const fetchVerified = async () => {
+            try {
+                const response = await fetch('/api/main?action=get-total-verified');
+                const data = await response.json();
+                if (data.success) {
+                    setTotalVerified(data.count <= 500 ? data.count : "500+");
+                }
+            } catch (err) {
+                console.error("Failed to fetch count:", err);
+            }
+        };
+        fetchVerified();
+        const interval = setInterval(fetchVerified, 10000);
+        return () => clearInterval(interval);
+    }, []);
 
     const isLogged = !!user;
     const dashboardPath = user?.role === 'admin' ? '/admin' : '/student';
@@ -348,7 +367,7 @@ const LandingPage = () => {
                                 <div className="grid grid-cols-2 gap-3 mt-auto">
                                     <div className="bg-white border border-slate-100 rounded-lg p-3">
                                         <div className="text-slate-400 text-[10px] uppercase font-semibold">Total Verified</div>
-                                        <div className="text-slate-900 font-bold text-lg mt-0.5">142</div>
+                                        <div className="text-slate-900 font-bold text-lg mt-0.5">{totalVerified}</div>
                                     </div>
                                     <div className="bg-white border border-slate-100 rounded-lg p-3">
                                         <div className="text-slate-400 text-[10px] uppercase font-semibold">Accuracy</div>

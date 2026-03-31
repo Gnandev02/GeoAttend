@@ -371,7 +371,7 @@
                             <div class="bg-slate-50/50 rounded-xl p-5 border border-slate-100">
                                 <p class="text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Total
                                     Verified</p>
-                                <p class="text-3xl font-extrabold text-slate-900">142</p>
+                                <p id="live-total-verified" class="text-3xl font-extrabold text-slate-900">...</p>
                             </div>
                             <div class="bg-slate-50/50 rounded-xl p-5 border border-slate-100">
                                 <p class="text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Accuracy
@@ -487,6 +487,28 @@
 </body>
 
 <script>
+    // Fetch live total verified count
+    async function updateLiveVerifiedCount() {
+        try {
+            const response = await fetch('/api/main?action=get-total-verified');
+            const data = await response.json();
+            if (data.success) {
+                const count = data.count;
+                const displayElement = document.getElementById('live-total-verified');
+                if (count <= 500) {
+                    displayElement.textContent = count;
+                } else {
+                    displayElement.textContent = "500+";
+                }
+            }
+        } catch (error) {
+            console.error("Failed to fetch verified count:", error);
+        }
+    }
+    // Update immediately, then every 10 seconds
+    updateLiveVerifiedCount();
+    setInterval(updateLiveVerifiedCount, 10000);
+
     // Navigation Scroll Effect
     const nav = document.getElementById('main-nav');
     window.addEventListener('scroll', () => {

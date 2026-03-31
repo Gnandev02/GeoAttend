@@ -118,6 +118,12 @@ export default async function handler(req, res) {
             });
         }
 
+        // --- 1b. PUBLIC STATS (Landing Page) ---
+        else if (action === "get-total-verified") {
+            const result = await query("SELECT COUNT(id) as total FROM attendance WHERE status IN ('Present', 'Absent', 'completed')");
+            return res.status(200).json({ success: true, count: parseInt(result.rows[0].total) || 0 });
+        }
+
         // --- 2. ATTENDANCE MARKING / TRACKING (Unified Action) ---
         else if (action === "mark-attendance" || action === "track" || action === "attendance") {
             const student = await protectStudent(req);
