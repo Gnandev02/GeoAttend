@@ -128,6 +128,10 @@
                             </label>
                             <input type="password" id="password" required class="saas-input" placeholder="Enter your password" autocomplete="current-password">
                         </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">College Code (Optional)</label>
+                            <input type="text" id="collegeCode" class="saas-input" placeholder="e.g. GEO-12345" autocomplete="off">
+                        </div>
                     </div>
 
                     <div id="error-msg"
@@ -140,6 +144,16 @@
                         <span id="btn-text">Sign in securely</span>
                     </button>
                 </form>
+
+                <!-- Campus Selection Step (Hidden by default) -->
+                <div id="selection-container" class="hidden space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                    <div class="text-center">
+                        <p class="text-sm font-bold text-slate-900 border-b pb-2">Multiple Institutions Found</p>
+                        <p class="text-xs text-slate-500 mt-2">Which campus are you logging into today?</p>
+                    </div>
+                    <div id="campus-list" class="space-y-2 max-h-48 overflow-y-auto px-1"></div>
+                    <button onclick="resetLoginForm()" class="text-xs text-center w-full text-slate-400 hover:text-[#0284c7] font-semibold">Back to Login</button>
+                </div>
             </div>
 
             <!-- Back Link -->
@@ -161,10 +175,14 @@
             e.preventDefault();
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
+            const collegeCode = document.getElementById('collegeCode').value;
             const submitBtn = document.getElementById('submit-btn');
             const btnText = document.getElementById('btn-text');
             const errorMsg = document.getElementById('error-msg');
             const errorText = document.getElementById('error-text');
+            const loginForm = document.getElementById('login-form');
+            const selectionContainer = document.getElementById('selection-container');
+            const campusList = document.getElementById('campus-list');
 
             submitBtn.disabled = true;
             btnText.innerHTML = `
@@ -178,7 +196,7 @@
                 const response = await fetch('/api/main?action=studentLogin', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
+                    body: JSON.stringify({ email, password, collegeCode })
                 });
 
                 const data = await response.json();
@@ -191,15 +209,22 @@
 
                 localStorage.setItem('token', data.token);
                 // Construct the user object from the flat response
-                const userObj = {
-                    _id: data._id,
-                    name: data.name,
-                    email: data.email,
-                    rollNumber: data.rollNumber,
-                    role: data.role,
-                    collegeCode: data.collegeCode
-                };
-                localStorage.setItem('student', JSON.stringify(userObj));
+                if (data.multipleCampuses) {
+                    loginForm.classList.add('hidden');
+                    selectionContainer.classList.remove('hidden');
+                    campusList.innerHTML = '';
+                    data.campuses.forEach(campus => {
+                        const btn = document.createElement('button');
+                        btn.className = 'w-full text-left p-3 rounded-lg border border-slate-100 hover:border-[#0284c7] hover:bg-blue-50 transition-all font-bold text-slate-700 flex justify-between items-center group';
+                        btn.onclick = () => selectCampus(email, password, campus.collegeCode);
+                        btn.innerHTML = `
+                            <span>${campus.collegeName}</span>
+                            <span class="text-[10px] text-slate-400 group-hover:text-blue-600">${campus.collegeCode}</span>
+                        `;
+                        campusList.appendChild(btn);
+                    });
+                    return;
+                }
 
                 if (data.role !== 'student') {
                     errorText.textContent = 'Invalid account type for this portal.';
@@ -218,6 +243,41 @@
                 btnText.textContent = 'Sign in securely';
             }
         });
+
+        async function selectCampus(email, password, collegeCode) {
+            const errorText = document.getElementById('error-text');
+            const errorMsg = document.getElementById('error-msg');
+            
+            try {
+                const response = await fetch('/api/main?action=studentLogin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, collegeCode })
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message);
+
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('student', JSON.stringify({
+                    _id: data._id,
+                    name: data.name,
+                    email: data.email,
+                    rollNumber: data.rollNumber,
+                    role: data.role,
+                    collegeCode: data.collegeCode
+                }));
+                window.location.href = 'student-dashboard.html';
+            } catch (err) {
+                errorText.textContent = err.message;
+                errorMsg.classList.remove('hidden');
+                resetLoginForm();
+            }
+        }
+
+        function resetLoginForm() {
+            document.getElementById('login-form').classList.remove('hidden');
+            document.getElementById('selection-container').classList.add('hidden');
+        }
 
     </script>
 </body>

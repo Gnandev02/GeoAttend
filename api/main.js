@@ -509,14 +509,52 @@ export default async function handler(req, res) {
             const { email, password, name, otp, newPassword } = req.body;
             
             if (action === "auth-login" || action === "studentLogin") {
-                // ONLY Students table
+                const collegeCode = req.body.collegeCode || req.body.college_code;
+                
+                if (collegeCode) {
+                    // Direct Login: strictly check email + college_code
+                    const result = await query('SELECT * FROM students WHERE email = $1 AND college_code = $2', [email, collegeCode]);
+                    if (result.rows.length === 0) {
+                        return res.status(401).json({ success: false, message: 'Invalid student credentials for this campus.' });
+                    }
+                    
+                    const student = result.rows[0];
+                    if (await comparePassword(password, student.password)) {
+                        const token = generateToken(student.id, student.email, student.college_code, 'student');
+                        return res.status(200).json({ 
+                            success: true,
+                            token,
+                            id: student.id, 
+                            name: student.name, 
+                            email: student.email, 
+                            rollNumber: student.roll_number, 
+                            role: 'student', 
+                            collegeCode: student.college_code 
+                        });
+                    }
+                    return res.status(401).json({ success: false, message: 'Invalid student credentials.' });
+                }
+
+                // Smart Login: check all campuses for this email
                 const result = await query('SELECT * FROM students WHERE email = $1', [email]);
                 if (result.rows.length === 0) {
-                    return res.status(401).json({ success: false, message: 'Invalid student credentials' });
+                    return res.status(401).json({ success: false, message: 'Invalid student credentials.' });
                 }
-                
-                const student = result.rows[0];
-                if (await comparePassword(password, student.password)) {
+
+                // Filter students by valid password
+                const validMatches = [];
+                for (const student of result.rows) {
+                    if (await comparePassword(password, student.password)) {
+                        validMatches.push(student);
+                    }
+                }
+
+                if (validMatches.length === 0) {
+                    return res.status(401).json({ success: false, message: 'Invalid student credentials.' });
+                }
+
+                if (validMatches.length === 1) {
+                    const student = validMatches[0];
                     const token = generateToken(student.id, student.email, student.college_code, 'student');
                     return res.status(200).json({ 
                         success: true,
@@ -529,8 +567,24 @@ export default async function handler(req, res) {
                         collegeCode: student.college_code 
                     });
                 }
-                
-                return res.status(401).json({ success: false, message: 'Invalid student credentials' });
+
+                // Multiple matches: return list of campuses
+                const campusIds = validMatches.map(s => s.college_code);
+                const campusNamesQ = await query('SELECT college_code, name FROM campus_setup WHERE college_code = ANY($1)', [campusIds]);
+                const campusMap = {};
+                campusNamesQ.rows.forEach(r => campusMap[r.college_code] = r.name);
+
+                const choices = validMatches.map(s => ({
+                    collegeCode: s.college_code,
+                    collegeName: campusMap[s.college_code] || 'Institution ' + s.college_code
+                }));
+
+                return res.status(200).json({ 
+                    success: true, 
+                    multipleCampuses: true, 
+                    message: 'Multiple institutions detected. Please select yours.',
+                    campuses: choices
+                });
             }
             else if (action === "adminLogin") {
                 // ONLY Admins table
