@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Records | GeoAttend</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: { brand: { 600: '#2563eb' } }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; padding: 12px; }
+        @media (min-width: 768px) { body { padding: 24px; } }
+        .saas-card { background-color: #fff; border: 1px solid #f1f5f9; border-radius: 0.75rem; box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.05); }
+        .badge-success { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; padding: 0.125rem 0.625rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; }
+        .badge-danger { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; padding: 0.125rem 0.625rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; }
+        .tab-btn { display: flex; align-items: center; gap: 1rem; padding: 0.875rem 1.25rem; border-radius: 0.875rem; font-size: 0.9375rem; font-weight: 600; width: 100%; transition: all 0.2s; text-align: left; }
+        .tab-btn.active { background: #e0f2fe; color: #0369a1; }
+        .tab-btn.inactive { color: #64748b; }
+        .tab-btn.inactive:hover { background: #f8fafc; color: #1e293b; }
+        
+        /* Table Styles */
+        .record-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        .record-table th { padding: 1rem; text-align: left; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; border-bottom: 1px solid #f1f5f9; }
+        .record-table td { padding: 1rem; font-size: 0.875rem; color: #334155; border-bottom: 1px solid #f8fafc; }
+    </style>
+</head>
+
+<body>
+    <div class="max-w-7xl mx-auto flex flex-col lg:flex-row gap-6">
+        <!-- Sidebar -->
+        <div id="sidebar" class="w-full lg:w-72 saas-card flex flex-col h-fit bg-white">
+            <div class="p-10 border-b border-slate-50 flex flex-col items-center relative">
+                <div id="user-initial" class="w-20 h-20 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-3xl font-bold mb-5 border border-blue-100/50">S</div>
+                <h2 id="user-name" class="font-bold text-slate-900 text-2xl text-center">Student</h2>
+                <p id="user-info" class="text-sm text-slate-400 mt-1 text-center">email</p>
+                <button onclick="logout()" class="mt-6 text-red-500 font-bold flex items-center gap-2 hover:text-red-700">
+                    <i data-lucide="log-out" class="w-4 h-4"></i> Logout
+                </button>
+            </div>
+            <div class="p-4 space-y-1.5 flex flex-col">
+                <button onclick="window.location.href='student-dashboard.html'" class="tab-btn inactive"><i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard</button>
+                <button class="tab-btn active"><i data-lucide="clipboard-list" class="w-4 h-4"></i> Attendance Records</button>
+                <button onclick="window.location.href='change-password.html'" class="tab-btn inactive"><i data-lucide="lock" class="w-4 h-4"></i> Change Password</button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 space-y-6">
+            <div class="saas-card overflow-hidden">
+                <div class="p-6 border-b border-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h1 class="text-2xl font-extrabold text-slate-900">Attendance History</h1>
+                        <p class="text-sm text-slate-400 mt-1">Review your recent presence and participation records.</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="px-4 py-2 bg-slate-50 rounded-lg border border-slate-100 flex items-center gap-2">
+                            <div class="w-2 h-2 rounded-full bg-green-500"></div>
+                            <span class="text-xs font-bold text-slate-600 uppercase">Read Only</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="record-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Check-in</th>
+                                <th>Check-out</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendance-tbody">
+                            <!-- Records will be loaded here -->
+                            <tr>
+                                <td colspan="4" class="text-center py-20 text-slate-400">
+                                    <div class="flex flex-col items-center gap-3">
+                                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-600"></div>
+                                        <p class="font-medium">Loading your records...</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="text-center">
+                <p class="text-xs text-slate-400">Showing up to the last 50 records. For older data, contact your administrator.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        const token = localStorage.getItem('token');
+        const user = JSON.parse(localStorage.getItem('student') || '{}');
+        
+        if (!token) window.location.href = 'student-login.html';
+
+        document.getElementById('user-name').textContent = user.name || 'Student';
+        document.getElementById('user-info').textContent = `${user.rollNumber || ''} • ${user.email}`;
+        if (user.name) document.getElementById('user-initial').textContent = user.name[0].toUpperCase();
+
+        async function fetchHistory() {
+            try {
+                const res = await fetch("/api/main?action=getAttendanceLogs", {
+                    headers: { "Authorization": "Bearer " + token }
+                });
+                const data = await res.json();
+                
+                const tbody = document.getElementById('attendance-tbody');
+                if (data.success && data.logs && data.logs.length > 0) {
+                    tbody.innerHTML = '';
+                    data.logs.forEach(log => {
+                        const tr = document.createElement('tr');
+                        const dateObj = new Date(log.date);
+                        const formattedDate = dateObj.toLocaleDateString('en-US', { 
+                            weekday: 'short', 
+                            year: 'numeric', 
+                            month: 'short', 
+                            day: 'numeric' 
+                        });
+
+                        tr.innerHTML = `
+                            <td class="font-bold text-slate-900">${formattedDate}</td>
+                            <td class="font-medium">${log.checkinTime || '--:--'}</td>
+                            <td class="font-medium">${log.checkoutTime || '--:--'}</td>
+                            <td>
+                                <span class="${log.status === 'Present' ? 'badge-success' : 'badge-danger'}">
+                                    ${log.status}
+                                </span>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                } else {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="text-center py-20 text-slate-400">
+                                <i data-lucide="calendar-x" class="w-12 h-12 mx-auto mb-4 opacity-20"></i>
+                                <p class="font-bold text-slate-900">No records found</p>
+                                <p class="text-sm mt-1">Start tracking your attendance to see your history here.</p>
+                            </td>
+                        </tr>
+                    `;
+                    lucide.createIcons();
+                }
+            } catch (err) {
+                console.error("History fetch error:", err);
+            }
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = 'student-login.html';
+        }
+
+        fetchHistory();
+    </script>
+</body>
+
+</html>

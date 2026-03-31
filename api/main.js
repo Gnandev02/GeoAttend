@@ -434,10 +434,15 @@ export default async function handler(req, res) {
                 // Student's own logs
                 const result = await query(
                     `SELECT attendance_date as date, check_in_time as "checkinTime", check_out_time as "checkoutTime", status, duration_minutes as "durationMinutes"
-                     FROM attendance WHERE student_id = $1 ORDER BY attendance_date DESC LIMIT 30`,
+                     FROM attendance WHERE student_id = $1 ORDER BY attendance_date DESC LIMIT 50`,
                     [student.id]
                 );
-                return res.status(200).json({ success: true, logs: result.rows });
+                // Transform status for UI consistency (Present/completed -> Present)
+                const transformed = result.rows.map(log => ({
+                    ...log,
+                    status: (log.status === 'completed' || log.status === 'Present') ? 'Present' : log.status
+                }));
+                return res.status(200).json({ success: true, logs: transformed });
             }
 
             // Admin: all logs for their college
