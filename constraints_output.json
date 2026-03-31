@@ -1,0 +1,17 @@
+[
+  {
+    "conname": "students_pkey",
+    "contype": "p",
+    "pg_get_constraintdef": "PRIMARY KEY (id)"
+  },
+  {
+    "conname": "students_email_key",
+    "contype": "u",
+    "pg_get_constraintdef": "UNIQUE (email)"
+  },
+  {
+    "conname": "students_college_code_fkey",
+    "contype": "f",
+    "pg_get_constraintdef": "FOREIGN KEY (college_code) REFERENCES admins(college_code)"
+  }
+]

@@ -671,6 +671,16 @@ export default async function handler(req, res) {
                 // Extra validation: email required
                 if (!email) return res.status(400).json({ message: "Email is required" });
 
+                // Multi-campus uniqueness check:
+                // Check if this student email already exists IN THIS COLLEGE.
+                const existing = await query('SELECT id FROM students WHERE email = $1 AND college_code = $2', [email, admin.college_code]);
+                if (existing.rows.length > 0) {
+                    return res.status(400).json({ 
+                        success: false, 
+                        message: 'Student already exists in this campus.' 
+                    });
+                }
+
                 const tempPassword = Math.random().toString(36).slice(-8);
                 const hashedPassword = await hashPassword(tempPassword);
                 const result = await query(
@@ -678,9 +688,16 @@ export default async function handler(req, res) {
                     [name, email, hashedPassword, rollNumber, department || 'General', admin.college_code]
                 );
                 try {
-                    await sendOnboardingEmail(email, name, tempPassword, `${req.headers.origin}/student-login.html`);
-                } catch (e) { console.error("Email fail:", e); }
-                return res.status(201).json({ success: true, message: 'Student added', student: result.rows[0] });
+                    await sendOnboardingEmail(email, name, tempPassword, `${req.headers.origin || 'https://geoattend.vercel.app'}/student-login.html`);
+                } catch (e) { 
+                    console.error("Email fail:", e); 
+                    // We don't fail the whole request if email fails, but we should inform
+                }
+                return res.status(201).json({ 
+                    success: true, 
+                    message: `Student added. Temporary password: ${tempPassword} (Also sent via email)`, 
+                    student: result.rows[0] 
+                });
             }
 
             if (action === "updateStudent") {
