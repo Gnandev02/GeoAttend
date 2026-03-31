@@ -94,8 +94,22 @@ export default async function handler(req, res) {
                 [user.college_code]
             );
 
-            if (result.rows.length === 0) return res.status(200).json({}); // Return empty for new setup
-            const row = result.rows[0];
+            let row;
+            if (result.rows.length === 0) {
+                // Return default structure for new/unconfigured campus
+                row = {
+                    name: 'Main Campus',
+                    latitude: 23.2599,
+                    longitude: 77.4126,
+                    radius: 200,
+                    attendance_start_time: '09:00 AM',
+                    attendance_end_time: '05:00 PM',
+                    college_code: user.college_code,
+                    polygon_coordinates: null
+                };
+            } else {
+                row = result.rows[0];
+            }
 
             let collegeName = null;
             if (admin) {
@@ -566,15 +580,25 @@ export default async function handler(req, res) {
                     return res.status(400).json({ message: "Invalid or expired OTP" });
                 }
                 const hashedPassword = await hashPassword(password);
+                const generatedCollegeCode = 'ORG-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+                
                 try {
                     const result = await query(
-                        'INSERT INTO admins (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email',
-                        [name, email, hashedPassword]
+                        'INSERT INTO admins (name, email, password, college_code) VALUES ($1, $2, $3, $4) RETURNING id, name, email, college_code',
+                        [name, email, hashedPassword, generatedCollegeCode]
                     );
+                    
+                    // Create default campus setup
+                    await query(
+                        'INSERT INTO campus_setup (college_code, name, latitude, longitude, radius) VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING',
+                        [generatedCollegeCode, 'Main Campus', 23.2599, 77.4126, 200]
+                    );
+
                     await query('DELETE FROM otps WHERE email = $1', [email]);
                     return res.status(201).json({ success: true, data: result.rows[0] });
                 } catch (e) {
-                    return res.status(400).json({ message: "Email may already exist" });
+                    console.error("Signup DB Error:", e);
+                    return res.status(400).json({ message: "An account with this email already exists." });
                 }
             }
             else if (action === "forgotPassword") {
@@ -685,6 +709,10 @@ export default async function handler(req, res) {
                     attendance_end_time,
                     polygonCoordinates
                 } = req.body;
+
+                if (!admin.college_code) {
+                    return res.status(400).json({ error: "Admin college code missing. Please contact support." });
+                }
 
                 console.log("Incoming Data:", req.body);
 
