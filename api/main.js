@@ -729,10 +729,17 @@ export default async function handler(req, res) {
                     return res.status(400).json({ error: "Invalid numeric values" });
                 }
 
+                if (!polygonCoordinates || !Array.isArray(polygonCoordinates) || polygonCoordinates.length < 3) {
+                    return res.status(400).json({ 
+                        error: "Validation failed", 
+                        message: "At least 3 polygon points are required to define a campus boundary." 
+                    });
+                }
+
                 const result = await query(`
                     INSERT INTO campus_setup 
                     (college_code, name, latitude, longitude, radius, attendance_start_time, attendance_end_time, polygon_coordinates)
-                    VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
                     ON CONFLICT (college_code)
                     DO UPDATE SET
                         name = EXCLUDED.name,
@@ -745,13 +752,13 @@ export default async function handler(req, res) {
                     RETURNING *
                 `, [
                     admin.college_code,
-                    req.body.name || 'Main Campus',
+                    req.body.name || req.body.collegeName || 'Main Campus',
                     lat,
                     lng,
                     rad,
                     attendance_start_time || null,
                     attendance_end_time || null,
-                    polygonCoordinates ? JSON.stringify(polygonCoordinates) : null
+                    JSON.stringify(polygonCoordinates)
                 ]);
 
                 if (req.body.collegeName) {
