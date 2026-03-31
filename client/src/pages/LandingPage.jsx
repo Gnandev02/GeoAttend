@@ -9,21 +9,28 @@ const LandingPage = () => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [showRoleSelector, setShowRoleSelector] = useState(false);
     const [totalVerified, setTotalVerified] = useState("...");
+    const [systemAccuracy, setSystemAccuracy] = useState("...");
 
     useEffect(() => {
-        const fetchVerified = async () => {
+        const fetchStats = async () => {
             try {
                 const response = await fetch('/api/main?action=get-total-verified');
                 const data = await response.json();
                 if (data.success) {
                     setTotalVerified(data.count <= 500 ? data.count : "500+");
                 }
+                
+                const accRes = await fetch('/api/main?action=get-system-accuracy');
+                const accData = await accRes.json();
+                if (accData.success) {
+                    setSystemAccuracy(accData.percentage > 0 ? `${accData.percentage}%` : '0%');
+                }
             } catch (err) {
-                console.error("Failed to fetch count:", err);
+                console.error("Failed to fetch stats:", err);
             }
         };
-        fetchVerified();
-        const interval = setInterval(fetchVerified, 10000);
+        fetchStats();
+        const interval = setInterval(fetchStats, 10000);
         return () => clearInterval(interval);
     }, []);
 
@@ -362,8 +369,8 @@ const LandingPage = () => {
                                         <div className="text-slate-900 font-bold text-lg mt-0.5">{totalVerified}</div>
                                     </div>
                                     <div className="bg-white border border-slate-100 rounded-lg p-3">
-                                        <div className="text-slate-400 text-[10px] uppercase font-semibold">Accuracy</div>
-                                        <div className="text-brand-600 font-bold text-lg mt-0.5">99.8%</div>
+                                        <div className="text-slate-400 text-[10px] uppercase font-semibold">System Accuracy</div>
+                                        <div className="text-brand-600 font-bold text-lg mt-0.5">{systemAccuracy}</div>
                                     </div>
                                 </div>
                             </div>

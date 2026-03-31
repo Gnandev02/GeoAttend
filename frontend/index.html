@@ -373,9 +373,9 @@
                                 <p id="live-total-verified" class="text-3xl font-extrabold text-slate-900">...</p>
                             </div>
                             <div class="bg-slate-50/50 rounded-xl p-5 border border-slate-100">
-                                <p class="text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Accuracy
+                                <p class="text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wider">System Accuracy
                                 </p>
-                                <p class="text-3xl font-extrabold text-[#0284c7]">99.8%</p>
+                                <p id="live-system-accuracy" class="text-3xl font-extrabold text-[#0284c7]">...</p>
                             </div>
                         </div>
                     </div>
@@ -486,27 +486,37 @@
 </body>
 
 <script>
-    // Fetch live total verified count
-    async function updateLiveVerifiedCount() {
+    // Fetch live system stats
+    async function updateLiveStats() {
         try {
-            const response = await fetch('/api/main?action=get-total-verified');
-            const data = await response.json();
-            if (data.success) {
-                const count = data.count;
+            // Verified count
+            const resCount = await fetch('/api/main?action=get-total-verified');
+            const dataCount = await resCount.json();
+            if (dataCount.success) {
+                const count = dataCount.count;
                 const displayElement = document.getElementById('live-total-verified');
-                if (count <= 500) {
-                    displayElement.textContent = count;
+                if (count <= 500) displayElement.textContent = count;
+                else displayElement.textContent = "500+";
+            }
+            
+            // System accuracy
+            const resAcc = await fetch('/api/main?action=get-system-accuracy');
+            const dataAcc = await resAcc.json();
+            if (dataAcc.success) {
+                const displayElement = document.getElementById('live-system-accuracy');
+                if (dataAcc.percentage > 0) {
+                    displayElement.textContent = dataAcc.percentage + '%';
                 } else {
-                    displayElement.textContent = "500+";
+                    displayElement.textContent = '0%';
                 }
             }
         } catch (error) {
-            console.error("Failed to fetch verified count:", error);
+            console.error("Failed to fetch live stats:", error);
         }
     }
     // Update immediately, then every 10 seconds
-    updateLiveVerifiedCount();
-    setInterval(updateLiveVerifiedCount, 10000);
+    updateLiveStats();
+    setInterval(updateLiveStats, 10000);
 
     // Navigation Scroll Effect
     const nav = document.getElementById('main-nav');

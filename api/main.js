@@ -123,15 +123,29 @@ export default async function handler(req, res) {
             const result = await query("SELECT COUNT(id) as total FROM attendance WHERE status IN ('Present', 'Absent', 'completed')");
             return res.status(200).json({ success: true, count: parseInt(result.rows[0].total) || 0 });
         }
+        else if (action === "get-system-accuracy") {
+            const result = await query("SELECT AVG(location_accuracy) as avg_acc FROM attendance WHERE location_accuracy IS NOT NULL");
+            const avgAcc = result.rows[0]?.avg_acc ? parseFloat(result.rows[0].avg_acc) : null;
+            if (avgAcc === null) return res.status(200).json({ success: true, percentage: 0 });
+            
+            let percentage = 0;
+            if (avgAcc <= 10) percentage = 100 - (avgAcc / 10) * 5;
+            else if (avgAcc <= 20) percentage = 95 - ((avgAcc - 10) / 10) * 10;
+            else if (avgAcc <= 50) percentage = 85 - ((avgAcc - 20) / 30) * 25;
+            else percentage = Math.max(0, 60 - ((avgAcc - 50) / 50) * 20);
+            
+            return res.status(200).json({ success: true, percentage: parseFloat(percentage.toFixed(1)) });
+        }
 
         // --- 2. ATTENDANCE MARKING / TRACKING (Unified Action) ---
         else if (action === "mark-attendance" || action === "track" || action === "attendance") {
             const student = await protectStudent(req);
             if (!student) return res.status(401).json({ success: false, message: 'Not authorized as a student' });
 
-            const { lat, lng } = req.body;
+            const { lat, lng, accuracy } = req.body;
             const latitude = Number(lat);
             const longitude = Number(lng);
+            const userAccuracy = Number(accuracy) || null;
 
             if (isNaN(latitude) || isNaN(longitude)) {
                 return res.status(400).json({ success: false, message: "Invalid GPS coordinates" });
@@ -196,9 +210,9 @@ export default async function handler(req, res) {
                 // IN LOGIC: Create check-in if none exists. If already checked in and marked as completed, do nothing for today.
                 if (!todayRecord) {
                     await query(
-                        `INSERT INTO attendance (student_id, college_code, attendance_date, check_in_time, status) 
-                         VALUES ($1, $2, $3, $4, $5)`,
-                        [student.id, student.college_code, todayIST, currentTime, 'Present']
+                        `INSERT INTO attendance (student_id, college_code, attendance_date, check_in_time, status, location_accuracy) 
+                         VALUES ($1, $2, $3, $4, $5, $6)`,
+                        [student.id, student.college_code, todayIST, currentTime, 'Present', userAccuracy]
                     );
                     apiAction = "checked-in";
                 } else {
@@ -212,8 +226,8 @@ export default async function handler(req, res) {
                     const durationMinutes = outMins > inMins ? outMins - inMins : 0;
                     
                     await query(
-                        'UPDATE attendance SET check_out_time = $1, status = $2, duration_minutes = $3 WHERE id = $4',
-                        [currentTime, 'Present', durationMinutes, todayRecord.id]
+                        'UPDATE attendance SET check_out_time = $1, status = $2, duration_minutes = $3, location_accuracy = COALESCE($5, location_accuracy) WHERE id = $4',
+                        [currentTime, 'Present', durationMinutes, todayRecord.id, userAccuracy]
                     );
                     apiAction = "checked-out";
                 }
