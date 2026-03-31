@@ -615,20 +615,14 @@
         if (!isDemo) {
             if (!token || !userStr) {
                 window.location.href = 'admin-login.html';
-            }
-
-            if (userStr) {
+            } else {
                 user = JSON.parse(userStr);
                 if (user.role !== 'admin') {
                     window.location.href = 'admin-login.html';
                 }
-
-                if (user.collegeName) {
-                    document.getElementById('brand-college-name').textContent = user.collegeName;
-                }
-                if (user.collegeCode) {
-                    document.getElementById('brand-college-code').textContent = user.collegeCode;
-                }
+                
+                if (user.collegeName) document.getElementById('brand-college-name').textContent = user.collegeName;
+                if (user.collegeCode) document.getElementById('brand-college-code').textContent = user.collegeCode;
             }
         } else {
             user = { collegeName: "Demo University", collegeCode: "DEMO-101", role: "admin" };

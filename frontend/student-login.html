@@ -175,7 +175,7 @@
             errorMsg.classList.add('hidden');
 
             try {
-                const response = await fetch('/api/main?action=auth-login', {
+                const response = await fetch('/api/main?action=studentLogin', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
@@ -201,11 +201,14 @@
                 };
                 localStorage.setItem('student', JSON.stringify(userObj));
 
-                if (data.role === 'admin') {
-                    window.location.href = 'admin-dashboard.html';
-                } else {
-                    window.location.href = 'student-dashboard.html';
+                if (data.role !== 'student') {
+                    errorText.textContent = 'Invalid account type for this portal.';
+                    errorMsg.classList.remove('hidden');
+                    return;
                 }
+
+                localStorage.setItem('student', JSON.stringify(userObj));
+                window.location.href = 'student-dashboard.html';
             } catch (error) {
                 console.error("Login error:", error);
                 errorText.textContent = error.message || 'A network or serverless API error occurred.';

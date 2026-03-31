@@ -509,50 +509,36 @@ export default async function handler(req, res) {
             const { email, password, name, otp, newPassword } = req.body;
             
             if (action === "auth-login" || action === "studentLogin") {
-                // Try Student Table
-                let result = await query('SELECT * FROM students WHERE email = $1', [email]);
-                if (result.rows.length > 0) {
-                    const student = result.rows[0];
-                    if (await comparePassword(password, student.password)) {
-                        const token = generateToken(student.id, student.email, student.college_code, 'student');
-                        return res.status(200).json({ 
-                            success: true,
-                            token,
-                            id: student.id, 
-                            name: student.name, 
-                            email: student.email, 
-                            rollNumber: student.roll_number, 
-                            role: 'student', 
-                            collegeCode: student.college_code 
-                        });
-                    }
+                // ONLY Students table
+                const result = await query('SELECT * FROM students WHERE email = $1', [email]);
+                if (result.rows.length === 0) {
+                    return res.status(401).json({ success: false, message: 'Invalid student credentials' });
                 }
                 
-                // Fallback to Admin Table for auth-login
-                if (action === "auth-login") {
-                    result = await query('SELECT * FROM admins WHERE email = $1', [email]);
-                    if (result.rows.length > 0) {
-                        const admin = result.rows[0];
-                        if (await comparePassword(password, admin.password)) {
-                            const token = generateToken(admin.id, admin.email, admin.college_code, 'admin');
-                            return res.status(200).json({ 
-                                success: true,
-                                token,
-                                id: admin.id, 
-                                name: admin.name, 
-                                email: admin.email, 
-                                role: 'admin', 
-                                collegeCode: admin.college_code 
-                            });
-                        }
-                    }
+                const student = result.rows[0];
+                if (await comparePassword(password, student.password)) {
+                    const token = generateToken(student.id, student.email, student.college_code, 'student');
+                    return res.status(200).json({ 
+                        success: true,
+                        token,
+                        id: student.id, 
+                        name: student.name, 
+                        email: student.email, 
+                        rollNumber: student.roll_number, 
+                        role: 'student', 
+                        collegeCode: student.college_code 
+                    });
                 }
                 
-                return res.status(401).json({ message: 'Invalid credentials' });
+                return res.status(401).json({ success: false, message: 'Invalid student credentials' });
             }
             else if (action === "adminLogin") {
+                // ONLY Admins table
                 const result = await query('SELECT * FROM admins WHERE email = $1', [email]);
-                if (result.rows.length === 0) return res.status(401).json({ message: 'Invalid credentials' });
+                if (result.rows.length === 0) {
+                    return res.status(401).json({ success: false, message: 'Invalid admin credentials' });
+                }
+                
                 const admin = result.rows[0];
                 if (await comparePassword(password, admin.password)) {
                     const token = generateToken(admin.id, admin.email, admin.college_code, 'admin');
@@ -567,7 +553,7 @@ export default async function handler(req, res) {
                         collegeName: admin.college_name
                     });
                 }
-                return res.status(401).json({ message: 'Invalid credentials' });
+                return res.status(401).json({ success: false, message: 'Invalid admin credentials' });
             }
             else if (action === "sendAdminOtp") {
                 const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();

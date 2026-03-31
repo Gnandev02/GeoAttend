@@ -241,7 +241,8 @@
                 if (data && data.role === 'admin') {
                     window.location.href = 'admin-dashboard.html';
                 } else {
-                    window.location.href = 'student-dashboard.html';
+                    errorText.textContent = 'Invalid account type for this portal.';
+                    errorMsg.classList.remove('hidden');
                 }
             } catch (error) {
                 console.error("Login error:", error);

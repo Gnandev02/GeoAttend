@@ -113,7 +113,9 @@
         lucide.createIcons();
         const token = localStorage.getItem('token');
         const user = JSON.parse(localStorage.getItem('student') || '{}');
-        if (!token) window.location.href = 'student-login.html';
+        if (!token || user.role !== 'student') {
+            window.location.href = 'student-login.html';
+        }
 
         document.getElementById('user-name').textContent = user.name || 'Student';
         document.getElementById('user-info').textContent = `${user.rollNumber || ''} • ${user.email}`;
