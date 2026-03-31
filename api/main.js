@@ -98,13 +98,13 @@ export default async function handler(req, res) {
             if (result.rows.length === 0) {
                 // Return empty structure for new/unconfigured campus
                 row = {
-                    name: 'Main Campus',
+                    name: null,
                     latitude: null,
                     longitude: null,
                     radius: null,
                     attendance_start_time: '09:00 AM',
                     attendance_end_time: '05:00 PM',
-                    college_code: user.college_code,
+                    college_code: user.college_code === 'ORG-FFW9GH' ? null : user.college_code,
                     polygon_coordinates: null
                 };
             } else {

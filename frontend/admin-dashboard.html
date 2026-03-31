@@ -987,8 +987,8 @@
 
             if (hasData) {
                 // Support both college_name and name (campus name) as fallback
-                document.getElementById('geo-college-name').value = mainCampus.college_name || mainCampus.name || user.collegeName || '';
-                document.getElementById('geo-college-code').value = mainCampus.college_code || user.collegeCode || '';
+                document.getElementById('geo-college-name').value = mainCampus.college_name || mainCampus.name || '';
+                document.getElementById('geo-college-code').value = mainCampus.college_code || '';
                 
                 document.getElementById('geo-lat').value = mainCampus.latitude || '0';
                 document.getElementById('geo-lng').value = mainCampus.longitude || '0';
