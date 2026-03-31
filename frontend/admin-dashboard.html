@@ -911,6 +911,22 @@
         function renderPolygonInputs(skipMapUpdate = false) {
             const container = document.getElementById('polygon-points-container');
             if(!container) return;
+            
+            if (currentPolygonPoints.length === 0) {
+                container.innerHTML = `
+                    <div class="py-10 text-center border-2 border-dashed border-slate-100 rounded-2xl bg-slate-50/30">
+                        <div class="w-12 h-12 bg-indigo-50 text-indigo-400 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <i data-lucide="map-pin" class="w-6 h-6"></i>
+                        </div>
+                        <p class="text-sm font-bold text-slate-500 mb-1">No campus boundary defined</p>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest px-6">Click on the map or use the button above to start creating your geofence.</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                if(adminPolygon) adminPolygon.setMap(null);
+                return;
+            }
+
             container.innerHTML = currentPolygonPoints.map((pt, i) => `
                 <div class="flex items-center gap-3">
                     <span class="text-xs font-bold text-slate-400 w-6">P${i+1}</span>
@@ -935,10 +951,17 @@
 
         function addPolygonPoint(lat, lng) {
             if(!isEditingGeofence) return;
-            let newPoint = { lat: lat || 0, lng: lng || 0 };
-            if(!lat && !lng && currentPolygonPoints.length > 0) {
+            let newPoint;
+            if (lat && lng) {
+                newPoint = { lat, lng };
+            } else if (currentPolygonPoints.length > 0) {
                 const last = currentPolygonPoints[currentPolygonPoints.length - 1];
                 newPoint = { lat: last.lat + 0.0005, lng: last.lng + 0.0005 };
+            } else if (adminMap) {
+                const center = adminMap.getCenter();
+                newPoint = { lat: center.lat(), lng: center.lng() };
+            } else {
+                newPoint = { lat: 0, lng: 0 };
             }
             currentPolygonPoints.push(newPoint);
             renderPolygonInputs();
@@ -963,15 +986,6 @@
                 currentPolygonPoints = [];
                 if (mainCampus.polygon_coordinates && mainCampus.polygon_coordinates.length >= 3) {
                     currentPolygonPoints = [...mainCampus.polygon_coordinates];
-                } else if (mainCampus.latitude && mainCampus.longitude) {
-                    const lat = parseFloat(mainCampus.latitude);
-                    const lng = parseFloat(mainCampus.longitude);
-                    currentPolygonPoints = [
-                        {lat: lat + 0.002, lng: lng - 0.002},
-                        {lat: lat + 0.002, lng: lng + 0.002},
-                        {lat: lat - 0.002, lng: lng + 0.002},
-                        {lat: lat - 0.002, lng: lng - 0.002}
-                    ];
                 }
                 renderPolygonInputs();
 

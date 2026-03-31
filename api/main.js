@@ -96,12 +96,12 @@ export default async function handler(req, res) {
 
             let row;
             if (result.rows.length === 0) {
-                // Return default structure for new/unconfigured campus
+                // Return empty structure for new/unconfigured campus
                 row = {
                     name: 'Main Campus',
-                    latitude: 23.2599,
-                    longitude: 77.4126,
-                    radius: 200,
+                    latitude: null,
+                    longitude: null,
+                    radius: null,
                     attendance_start_time: '09:00 AM',
                     attendance_end_time: '05:00 PM',
                     college_code: user.college_code,
@@ -588,11 +588,8 @@ export default async function handler(req, res) {
                         [name, email, hashedPassword, generatedCollegeCode]
                     );
                     
-                    // Create default campus setup
-                    await query(
-                        'INSERT INTO campus_setup (college_code, name, latitude, longitude, radius) VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING',
-                        [generatedCollegeCode, 'Main Campus', 23.2599, 77.4126, 200]
-                    );
+                    // Removed default campus setup creation with dummy data
+                    // Admins will now see a clean empty state and must define their campus manually.
 
                     await query('DELETE FROM otps WHERE email = $1', [email]);
                     return res.status(201).json({ success: true, data: result.rows[0] });
