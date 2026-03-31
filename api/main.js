@@ -653,6 +653,13 @@ export default async function handler(req, res) {
             const admin = await protectAdmin(req);
             if (!admin) return res.status(401).json({ message: 'Not authorized as an admin' });
 
+            if (!admin.college_code) {
+                return res.status(400).json({ 
+                    error: "Admin not properly configured", 
+                    message: "No college code assigned. Please contact support or complete institution setup." 
+                });
+            }
+
             if (action === "get-students" || action === "getStudents") {
                 const result = await query('SELECT * FROM students WHERE college_code = $1', [admin.college_code]);
                 return res.status(200).json({ success: true, students: result.rows.map(s => ({ _id: s.id, name: s.name, email: s.email, rollNumber: s.roll_number, department: s.department, collegeCode: s.college_code, userId: { name: s.name, email: s.email } })) });
@@ -660,10 +667,14 @@ export default async function handler(req, res) {
 
             if (action === "addStudent") {
                 const { name, email, rollNumber, department } = req.body;
+                
+                // Extra validation: email required
+                if (!email) return res.status(400).json({ message: "Email is required" });
+
                 const tempPassword = Math.random().toString(36).slice(-8);
                 const hashedPassword = await hashPassword(tempPassword);
                 const result = await query(
-                    'INSERT INTO students (name, email, password, roll_number, department, college_code) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+                    'INSERT INTO students (name, email, password, roll_number, department, college_code) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, name, email, roll_number, department, college_code',
                     [name, email, hashedPassword, rollNumber, department || 'General', admin.college_code]
                 );
                 try {

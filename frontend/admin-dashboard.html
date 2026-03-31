@@ -1291,6 +1291,13 @@
 
     <script>
         let adminPolygon;
+        let tempMarkers = [];
+
+        function clearTempMarkers() {
+            tempMarkers.forEach(m => m.setMap(null));
+            tempMarkers = [];
+        }
+
         function initAdminMap() {
             adminMap = new google.maps.Map(document.getElementById('admin-map'), {
                 zoom: 16,
@@ -1316,34 +1323,58 @@
 
         function drawPolygonOnMap() {
             if(!adminMap) return;
+            
             if(adminPolygon) {
                 adminPolygon.setMap(null);
+                adminPolygon = null;
             }
+            clearTempMarkers();
             
             if(currentPolygonPoints.length === 0) return;
 
             const path = currentPolygonPoints.map(p => ({lat: p.lat, lng: p.lng}));
-            adminPolygon = new google.maps.Polygon({
-                paths: path,
-                strokeColor: "#4f46e5",
-                strokeOpacity: 0.8,
-                strokeWeight: 2,
-                fillColor: "#4f46e5",
-                fillOpacity: 0.15,
-                editable: isEditingGeofence,
-                map: adminMap
-            });
 
-            if (currentPolygonPoints.length > 0 && !isEditingGeofence) {
+            if (currentPolygonPoints.length < 3) {
+                // Show markers instead of polygon for < 3 points
+                currentPolygonPoints.forEach((p, i) => {
+                    const m = new google.maps.Marker({
+                        position: { lat: p.lat, lng: p.lng },
+                        map: adminMap,
+                        label: (i + 1).toString(),
+                        draggable: isEditingGeofence
+                    });
+                    if (isEditingGeofence) {
+                        m.addListener('dragend', (e) => {
+                            updatePoint(i, 'lat', e.latLng.lat());
+                            updatePoint(i, 'lng', e.latLng.lng());
+                        });
+                    }
+                    tempMarkers.push(m);
+                });
+            } else {
+                // Draw polygon for 3+ points
+                adminPolygon = new google.maps.Polygon({
+                    paths: path,
+                    strokeColor: "#4f46e5",
+                    strokeOpacity: 0.8,
+                    strokeWeight: 2,
+                    fillColor: "#4f46e5",
+                    fillOpacity: 0.15,
+                    editable: isEditingGeofence,
+                    map: adminMap
+                });
+
+                // Listen to edits on polygon visually
+                google.maps.event.addListener(adminPolygon.getPath(), 'set_at', updatePointsFromMap);
+                google.maps.event.addListener(adminPolygon.getPath(), 'insert_at', updatePointsFromMap);
+                google.maps.event.addListener(adminPolygon.getPath(), 'remove_at', updatePointsFromMap);
+            }
+
+            if (!isEditingGeofence && currentPolygonPoints.length > 0) {
                 const bounds = new google.maps.LatLngBounds();
                 path.forEach(p => bounds.extend(p));
                 adminMap.fitBounds(bounds);
             }
-
-            // Listen to edits on polygon visually
-            google.maps.event.addListener(adminPolygon.getPath(), 'set_at', updatePointsFromMap);
-            google.maps.event.addListener(adminPolygon.getPath(), 'insert_at', updatePointsFromMap);
-            google.maps.event.addListener(adminPolygon.getPath(), 'remove_at', updatePointsFromMap);
         }
 
         function updatePointsFromMap() {
