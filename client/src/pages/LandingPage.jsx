@@ -10,23 +10,23 @@ const LandingPage = () => {
     const [showRoleSelector, setShowRoleSelector] = useState(false);
     const [totalVerified, setTotalVerified] = useState("...");
     const [systemAccuracy, setSystemAccuracy] = useState("...");
+    const [activeStudents, setActiveStudents] = useState("...");
+    const [proxyCases, setProxyCases] = useState("...");
 
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const response = await fetch('/api/main?action=get-total-verified');
-                const data = await response.json();
-                if (data.success) {
-                    setTotalVerified(data.count <= 500 ? data.count : "500+");
-                }
+                const res = await fetch('/api/main?action=get-landing-stats');
+                const data = await res.json();
                 
-                const accRes = await fetch('/api/main?action=get-system-accuracy');
-                const accData = await accRes.json();
-                if (accData.success) {
-                    setSystemAccuracy(accData.percentage > 0 ? `${accData.percentage}%` : '0%');
+                if (data.success) {
+                    setTotalVerified(data.total_attendance_count <= 500 ? data.total_attendance_count : "500+");
+                    setSystemAccuracy(data.accuracy > 0 ? `${data.accuracy}%` : '0%');
+                    setActiveStudents(data.total_students <= 500 ? data.total_students : "500+");
+                    setProxyCases(data.manual_attendance_count);
                 }
             } catch (err) {
-                console.error("Failed to fetch stats:", err);
+                console.error("Failed to fetch landing stats:", err);
             }
         };
         fetchStats();
@@ -408,17 +408,17 @@ const LandingPage = () => {
             < section className="py-12 px-6 border-b border-slate-100 bg-slate-50/50" >
                 <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-center gap-x-16 gap-y-8">
                     <div className="flex flex-col items-center">
-                        <div className="font-sans font-bold text-3xl text-slate-900">500+</div>
-                        <div className="text-sm font-medium text-slate-500 mt-1">Students</div>
+                        <div className="font-sans font-bold text-3xl text-slate-900">{activeStudents}</div>
+                        <div className="text-sm font-medium text-slate-500 mt-1">Active Students</div>
                     </div>
                     <div className="hidden sm:block w-px h-8 bg-slate-200"></div>
                     <div className="flex flex-col items-center">
-                        <div className="font-sans font-bold text-3xl text-slate-900">98%</div>
-                        <div className="text-sm font-medium text-slate-500 mt-1">Accuracy</div>
+                        <div className="font-sans font-bold text-3xl text-slate-900">{systemAccuracy}</div>
+                        <div className="text-sm font-medium text-slate-500 mt-1">GeoAttend Accuracy</div>
                     </div>
                     <div className="hidden sm:block w-px h-8 bg-slate-200"></div>
                     <div className="flex flex-col items-center">
-                        <div className="font-sans font-bold text-3xl text-slate-900">0</div>
+                        <div className="font-sans font-bold text-3xl text-slate-900">{proxyCases}</div>
                         <div className="text-sm font-medium text-slate-500 mt-1">Proxy Cases</div>
                     </div>
                     <div className="hidden sm:block w-px h-8 bg-slate-200"></div>

@@ -395,15 +395,15 @@
                 academic institutions</p>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center divide-x divide-slate-100">
                 <div>
-                    <div class="text-3xl font-bold text-slate-900 mb-1">500+</div>
+                    <div id="stat-active-students" class="text-3xl font-bold text-slate-900 mb-1">500+</div>
                     <div class="text-sm text-slate-500 font-medium">Active Students</div>
                 </div>
                 <div>
-                    <div class="text-3xl font-bold text-slate-900 mb-1">98%</div>
-                    <div class="text-sm text-slate-500 font-medium">Location Accuracy</div>
+                    <div id="stat-geo-accuracy" class="text-3xl font-bold text-slate-900 mb-1">...</div>
+                    <div class="text-sm text-slate-500 font-medium">GeoAttend Accuracy</div>
                 </div>
                 <div>
-                    <div class="text-3xl font-bold text-slate-900 mb-1">0</div>
+                    <div id="stat-proxy-cases" class="text-3xl font-bold text-slate-900 mb-1">0</div>
                     <div class="text-sm text-slate-500 font-medium">Proxy Cases</div>
                 </div>
                 <div>
@@ -493,26 +493,29 @@
     // Fetch live system stats
     async function updateLiveStats() {
         try {
-            // Verified count
-            const resCount = await fetch('/api/main?action=get-total-verified');
-            const dataCount = await resCount.json();
-            if (dataCount.success) {
-                const count = dataCount.count;
-                const displayElement = document.getElementById('live-total-verified');
-                if (count <= 500) displayElement.textContent = count;
-                else displayElement.textContent = "500+";
-            }
+            const res = await fetch('/api/main?action=get-landing-stats');
+            const data = await res.json();
             
-            // System accuracy
-            const resAcc = await fetch('/api/main?action=get-system-accuracy');
-            const dataAcc = await resAcc.json();
-            if (dataAcc.success) {
-                const displayElement = document.getElementById('live-system-accuracy');
-                if (dataAcc.percentage > 0) {
-                    displayElement.textContent = dataAcc.percentage + '%';
-                } else {
-                    displayElement.textContent = '0%';
-                }
+            if (data.success) {
+                // Setup live total verified count
+                const displayTotal = document.getElementById('live-total-verified');
+                if (data.total_attendance_count <= 500) displayTotal.textContent = data.total_attendance_count;
+                else displayTotal.textContent = "500+";
+                
+                // System accuracy (top card)
+                const displayAccuracy = document.getElementById('live-system-accuracy');
+                if (data.accuracy > 0) displayAccuracy.textContent = data.accuracy + '%';
+                else displayAccuracy.textContent = '0%';
+                
+                // Bottom stats bar
+                const statActiveStudents = document.getElementById('stat-active-students');
+                if (statActiveStudents) statActiveStudents.textContent = data.total_students <= 500 ? data.total_students : "500+";
+                
+                const statGeoAccuracy = document.getElementById('stat-geo-accuracy');
+                if (statGeoAccuracy) statGeoAccuracy.textContent = data.accuracy > 0 ? data.accuracy + '%' : '0%';
+                
+                const statProxyCases = document.getElementById('stat-proxy-cases');
+                if (statProxyCases) statProxyCases.textContent = data.manual_attendance_count;
             }
         } catch (error) {
             console.error("Failed to fetch live stats:", error);

@@ -139,6 +139,36 @@ export default async function handler(req, res) {
             const percentage = (autoCount / total) * 100;
             return res.status(200).json({ success: true, percentage: parseFloat(percentage.toFixed(1)) });
         }
+        else if (action === "get-landing-stats") {
+            const studentResult = await query("SELECT COUNT(id) as total_students FROM students");
+            const attendanceResult = await query(`
+                SELECT 
+                    COUNT(*) as total_attendance,
+                    COUNT(CASE WHEN source = 'auto' THEN 1 END) as auto_attendance,
+                    COUNT(CASE WHEN source = 'manual' THEN 1 END) as manual_attendance
+                FROM attendance
+                WHERE status IN ('Present', 'Absent', 'completed')
+            `);
+            
+            const totalStudents = parseInt(studentResult.rows[0].total_students) || 0;
+            const totalAttendance = parseInt(attendanceResult.rows[0].total_attendance) || 0;
+            const autoAttendance = parseInt(attendanceResult.rows[0].auto_attendance) || 0;
+            const manualAttendance = parseInt(attendanceResult.rows[0].manual_attendance) || 0;
+            
+            let accuracy = 0;
+            if (totalAttendance > 0) {
+                accuracy = parseFloat(((autoAttendance / totalAttendance) * 100).toFixed(1));
+            }
+            
+            return res.status(200).json({
+                success: true,
+                total_students: totalStudents,
+                total_attendance_count: totalAttendance,
+                auto_attendance_count: autoAttendance,
+                manual_attendance_count: manualAttendance,
+                accuracy: accuracy
+            });
+        }
 
         // --- 2. ATTENDANCE MARKING / TRACKING (Unified Action) ---
         else if (action === "mark-attendance" || action === "track" || action === "attendance") {
