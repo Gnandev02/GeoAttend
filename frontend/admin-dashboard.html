@@ -967,11 +967,11 @@
             } else if (currentPolygonPoints.length > 0) {
                 const last = currentPolygonPoints[currentPolygonPoints.length - 1];
                 newPoint = { lat: last.lat + 0.0005, lng: last.lng + 0.0005 };
-            } else if (adminMap) {
+            } else if (typeof adminMap !== 'undefined' && adminMap) {
                 const center = adminMap.getCenter();
                 newPoint = { lat: center.lat(), lng: center.lng() };
             } else {
-                newPoint = { lat: 0, lng: 0 };
+                newPoint = { lat: 20.5937, lng: 78.9629 }; // India center default
             }
             currentPolygonPoints.push(newPoint);
             renderPolygonInputs();
@@ -1014,8 +1014,10 @@
                     document.getElementById('geo-cancel-btn').classList.add('hidden');
                 }
 
-                if (typeof adminMap !== 'undefined' && adminMap && currentPolygonPoints.length > 0) {
-                    const center = currentPolygonPoints[0];
+                if (typeof adminMap === 'undefined' || !adminMap) {
+                    initAdminMap(mainCampus.latitude, mainCampus.longitude);
+                } else {
+                    const center = { lat: parseFloat(mainCampus.latitude), lng: parseFloat(mainCampus.longitude) };
                     adminMap.setCenter(center);
                     drawPolygonOnMap();
                 }
@@ -1032,6 +1034,11 @@
                     document.getElementById('geo-cancel-btn').classList.add('hidden');
                 }
                 renderPolygonInputs();
+                
+                // Force map initialization for new admins
+                if (typeof adminMap === 'undefined' || !adminMap) {
+                    initAdminMap();
+                }
             }
         }
 
@@ -1316,9 +1323,13 @@
             tempMarkers = [];
         }
 
-        function initAdminMap() {
+        function initAdminMap(lat, lng) {
+            // Default center if no coords provided (India roughly center)
+            const center = { lat: parseFloat(lat) || 20.5937, lng: parseFloat(lng) || 78.9629 };
+            
             adminMap = new google.maps.Map(document.getElementById('admin-map'), {
-                zoom: 16,
+                center: center,
+                zoom: lat && lng ? 16 : 5, // Zoom out if no specific location
                 mapTypeId: 'roadmap',
                 mapTypeControl: false,
                 streetViewControl: false
