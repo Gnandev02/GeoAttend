@@ -344,23 +344,15 @@ const LandingPage = () => {
                                         style={{ backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)', backgroundSize: '10px 10px', opacity: 0.5 }}>
                                     </div>
 
-                                    {/* Geofence circle */}
-                                    <div
-                                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full border border-brand-300 bg-brand-50/40">
-                                    </div>
+                                    {/* Geofence polygon */}
+                                    <svg className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 overflow-visible text-brand-300" viewBox="0 0 100 100">
+                                        <polygon points="50,5 90,30 80,80 20,80 10,30" className="fill-brand-50/40 stroke-current stroke-1 pointer-events-none" strokeDasharray="4" />
+                                    </svg>
 
-                                    {/* Student Pins */}
-                                    {/* Pin 1 */}
-                                    <div className="absolute top-1/3 left-1/3 w-2 h-2 rounded-full bg-brand-500 ring-2 ring-white">
-                                    </div>
-                                    {/* Pin 2 */}
-                                    <div
-                                        className="absolute top-1/2 left-[60%] w-2 h-2 rounded-full bg-brand-500 ring-2 ring-white">
-                                    </div>
-                                    {/* Pin 3 (Out of bounds) */}
-                                    <div
-                                        className="absolute bottom-1/4 right-1/4 w-2 h-2 rounded-full bg-slate-400 ring-2 ring-white">
-                                    </div>
+                                    {/* Map Pins */}
+                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-brand-500 ring-4 ring-brand-100 animate-pulse"></div>
+                                    <div className="absolute top-1/3 right-1/3 w-2 h-2 rounded-full bg-brand-400 ring-2 ring-white"></div>
+                                    <div className="absolute bottom-1/4 -right-4 w-2 h-2 rounded-full bg-slate-400 ring-2 ring-white"></div>
                                 </div>
 
                                 {/* Stats Area */}
@@ -390,8 +382,8 @@ const LandingPage = () => {
                                     </svg>
                                 </div>
                                 <div>
-                                    <div className="text-[10px] font-medium text-slate-400">J. Smith verified</div>
-                                    <div className="text-xs font-semibold text-slate-800">Within zone (12m)</div>
+                                    <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Geo-based Verification</div>
+                                    <div className="text-[11px] font-bold text-slate-800 mt-0.5">Location verified inside boundary</div>
                                 </div>
                             </div>
                         </div>

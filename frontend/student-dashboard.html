@@ -95,8 +95,9 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div class="saas-card p-6"><h3 class="font-bold text-slate-900 mb-4">Live Distance</h3><p class="text-3xl font-extrabold text-slate-900"><span id="distance">--</span></p></div>
+                <div class="saas-card p-6"><h3 class="font-bold text-slate-900 mb-4">GPS Accuracy</h3><p class="text-3xl font-extrabold text-[#0284c7]"><span id="gps-accuracy">--</span></p><p id="gps-accuracy-raw" class="text-sm font-semibold text-slate-400 mt-1">--</p></div>
                 <div class="saas-card p-6"><h3 class="font-bold text-slate-900 mb-4">Presence Alert</h3><div id="presence-badge" class="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-500 inline-block">Unknown</div></div>
             </div>
 
@@ -121,6 +122,23 @@
         let pendingStatus = null;
         let consecutiveMatches = 0;
         let currentLat = 0, currentLng = 0;
+        const accuracyHistory = [];
+
+        function calculateAccuracyPercentage(acc) {
+            if (acc <= 10) return 100 - (acc / 10) * 5;
+            if (acc <= 20) return 95 - ((acc - 10) / 10) * 10;
+            if (acc <= 50) return 85 - ((acc - 20) / 30) * 25;
+            return Math.max(0, 60 - ((acc - 50) / 50) * 20);
+        }
+
+        function updateAccuracyUI(rawAccuracy) {
+            accuracyHistory.push(rawAccuracy);
+            if (accuracyHistory.length > 5) accuracyHistory.shift();
+            const avgAccuracy = accuracyHistory.reduce((a, b) => a + b, 0) / accuracyHistory.length;
+            const percentage = calculateAccuracyPercentage(avgAccuracy);
+            document.getElementById('gps-accuracy').textContent = percentage.toFixed(1) + '%';
+            document.getElementById('gps-accuracy-raw').textContent = '± ' + avgAccuracy.toFixed(1) + 'm';
+        }
 
         // STEP 1: FETCH CAMPUS DATA FROM BACKEND
         async function initDashboard() {
@@ -215,6 +233,7 @@
                     currentLat = pos.coords.latitude;
                     currentLng = pos.coords.longitude;
                     updateLocation(currentLat, currentLng);
+                    updateAccuracyUI(pos.coords.accuracy);
                 },
                 (err) => {
                     console.error(err);
