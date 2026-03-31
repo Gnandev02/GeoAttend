@@ -1005,6 +1005,8 @@
                     drawPolygonOnMap();
                 }
             } else {
+                // For brand new admins, we skip the "Edit" button and show the "Update" button immediately
+                isEditingGeofence = true;
                 const fieldset = document.getElementById('geofence-fieldset');
                 if (fieldset) fieldset.disabled = false;
                 
@@ -1014,6 +1016,7 @@
                     document.getElementById('geo-submit-btn').classList.remove('hidden');
                     document.getElementById('geo-cancel-btn').classList.add('hidden');
                 }
+                renderPolygonInputs();
             }
         }
 
