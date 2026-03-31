@@ -368,9 +368,15 @@ const LandingPage = () => {
                                         <div className="text-slate-400 text-[10px] uppercase font-semibold">Total Verified</div>
                                         <div className="text-slate-900 font-bold text-lg mt-0.5">{totalVerified}</div>
                                     </div>
-                                    <div className="bg-white border border-slate-100 rounded-lg p-3">
-                                        <div className="text-slate-400 text-[10px] uppercase font-semibold">System Accuracy</div>
+                                    <div className="bg-white border border-slate-100 rounded-lg p-3 relative group cursor-help">
+                                        <div className="text-slate-400 text-[10px] uppercase font-semibold truncate" title="Accuracy reflects how many attendances were automatically verified without admin intervention">GeoAttend Accuracy</div>
                                         <div className="text-brand-600 font-bold text-lg mt-0.5">{systemAccuracy}</div>
+                                        
+                                        {/* Tooltip */}
+                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-48 text-[10px] bg-slate-800 text-white shadow-lg rounded p-2 text-center pointer-events-none z-50">
+                                            Accuracy reflects how many attendances were automatically verified without admin intervention
+                                            <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-800"></div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

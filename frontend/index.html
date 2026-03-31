@@ -372,10 +372,14 @@
                                     Verified</p>
                                 <p id="live-total-verified" class="text-3xl font-extrabold text-slate-900">...</p>
                             </div>
-                            <div class="bg-slate-50/50 rounded-xl p-5 border border-slate-100">
-                                <p class="text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wider">System Accuracy
-                                </p>
+                            <div class="bg-slate-50/50 rounded-xl p-5 border border-slate-100 relative group cursor-help">
+                                <p class="text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wider truncate" title="Accuracy reflects how many attendances were automatically verified without admin intervention">GeoAttend Accuracy</p>
                                 <p id="live-system-accuracy" class="text-3xl font-extrabold text-[#0284c7]">...</p>
+                                <!-- Tooltip -->
+                                <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-48 text-[10px] bg-slate-800 text-white shadow-lg rounded p-2 text-center pointer-events-none z-50">
+                                    Accuracy reflects how many attendances were automatically verified without admin intervention
+                                    <div class="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-800"></div>
+                                </div>
                             </div>
                         </div>
                     </div>

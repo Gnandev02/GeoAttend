@@ -124,16 +124,19 @@ export default async function handler(req, res) {
             return res.status(200).json({ success: true, count: parseInt(result.rows[0].total) || 0 });
         }
         else if (action === "get-system-accuracy") {
-            const result = await query("SELECT AVG(location_accuracy) as avg_acc FROM attendance WHERE location_accuracy IS NOT NULL");
-            const avgAcc = result.rows[0]?.avg_acc ? parseFloat(result.rows[0].avg_acc) : null;
-            if (avgAcc === null) return res.status(200).json({ success: true, percentage: 0 });
+            const result = await query(`
+                SELECT 
+                    COUNT(*) as total_records,
+                    COUNT(CASE WHEN source = 'auto' THEN 1 END) as auto_records
+                FROM attendance
+                WHERE status = 'Present' OR status = 'Absent' OR status = 'completed'
+            `);
+            const total = parseInt(result.rows[0].total_records) || 0;
+            const autoCount = parseInt(result.rows[0].auto_records) || 0;
             
-            let percentage = 0;
-            if (avgAcc <= 10) percentage = 100 - (avgAcc / 10) * 5;
-            else if (avgAcc <= 20) percentage = 95 - ((avgAcc - 10) / 10) * 10;
-            else if (avgAcc <= 50) percentage = 85 - ((avgAcc - 20) / 30) * 25;
-            else percentage = Math.max(0, 60 - ((avgAcc - 50) / 50) * 20);
+            if (total === 0) return res.status(200).json({ success: true, percentage: 0 });
             
+            const percentage = (autoCount / total) * 100;
             return res.status(200).json({ success: true, percentage: parseFloat(percentage.toFixed(1)) });
         }
 
@@ -239,6 +242,47 @@ export default async function handler(req, res) {
                 inside: isInside,
                 action: apiAction
             });
+        }
+
+        // --- ADMIN: MANUAL MARK ---
+        else if (action === "manualMark") {
+            const admin = await protectAdmin(req);
+            if (!admin) return res.status(401).json({ success: false, message: 'Not authorized as admin' });
+
+            const { studentId, date, checkInTime, checkOutTime } = req.body;
+            if (!studentId || !date || !checkInTime) {
+                return res.status(400).json({ success: false, message: 'Student ID, Date, and Check-In Time are required.' });
+            }
+
+            // Verify student belongs to admin's college
+            const studentCheck = await query('SELECT id FROM students WHERE id = $1 AND college_code = $2', [studentId, admin.college_code]);
+            if (studentCheck.rows.length === 0) {
+                return res.status(403).json({ success: false, message: 'Student not found in your institution.' });
+            }
+
+            const existingRecord = await query('SELECT id FROM attendance WHERE student_id = $1 AND attendance_date = $2', [studentId, date]);
+            
+            let durationMinutes = 0;
+            if (checkOutTime) {
+                const inMins = timeStringToMinutes(checkInTime);
+                const outMins = timeStringToMinutes(checkOutTime);
+                durationMinutes = outMins > inMins ? outMins - inMins : 0;
+            }
+
+            if (existingRecord.rows.length > 0) {
+                await query(`
+                    UPDATE attendance 
+                    SET check_in_time = $1, check_out_time = $2, duration_minutes = $3, status = 'Present', source = 'manual' 
+                    WHERE id = $4
+                `, [checkInTime, checkOutTime || null, durationMinutes, existingRecord.rows[0].id]);
+            } else {
+                await query(`
+                    INSERT INTO attendance (student_id, college_code, attendance_date, check_in_time, check_out_time, status, duration_minutes, source) 
+                    VALUES ($1, $2, $3, $4, $5, 'Present', $6, 'manual')
+                `, [studentId, admin.college_code, date, checkInTime, checkOutTime || null, durationMinutes]);
+            }
+
+            return res.status(200).json({ success: true, message: 'Attendance marked manually.' });
         }
 
         // --- 3. ATTENDANCE TODAY (Stats) ---
