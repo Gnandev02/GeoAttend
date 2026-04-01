@@ -797,9 +797,6 @@
                     <td class="py-4 px-8 text-sm font-bold text-slate-600 font-mono">${student.rollNumber || 'N/A'}</td>
                     <td class="py-4 px-8 text-sm font-semibold text-slate-600">${student.department || 'N/A'}</td>
                     <td class="py-4 px-8 text-right flex justify-end gap-2">
-                        <button onclick="openManualAttendanceModal('${student._id}', '${(student.userId?.name || '').replace(/'/g, "\\'")}')" class="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all" title="Mark Manual Attendance">
-                            <i data-lucide="check-square" class="w-4 h-4"></i>
-                        </button>
                         <button onclick="openEditStudentModal('${student._id}', '${(student.userId?.name || '').replace(/'/g, "\\'")}', '${student.userId?.email || ''}', '${student.rollNumber || ''}', '${student.department || ''}')" class="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all" title="Edit Student">
                             <i data-lucide="edit" class="w-4 h-4"></i>
                         </button>
