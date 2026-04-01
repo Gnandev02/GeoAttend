@@ -143,12 +143,12 @@ export default async function handler(req, res) {
                     COUNT(*) as total_records,
                     COUNT(CASE WHEN source = 'auto' THEN 1 END) as auto_records
                 FROM attendance
-                WHERE status = 'Present' OR status = 'Absent' OR status = 'completed'
+                WHERE (status = 'Present' OR status = 'completed')
             `);
             const total = parseInt(result.rows[0].total_records) || 0;
             const autoCount = parseInt(result.rows[0].auto_records) || 0;
             
-            if (total === 0) return res.status(200).json({ success: true, percentage: 0 });
+            if (total === 0) return res.status(200).json({ success: true, percentage: 100 }); // Default to 100 if no data
             
             const percentage = (autoCount / total) * 100;
             return res.status(200).json({ success: true, percentage: parseFloat(percentage.toFixed(1)) });
@@ -257,8 +257,8 @@ export default async function handler(req, res) {
                 // IN LOGIC: Create check-in if none exists. If already checked in and marked as completed, do nothing for today.
                 if (!todayRecord) {
                     await query(
-                        `INSERT INTO attendance (student_id, college_code, attendance_date, check_in_time, status, location_accuracy) 
-                         VALUES ($1, $2, $3, $4, $5, $6)`,
+                        `INSERT INTO attendance (student_id, college_code, attendance_date, check_in_time, status, location_accuracy, source) 
+                         VALUES ($1, $2, $3, $4, $5, $6, 'auto')`,
                         [student.id, student.college_code, todayIST, currentTime, 'Present', userAccuracy]
                     );
                     apiAction = "checked-in";
@@ -327,6 +327,44 @@ export default async function handler(req, res) {
             }
 
             return res.status(200).json({ success: true, message: 'Attendance marked manually.' });
+        }
+
+        // --- ADMIN: EDIT ATTENDANCE (Existing Record) ---
+        else if (action === "editAttendance") {
+            const admin = await protectAdmin(req);
+            if (!admin) return res.status(401).json({ success: false, message: 'Not authorized as admin' });
+
+            const { attendanceId, status, checkInTime, checkOutTime } = req.body;
+            if (!attendanceId || !status) {
+                return res.status(400).json({ success: false, message: 'Attendance ID and Status are required.' });
+            }
+
+            // Verify admin owns this record via student college_code
+            const recordCheck = await query(`
+                SELECT a.id, a.check_in_time 
+                FROM attendance a
+                JOIN students s ON a.student_id = s.id
+                WHERE a.id = $1 AND s.college_code = $2
+            `, [attendanceId, admin.college_code]);
+
+            if (recordCheck.rows.length === 0) {
+                return res.status(403).json({ success: false, message: 'Record not found in your institution.' });
+            }
+
+            let durationMinutes = 0;
+            if (checkInTime && checkOutTime) {
+                const inMins = timeStringToMinutes(checkInTime);
+                const outMins = timeStringToMinutes(checkOutTime);
+                durationMinutes = outMins > inMins ? outMins - inMins : 0;
+            }
+
+            await query(`
+                UPDATE attendance 
+                SET status = $1, check_in_time = $2, check_out_time = $3, duration_minutes = $4, source = 'manual'
+                WHERE id = $5
+            `, [status, checkInTime || null, checkOutTime || null, durationMinutes, attendanceId]);
+
+            return res.status(200).json({ success: true, message: 'Attendance record updated successfully.' });
         }
 
         // --- 3. ATTENDANCE TODAY (Stats) ---
