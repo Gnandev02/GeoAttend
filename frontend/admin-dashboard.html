@@ -711,7 +711,8 @@
                     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } 
                 });
                 const aData = await l.json();
-                allLogs = aData.data || []; 
+                console.log("Admin Data Response (Logs/Stats):", aData);
+                allLogs = aData.logs || []; 
                 const statsData = aData.overall || {}; 
 
                 // Students
@@ -900,8 +901,13 @@
         }
 
         function renderLogs(l) {
-            document.getElementById('table-logs-body').innerHTML = (l || []).map(log => {
-                // Task 6: Loop through record and show student_name, in_time, out_time
+            const tableBody = document.getElementById('table-logs-body');
+            if (!l || l.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="8" class="py-10 text-center text-slate-400 font-bold italic">No attendance records found</td></tr>';
+                return;
+            }
+            
+            tableBody.innerHTML = l.map(log => {
                 const dur = log.durationMinutes || (log.in_time && log.out_time ? calculateMins(log.in_time, log.out_time) : 0);
                 const durationText = dur ? `${dur} mins` : '--';
                 const dateDisplay = fmtDate(log.date);
@@ -912,6 +918,12 @@
                 const sourceBadge = isAuto 
                     ? `<span class="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-600 text-[9px] font-extrabold uppercase border border-emerald-100/50">Auto</span>`
                     : `<span class="px-2 py-0.5 rounded-md bg-amber-50 text-amber-600 text-[9px] font-extrabold uppercase border border-amber-100/50">Manual</span>`;
+
+                const isPresent = log.status === 'Present';
+                const statusText = isPresent ? 'Present' : 'Absent';
+                const badgeClass = isPresent
+                    ? 'px-2 py-1 rounded-md bg-emerald-50 text-emerald-600 text-[10px] font-extrabold uppercase border border-emerald-100/50'
+                    : 'px-2 py-1 rounded-md bg-rose-50 text-rose-600 text-[10px] font-extrabold uppercase border border-rose-100/50';
 
                 return `
                     <tr class="hover:bg-slate-50/50 transition-colors">

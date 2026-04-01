@@ -406,7 +406,7 @@ export default async function handler(req, res) {
 
                 return res.status(200).json({ 
                     success: true,
-                    data: transformedLogs,
+                    logs: transformedLogs,
                     overall: { 
                         totalStudents: parseInt(totalQ.rows[0].total) || 0, 
                         Present: presentToday
