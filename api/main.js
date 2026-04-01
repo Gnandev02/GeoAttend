@@ -920,6 +920,21 @@ if (!email) return res.status(400).json({ message: "Email is required" });
                 });
             }
         }
+        else if (action === "verify-password") {
+            const student = await protectStudent(req);
+            const user = student || await protectAdmin(req);
+            if (!user) return res.status(401).json({ error: "Unauthorized", message: "Authentication failed. Please login again." });
+
+            const { currentPassword } = req.body;
+            if (!currentPassword) return res.status(400).json({ error: "Current password is required" });
+
+            const isMatch = await comparePassword(currentPassword, user.password);
+            if (isMatch) {
+                return res.status(200).json({ success: true, message: "Password verified" });
+            } else {
+                return res.status(401).json({ success: false, error: "Incorrect current password" });
+            }
+        }
         else if (action === "sendChangePasswordOtp") {
             const student = await protectStudent(req);
             const user = student || await protectAdmin(req);
