@@ -139,6 +139,7 @@ export default async function handler(req, res) {
                 attendance_start_time: row.attendance_start_time,
                 attendance_end_time: row.attendance_end_time,
                 college_code: row.college_code,
+                branch_code: row.college_code, // terminology match
                 college_name: collegeName,
                 polygon_coordinates: row.polygon_coordinates,
                 polygon_points: polygonPoints,

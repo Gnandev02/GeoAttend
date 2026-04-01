@@ -759,8 +759,12 @@
                 console.log("DEBUG: Campus Verification Data:", campusData);
 
                 // Update global configuration state using backend is_ready flag
+                // Requirement: college_name, branch_code, polygon_points.length >= 3
                 isCampusConfigured = !!campusData.is_ready;
-                console.log("Is Campus Configured (is_ready):", isCampusConfigured);
+                console.log("Is Campus Configured (is_ready check):", isCampusConfigured);
+                if (!isCampusConfigured) {
+                    console.warn("DEBUG: Campus Setup Incomplete - Name:", !!campusData.college_name, "Code:", !!campusData.branch_code, "Points:", campusData.polygon_points?.length || 0);
+                }
                 
                 renderOverview(studentsData, { overall: statsData }, campusData);  
                 renderStudents(studentsData);
