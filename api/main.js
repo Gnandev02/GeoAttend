@@ -117,9 +117,17 @@ export default async function handler(req, res) {
                 if (adminRecord.rows.length > 0) collegeName = adminRecord.rows[0].college_name;
             }
 
+            let polygonPoints = [];
+            try {
+                polygonPoints = typeof row.polygon_coordinates === 'string' ? JSON.parse(row.polygon_coordinates) : (row.polygon_coordinates || []);
+            } catch (e) {
+                console.error("Polygon Coordinates Parsing Fail:", e);
+                polygonPoints = [];
+            }
+
             const isReady = !!collegeName && 
                             !!row.college_code && 
-                            (row.polygon_coordinates && row.polygon_coordinates.length >= 3);
+                            (Array.isArray(polygonPoints) && polygonPoints.length >= 3);
 
             return res.status(200).json({
                 name: row.name,
@@ -133,6 +141,7 @@ export default async function handler(req, res) {
                 college_code: row.college_code,
                 college_name: collegeName,
                 polygon_coordinates: row.polygon_coordinates,
+                polygon_points: polygonPoints,
                 is_ready: isReady
             });
         }

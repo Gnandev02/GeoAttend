@@ -755,6 +755,9 @@
                 }
 
                 
+                // Debugging Log
+                console.log("DEBUG: Campus Verification Data:", campusData);
+
                 // Update global configuration state using backend is_ready flag
                 isCampusConfigured = !!campusData.is_ready;
                 console.log("Is Campus Configured (is_ready):", isCampusConfigured);
