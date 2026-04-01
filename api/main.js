@@ -771,9 +771,9 @@ export default async function handler(req, res) {
                     [name, email, hashedPassword, rollNumber, department || 'General', admin.college_code]
                 );
                 try {
-                    await sendOnboardingEmail(email, name, tempPassword, `${req.headers.origin || 'https://geoattend.vercel.app'}/student-login.html`);
+                    await sendOnboardingEmail(email, name, tempPassword, admin.college_code, `${req.headers.origin || 'https://geoattend.vercel.app'}/student-login.html`);
                 } catch (e) { 
-                    console.error("Email fail:", e); 
+                    console.error("Email fail for student creation:", e); 
                     // We don't fail the whole request if email fails, but we should inform
                 }
                 return res.status(201).json({ 

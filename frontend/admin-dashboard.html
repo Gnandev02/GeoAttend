@@ -1182,6 +1182,7 @@
                 if (res.ok) {
                     document.getElementById('addStudentModal').classList.add('hidden');
                     document.getElementById('add-student-form').reset();
+                    alert('Student added! Login credentials and college code have been sent to their email.');
                     fetchAdminData();
                 } else {
                     const data = await res.json();

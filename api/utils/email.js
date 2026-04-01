@@ -99,7 +99,7 @@ const sendResetEmail = async (toEmail, otp) => {
     }
 };
 
-const sendOnboardingEmail = async (toEmail, name, tempPassword, loginUrl = 'https://geoattend.vercel.app/student-login.html') => {
+const sendOnboardingEmail = async (toEmail, name, tempPassword, collegeCode, loginUrl = 'https://geoattend.vercel.app/student-login.html') => {
     try {
         const transporter = nodemailer.createTransport({
             host: 'smtp.gmail.com',
@@ -116,16 +116,33 @@ const sendOnboardingEmail = async (toEmail, name, tempPassword, loginUrl = 'http
             to: toEmail,
             subject: 'Your GeoAttend Account Credentials',
             html: `
-                <div style="font-family: Arial, sans-serif; padding: 20px; color: #1e293b;">
-                    <h2 style="color: #0284c7;">Welcome to GeoAttend!</h2>
-                    <p>Hello ${name},</p>
-                    <p>An admin has created your GeoAttend account. Here are your credentials:</p>
-                    <ul>
-                        <li><strong>Login Email:</strong> ${toEmail}</li>
-                        <li><strong>Temporary Password:</strong> ${tempPassword}</li>
-                    </ul>
-                    <p>Please log in at <a href="${loginUrl}">GeoAttend Student Portal</a>.</p>
-                    <p><strong>IMPORTANT:</strong> You will be required to change your password immediately upon your first login.</p>
+                <div style="font-family: Arial, sans-serif; padding: 30px; color: #1e293b; background-color: #f8fafc; border-radius: 12px; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0;">
+                    <h2 style="color: #4f46e5; margin-bottom: 20px;">Welcome to GeoAttend!</h2>
+                    <p style="font-size: 16px; line-height: 1.6; margin-bottom: 20px;">Hello ${name},</p>
+                    <p style="font-size: 16px; line-height: 1.6; margin-bottom: 30px;">An admin has created your student account. Please use the Following credentials to log in to the GeoAttend portal:</p>
+                    
+                    <div style="background-color: white; padding: 25px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 30px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr>
+                                <td style="padding: 8px 0; color: #64748b; font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.1em;">Login Email</td>
+                                <td style="padding: 8px 0; color: #1e293b; font-weight: bold; text-align: right;">${toEmail}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px 0; color: #64748b; font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.1em;">Temporary Password</td>
+                                <td style="padding: 8px 0; color: #4f46e5; font-weight: bold; font-family: monospace; text-align: right; background-color: #f5f3ff; border-radius: 4px; padding: 4px 8px;">${tempPassword}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px 0; color: #64748b; font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.1em;">College Code</td>
+                                <td style="padding: 8px 0; color: #1e293b; font-weight: bold; font-family: monospace; text-align: right; letter-spacing: 0.1em;">${collegeCode}</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <a href="${loginUrl}" style="background-color: #4f46e5; color: white; padding: 12px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Log In to Portal</a>
+                    </div>
+                    
+                    <p style="font-size: 14px; color: #64748b; line-height: 1.6; text-align: center;"><strong>IMPORTANT:</strong> You are advised to change your password immediately upon your first login for better security.</p>
                 </div>
             `,
         };
@@ -137,6 +154,7 @@ const sendOnboardingEmail = async (toEmail, name, tempPassword, loginUrl = 'http
             });
         });
 
+        console.log(`Onboarding email sent successfully to: ${toEmail} for campus: ${collegeCode}`);
         return true;
     } catch (error) {
         console.error('Error sending onboarding email:', error);
