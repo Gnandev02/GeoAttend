@@ -343,12 +343,24 @@
 
             <!-- STUDENTS TAB -->
             <div id="content-students" class="premium-card overflow-hidden flex flex-col h-[calc(100vh-120px)] animate-in fade-in slide-in-from-bottom-4 duration-700" style="display: none;">
-                <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-white">
+                
+                <!-- UNINITIALIZED WARNING BANNER -->
+                <div id="setup-warning-banner" class="hidden p-4 bg-amber-50 border-b border-amber-100 flex items-center gap-3">
+                    <div class="p-2 rounded-lg bg-amber-100 text-amber-600">
+                        <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h4 class="text-xs font-extrabold text-amber-800 uppercase tracking-widest">Campus Setup Required</h4>
+                        <p class="text-[11px] text-amber-600 font-medium">Please configure your campus geofence and institutional details in the <b>Campus Setup</b> tab before managing students.</p>
+                    </div>
+                    <button onclick="switchTab('geofence')" class="px-4 py-2 bg-amber-600 text-white text-[10px] font-extrabold uppercase tracking-widest rounded-lg shadow-sm hover:bg-amber-700 transition-all">Go to Setup</button>
+                </div>
+<div class="p-6 border-b border-slate-100 flex justify-between items-center bg-white">
                     <div>
                         <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">Student Directory</h2>
                         <p class="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Manage institutional access</p>
                     </div>
-                    <button onclick="document.getElementById('addStudentModal').classList.remove('hidden')" class="btn-indigo">
+                    <button id="add-student-btn" onclick="document.getElementById('addStudentModal').classList.remove('hidden')" class="btn-indigo">
                         <i data-lucide="plus" class="w-4 h-4"></i> Add Student
                     </button>
                 </div>
@@ -679,6 +691,7 @@
 
         let allLogs = [];
         let isEditingGeofence = false;
+        let isCampusConfigured = false;
 
         async function fetchAdminData() {
             if (isDemo) {
@@ -741,7 +754,12 @@
                     }
                 }
 
-                renderOverview(studentsData, { overall: statsData }, campusData); 
+                
+                // Update global configuration state
+                isCampusConfigured = campusData && campusData.latitude && campusData.name;
+                console.log("Is Campus Configured:", isCampusConfigured);
+                
+                renderOverview(studentsData, { overall: statsData }, campusData);  
                 renderStudents(studentsData);
                 renderLogs(allLogs);
                 renderGeofence(campusData);
@@ -1000,6 +1018,12 @@
         function addPolygonPoint(lat, lng) {
             // Safety measure: if we are adding a point, we are definitely editing.
             if(!isEditingGeofence) {
+                // Explicitly clear fields for new admins (Requirement 1)
+                document.getElementById('geo-college-name').value = '';
+                document.getElementById('geo-college-code').value = '';
+                document.getElementById('geo-start-time').value = '';
+                document.getElementById('geo-end-time').value = '';
+                
                 isEditingGeofence = true;
                 const fieldset = document.getElementById('geofence-fieldset');
                 if (fieldset) fieldset.disabled = false;
@@ -1334,6 +1358,12 @@
         });
 
         function switchTab(tabId) {
+            // Requirement 7: Auto-redirect if campus not set
+            if (!isCampusConfigured && (tabId === 'students' || tabId === 'logs' || tabId === 'overview')) {
+                alert("Please complete your Campus Setup (Geofence & Name) before accessing this section.");
+                tabId = 'geofence';
+            }
+
             ['overview', 'students', 'logs', 'geofence'].forEach(id => {
                 const btn = document.getElementById(`tab-${id}`);
                 const content = document.getElementById(`content-${id}`);
