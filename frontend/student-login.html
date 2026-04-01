@@ -227,11 +227,25 @@
                     return;
                 }
 
+                if (!data || !data.role) {
+                    throw new Error('Invalid server response: user role missing.');
+                }
+
                 if (data.role !== 'student') {
                     errorText.textContent = 'Invalid account type for this portal.';
                     errorMsg.classList.remove('hidden');
                     return;
                 }
+
+                // Proper user object construction to fix "userObj is not defined"
+                const userObj = {
+                    _id: data.id,
+                    name: data.name,
+                    email: data.email,
+                    rollNumber: data.rollNumber,
+                    role: data.role,
+                    collegeCode: data.collegeCode
+                };
 
                 localStorage.setItem('student', JSON.stringify(userObj));
                 window.location.href = 'student-dashboard.html';
@@ -259,8 +273,13 @@
                 if (!response.ok) throw new Error(data.message);
 
                 localStorage.setItem('token', data.token);
+                
+                if (!data || !data.role) {
+                    throw new Error('Invalid server response after campus selection.');
+                }
+
                 localStorage.setItem('student', JSON.stringify({
-                    _id: data._id,
+                    _id: data.id,
                     name: data.name,
                     email: data.email,
                     rollNumber: data.rollNumber,
