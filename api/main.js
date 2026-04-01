@@ -293,37 +293,37 @@ export default async function handler(req, res) {
             const admin = await protectAdmin(req);
             if (!admin) return res.status(401).json({ success: false, message: 'Not authorized as admin' });
 
-            const { studentId, date, checkInTime, checkOutTime } = req.body;
-            if (!studentId || !date || !checkInTime) {
+            const { student_id, date, check_in, check_out, status = 'Present' } = req.body;
+            if (!student_id || !date || !check_in) {
                 return res.status(400).json({ success: false, message: 'Student ID, Date, and Check-In Time are required.' });
             }
 
             // Verify student belongs to admin's college
-            const studentCheck = await query('SELECT id FROM students WHERE id = $1 AND college_code = $2', [studentId, admin.college_code]);
+            const studentCheck = await query('SELECT id FROM students WHERE id = $1 AND college_code = $2', [student_id, admin.college_code]);
             if (studentCheck.rows.length === 0) {
                 return res.status(403).json({ success: false, message: 'Student not found in your institution.' });
             }
 
-            const existingRecord = await query('SELECT id FROM attendance WHERE student_id = $1 AND attendance_date = $2', [studentId, date]);
+            const existingRecord = await query('SELECT id FROM attendance WHERE student_id = $1 AND attendance_date = $2', [student_id, date]);
             
             let durationMinutes = 0;
-            if (checkOutTime) {
-                const inMins = timeStringToMinutes(checkInTime);
-                const outMins = timeStringToMinutes(checkOutTime);
+            if (check_out) {
+                const inMins = timeStringToMinutes(check_in);
+                const outMins = timeStringToMinutes(check_out);
                 durationMinutes = outMins > inMins ? outMins - inMins : 0;
             }
 
             if (existingRecord.rows.length > 0) {
                 await query(`
                     UPDATE attendance 
-                    SET check_in_time = $1, check_out_time = $2, duration_minutes = $3, status = 'Present', source = 'manual' 
-                    WHERE id = $4
-                `, [checkInTime, checkOutTime || null, durationMinutes, existingRecord.rows[0].id]);
+                    SET check_in_time = $1, check_out_time = $2, duration_minutes = $3, status = $4, source = 'manual' 
+                    WHERE id = $5
+                `, [check_in, check_out || null, durationMinutes, status, existingRecord.rows[0].id]);
             } else {
                 await query(`
                     INSERT INTO attendance (student_id, college_code, attendance_date, check_in_time, check_out_time, status, duration_minutes, source) 
-                    VALUES ($1, $2, $3, $4, $5, 'Present', $6, 'manual')
-                `, [studentId, admin.college_code, date, checkInTime, checkOutTime || null, durationMinutes]);
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, 'manual')
+                `, [student_id, admin.college_code, date, check_in, check_out || null, status, durationMinutes]);
             }
 
             return res.status(200).json({ success: true, message: 'Attendance marked manually.' });
@@ -334,8 +334,8 @@ export default async function handler(req, res) {
             const admin = await protectAdmin(req);
             if (!admin) return res.status(401).json({ success: false, message: 'Not authorized as admin' });
 
-            const { attendanceId, status, checkInTime, checkOutTime } = req.body;
-            if (!attendanceId || !status) {
+            const { attendance_id, status, check_in, check_out } = req.body;
+            if (!attendance_id || !status) {
                 return res.status(400).json({ success: false, message: 'Attendance ID and Status are required.' });
             }
 
@@ -345,16 +345,16 @@ export default async function handler(req, res) {
                 FROM attendance a
                 JOIN students s ON a.student_id = s.id
                 WHERE a.id = $1 AND s.college_code = $2
-            `, [attendanceId, admin.college_code]);
+            `, [attendance_id, admin.college_code]);
 
             if (recordCheck.rows.length === 0) {
                 return res.status(403).json({ success: false, message: 'Record not found in your institution.' });
             }
 
             let durationMinutes = 0;
-            if (checkInTime && checkOutTime) {
-                const inMins = timeStringToMinutes(checkInTime);
-                const outMins = timeStringToMinutes(checkOutTime);
+            if (check_in && check_out) {
+                const inMins = timeStringToMinutes(check_in);
+                const outMins = timeStringToMinutes(check_out);
                 durationMinutes = outMins > inMins ? outMins - inMins : 0;
             }
 
@@ -362,7 +362,7 @@ export default async function handler(req, res) {
                 UPDATE attendance 
                 SET status = $1, check_in_time = $2, check_out_time = $3, duration_minutes = $4, source = 'manual'
                 WHERE id = $5
-            `, [status, checkInTime || null, checkOutTime || null, durationMinutes, attendanceId]);
+            `, [status, check_in || null, check_out || null, durationMinutes, attendance_id]);
 
             return res.status(200).json({ success: true, message: 'Attendance record updated successfully.' });
         }
@@ -547,16 +547,26 @@ export default async function handler(req, res) {
             const { email, password, name, otp, newPassword } = req.body;
             
             if (action === "auth-login" || action === "studentLogin") {
-                const collegeCode = req.body.collegeCode || req.body.college_code;
+                const collegeCode = (req.body.collegeCode || req.body.college_code || "").toString();
                 
+                console.log(`[studentLogin] Attempt: Email=${email}, Campus=${collegeCode || 'none'}`);
+
+                // 1. Fetch ALL records with this email
+                const result = await query('SELECT * FROM students WHERE email = $1', [email]);
+                console.log(`[studentLogin] Database matches for email: ${result.rows.length}`);
+
+                if (result.rows.length === 0) {
+                    return res.status(401).json({ success: false, message: 'Student not found.' });
+                }
+
                 if (collegeCode) {
-                    // Direct Login: strictly check email + college_code
-                    const result = await query('SELECT * FROM students WHERE email = $1 AND college_code = $2', [email, collegeCode]);
-                    if (result.rows.length === 0) {
-                        return res.status(401).json({ success: false, message: 'Invalid student credentials for this campus.' });
-                    }
+                    // Direct Login with Campus verification
+                    const student = result.rows.find(s => s.college_code && s.college_code.toLowerCase() === collegeCode.toLowerCase());
                     
-                    const student = result.rows[0];
+                    if (!student) {
+                        return res.status(401).json({ success: false, message: 'Wrong campus selected.' });
+                    }
+
                     if (await comparePassword(password, student.password)) {
                         const token = generateToken(student.id, student.email, student.college_code, 'student');
                         return res.status(200).json({ 
@@ -570,16 +580,10 @@ export default async function handler(req, res) {
                             collegeCode: student.college_code 
                         });
                     }
-                    return res.status(401).json({ success: false, message: 'Invalid student credentials.' });
+                    return res.status(401).json({ success: false, message: 'Incorrect password.' });
                 }
 
-                // Smart Login: check all campuses for this email
-                const result = await query('SELECT * FROM students WHERE email = $1', [email]);
-                if (result.rows.length === 0) {
-                    return res.status(401).json({ success: false, message: 'Invalid student credentials.' });
-                }
-
-                // Filter students by valid password
+                // Smart Login: check all campus matches for this student
                 const validMatches = [];
                 for (const student of result.rows) {
                     if (await comparePassword(password, student.password)) {
@@ -588,7 +592,7 @@ export default async function handler(req, res) {
                 }
 
                 if (validMatches.length === 0) {
-                    return res.status(401).json({ success: false, message: 'Invalid student credentials.' });
+                    return res.status(401).json({ success: false, message: 'Incorrect password.' });
                 }
 
                 if (validMatches.length === 1) {
@@ -606,7 +610,7 @@ export default async function handler(req, res) {
                     });
                 }
 
-                // Multiple matches: return list of campuses
+                // Multiple valid password matches
                 const campusIds = validMatches.map(s => s.college_code);
                 const campusNamesQ = await query('SELECT college_code, name FROM campus_setup WHERE college_code = ANY($1)', [campusIds]);
                 const campusMap = {};
@@ -944,6 +948,9 @@ export default async function handler(req, res) {
 
     } catch (err) {
         console.error("Monolith API Error:", err);
-        return res.status(500).json({ error: err.message });
+        return res.status(500).json({ 
+            success: false, 
+            message: err.message || "Failed to process request" 
+        });
     }
 }
