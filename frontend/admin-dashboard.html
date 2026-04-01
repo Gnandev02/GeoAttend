@@ -755,9 +755,9 @@
                 }
 
                 
-                // Update global configuration state
-                isCampusConfigured = campusData && campusData.latitude && campusData.name;
-                console.log("Is Campus Configured:", isCampusConfigured);
+                // Update global configuration state using backend is_ready flag
+                isCampusConfigured = !!campusData.is_ready;
+                console.log("Is Campus Configured (is_ready):", isCampusConfigured);
                 
                 renderOverview(studentsData, { overall: statsData }, campusData);  
                 renderStudents(studentsData);

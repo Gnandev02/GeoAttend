@@ -117,6 +117,10 @@ export default async function handler(req, res) {
                 if (adminRecord.rows.length > 0) collegeName = adminRecord.rows[0].college_name;
             }
 
+            const isReady = !!collegeName && 
+                            !!row.college_code && 
+                            (row.polygon_coordinates && row.polygon_coordinates.length >= 3);
+
             return res.status(200).json({
                 name: row.name,
                 lat: Number(row.latitude), // Backward compatibility
@@ -128,7 +132,8 @@ export default async function handler(req, res) {
                 attendance_end_time: row.attendance_end_time,
                 college_code: row.college_code,
                 college_name: collegeName,
-                polygon_coordinates: row.polygon_coordinates
+                polygon_coordinates: row.polygon_coordinates,
+                is_ready: isReady
             });
         }
 
