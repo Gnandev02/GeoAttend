@@ -8,6 +8,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="js/map-config.js"></script>
+
     <script>
         tailwind.config = {
             theme: {
@@ -1482,6 +1484,11 @@
         }
 
         function initAdminMap(lat, lng) {
+            if (!isGoogleMapsLoaded()) {
+                showMapFallback('admin-map');
+                return;
+            }
+
             // Default center if no coords provided (India roughly center)
             const center = { lat: parseFloat(lat) || 20.5937, lng: parseFloat(lng) || 78.9629 };
             
@@ -1576,7 +1583,10 @@
             renderPolygonInputs(true);
         }
     </script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAtcv3jZIS7M7bmf4Mwirbhd1qVulafbvk&callback=initAdminMap" async defer></script>
+    <script>
+        window.addEventListener('load', () => loadGoogleMaps('initAdminMap'));
+    </script>
+
 </body>
 
 </html>

@@ -7,7 +7,7 @@ with open(student_html, "r", encoding="utf-8") as f:
 
 # 1. Provide Maps script tag
 head_end = "</head>"
-script_tag = """    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAtcv3jZIS7M7bmf4Mwirbhd1qVulafbvk&callback=initStudentMap" async defer></script>
+script_tag = """    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDhq-vVMfPkHbaiFLyhR029wjr0tHKj0ng&callback=initStudentMap" async defer></script>
 </head>"""
 content = content.replace(head_end, script_tag)
 

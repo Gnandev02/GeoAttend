@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="js/map-config.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -151,6 +152,11 @@
                     document.getElementById("campus-center").innerText = `${campusCenter.lat.toFixed(6)}, ${campusCenter.lng.toFixed(6)}`;
 
                     // STEP 2: INITIALIZE MAP CORRECTLY (Polygon Center)
+                    if (!isGoogleMapsLoaded()) {
+                        showMapFallback("student-map");
+                        return;
+                    }
+
                     map = new google.maps.Map(document.getElementById("student-map"), {
                         center: campusCenter,
                         zoom: 17,
@@ -178,6 +184,11 @@
                     document.getElementById("campus-center").innerText = `${campusCenter.lat.toFixed(6)}, ${campusCenter.lng.toFixed(6)}`;
 
                     // STEP 2: INITIALIZE MAP CORRECTLY (Radius Center)
+                    if (!isGoogleMapsLoaded()) {
+                        showMapFallback("student-map");
+                        return;
+                    }
+
                     map = new google.maps.Map(document.getElementById("student-map"), {
                         center: campusCenter,
                         zoom: 17,
@@ -389,8 +400,8 @@
         }
 
         window.initMap = initDashboard;
+        window.addEventListener('load', () => loadGoogleMaps('initMap'));
         function logout() { localStorage.clear(); window.location.href = 'index.html'; }
     </script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAtcv3jZIS7M7bmf4Mwirbhd1qVulafbvk&libraries=geometry&callback=initMap" async defer></script>
 </body>
 </html>
