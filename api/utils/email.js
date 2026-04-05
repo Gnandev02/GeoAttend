@@ -3,9 +3,10 @@ const nodemailer = require('nodemailer');
 const sendVerificationEmail = async (toEmail, otp) => {
     try {
         const transporter = nodemailer.createTransport({
+            service: 'gmail',
             host: 'smtp.gmail.com',
-            port: 465,
-            secure: true,
+            port: 587,
+            secure: false,
             auth: {
                 user: process.env.EMAIL_USER,
                 pass: process.env.EMAIL_PASS,
@@ -62,9 +63,10 @@ const sendVerificationEmail = async (toEmail, otp) => {
 const sendResetEmail = async (toEmail, otp) => {
     try {
         const transporter = nodemailer.createTransport({
+            service: 'gmail',
             host: 'smtp.gmail.com',
-            port: 465,
-            secure: true,
+            port: 587,
+            secure: false,
             auth: {
                 user: process.env.EMAIL_USER,
                 pass: process.env.EMAIL_PASS,
@@ -102,9 +104,10 @@ const sendResetEmail = async (toEmail, otp) => {
 const sendOnboardingEmail = async (toEmail, name, tempPassword, collegeCode, loginUrl = 'https://geoattend.vercel.app/student-login.html') => {
     try {
         const transporter = nodemailer.createTransport({
+            service: 'gmail',
             host: 'smtp.gmail.com',
-            port: 465,
-            secure: true,
+            port: 587,
+            secure: false,
             auth: {
                 user: process.env.EMAIL_USER,
                 pass: process.env.EMAIL_PASS,

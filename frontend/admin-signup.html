@@ -376,6 +376,22 @@
                     return;
                 }
 
+                // Handle Requirement 3 & 4: Friendly message for email failure
+                if (data.emailError) {
+                    successMsg.classList.remove('hidden');
+                    successMsg.classList.add('bg-amber-50', 'text-amber-600', 'border-amber-100');
+                    document.getElementById('success-text').textContent = data.message;
+                    
+                    // Requirement 8: Fallback to allow bypass
+                    if (data.bypassOtp) {
+                        otpInput.value = data.bypassOtp;
+                        console.log("Email service failed. Auto-filling bypass code.");
+                    }
+                } else {
+                    successMsg.classList.remove('hidden');
+                    document.getElementById('success-text').textContent = 'Verification email sent!';
+                }
+
                 // Make form fields readonly since they are locked in
                 document.querySelectorAll('.saas-input').forEach(input => {
                     input.readOnly = true;
@@ -386,13 +402,11 @@
 
                 // Show OTP section and update UI states
                 otpSection.classList.remove('hidden');
-                successMsg.classList.remove('hidden');
-                document.getElementById('success-text').textContent = 'Verification email sent!';
                 submitBtn.disabled = false;
                 btnText.textContent = 'Verify & Sign Up';
 
                 // Start resend timer
-                startResendTimer();
+                if (!data.emailError) startResendTimer();
 
                 // Set focus to OTP field
                 setTimeout(() => otpInput.focus(), 100);
