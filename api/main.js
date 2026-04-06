@@ -559,9 +559,10 @@ export default async function handler(req, res) {
 
         // --- 4. AUTHENTICATION ---
         else if (action === "auth-login" || action === "studentLogin" || action === "adminLogin" || action === "adminSignup" || action === "sendAdminOtp" || action === "forgotPassword" || action === "verifyResetOTP" || action === "resetPassword") {
-            const { email, password, name, otp, newPassword } = req.body;
+            // Move destructuring into specific actions to avoid shadowing and confusion
             
             if (action === "auth-login" || action === "studentLogin") {
+                const { email, password } = req.body;
                 const collegeCode = (req.body.collegeCode || req.body.college_code || "").toString();
                 
                 console.log(`[studentLogin] Attempt: Email=${email}, Campus=${collegeCode || 'none'}`);
@@ -650,6 +651,27 @@ export default async function handler(req, res) {
                     return res.status(401).json({ success: false, message: 'Invalid admin credentials' });
                 }
                 
+                if (await comparePassword(password, admin.password)) {
+                    const token = generateToken(admin.id, admin.email, admin.college_code, 'admin');
+                    return res.status(200).json({ 
+                        success: true,
+                        token,
+                        _id: admin.id, 
+                        name: admin.name, 
+                        email: admin.email, 
+                        role: 'admin', 
+                        collegeCode: admin.college_code,
+                        collegeName: admin.college_name
+                    });
+                }
+                return res.status(401).json({ success: false, message: 'Invalid admin credentials' });
+            }
+            else if (action === "adminLogin") {
+                const { email, password } = req.body;
+                const result = await query('SELECT * FROM admins WHERE email = $1', [email]);
+                if (result.rows.length === 0) {
+                    return res.status(401).json({ success: false, message: 'Admin account not found.' });
+                }
                 const admin = result.rows[0];
                 if (await comparePassword(password, admin.password)) {
                     const token = generateToken(admin.id, admin.email, admin.college_code, 'admin');
@@ -669,7 +691,7 @@ export default async function handler(req, res) {
             else if (action === "sendAdminOtp") {
                 const { name, email, password, confirmPassword } = req.body;
 
-                // 1. Backend Validation (Requirement 1)
+                // 1. Backend Validation
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 if (!name || !emailRegex.test(email)) {
                     return res.status(400).json({ success: false, message: 'Invalid name or email format.' });
@@ -677,7 +699,10 @@ export default async function handler(req, res) {
                 if (!password || password.length < 6) {
                     return res.status(400).json({ success: false, message: 'Password must be at least 6 characters.' });
                 }
+                // Use .trim() just to avoid hidden whitespace issues for verification purpose if needed
+                // Actually, let's strictly compare what was sent
                 if (password !== confirmPassword) {
+                    console.log(`[sendAdminOtp] Password mismatch: "${password}" !== "${confirmPassword}"`);
                     return res.status(400).json({ success: false, message: 'Passwords do not match.' });
                 }
 
@@ -710,6 +735,7 @@ export default async function handler(req, res) {
                 }
             }
             else if (action === "adminSignup") {
+                const { name, email, password, otp } = req.body;
                 // 1. Fetch OTP record (Requirement 4 & 10)
                 const otpResult = await query('SELECT * FROM otps WHERE email = $1', [email]);
                 const otpRecord = otpResult.rows[0];
@@ -757,6 +783,7 @@ export default async function handler(req, res) {
                 }
             }
             else if (action === "forgotPassword") {
+                const { email } = req.body;
                 let userRecord = null;
                 const adminCheck = await query('SELECT * FROM admins WHERE email = $1', [email]);
                 if (adminCheck.rows.length > 0) userRecord = adminCheck.rows[0];
