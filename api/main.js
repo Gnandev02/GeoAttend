@@ -667,39 +667,79 @@ export default async function handler(req, res) {
                 return res.status(401).json({ success: false, message: 'Invalid admin credentials' });
             }
             else if (action === "sendAdminOtp") {
+                const { name, email, password, confirmPassword } = req.body;
+
+                // 1. Backend Validation (Requirement 1)
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!name || !emailRegex.test(email)) {
+                    return res.status(400).json({ success: false, message: 'Invalid name or email format.' });
+                }
+                if (!password || password.length < 6) {
+                    return res.status(400).json({ success: false, message: 'Password must be at least 6 characters.' });
+                }
+                if (password !== confirmPassword) {
+                    return res.status(400).json({ success: false, message: 'Passwords do not match.' });
+                }
+
+                // 2. Check if admin already exists
+                const existingAdmin = await query('SELECT id FROM admins WHERE email = $1', [email]);
+                if (existingAdmin.rows.length > 0) {
+                    return res.status(400).json({ success: false, message: 'Account with this email already exists.' });
+                }
+
                 const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+                
+                // Store OTP with reset attempts (Requirement 7 & 10)
                 await query(
-                    `INSERT INTO otps (email, otp, created_at) VALUES ($1, $2, CURRENT_TIMESTAMP)
-                     ON CONFLICT (email) DO UPDATE SET otp = EXCLUDED.otp, created_at = CURRENT_TIMESTAMP`,
+                    `INSERT INTO otps (email, otp, created_at, attempts) VALUES ($1, $2, CURRENT_TIMESTAMP, 0)
+                     ON CONFLICT (email) DO UPDATE SET otp = EXCLUDED.otp, created_at = CURRENT_TIMESTAMP, attempts = 0`,
                     [email, generatedOtp]
                 );
                 
                 try {
+                    // Try to send real email (Requirement 6)
                     await sendVerificationEmail(email, generatedOtp);
-                    return res.status(200).json({ success: true, message: 'OTP sent to email' });
+                    return res.status(200).json({ success: true, message: 'OTP sent to your email.' });
                 } catch (err) {
-                    // Requirement 3, 4, 7 & 8: Log full error in backend only and return friendly message
-                    console.error("SMTP AUTH / CONNECTION ERROR:", err);
-                    
-                    // Allow bypass if email fails
-                    await query(
-                        `UPDATE otps SET otp = '123456' WHERE email = $1`,
-                        [email]
-                    );
-                    
-                    return res.status(200).json({ 
-                        success: true, 
-                        emailError: true, 
-                        bypassOtp: '123456',
-                        message: "Signup successful, but email service is temporarily unavailable" 
+                    console.error("OTP SEND ERROR:", err);
+                    // Return failure, DO NOT allow bypass (Requirement 6)
+                    return res.status(500).json({ 
+                        success: false, 
+                        message: "OTP service unavailable. Please try again later." 
                     });
                 }
             }
             else if (action === "adminSignup") {
-                const otpRecord = await query('SELECT * FROM otps WHERE email = $1 AND otp = $2', [email, otp]);
-                if (otpRecord.rows.length === 0) {
-                    return res.status(400).json({ message: "Invalid or expired OTP" });
+                // 1. Fetch OTP record (Requirement 4 & 10)
+                const otpResult = await query('SELECT * FROM otps WHERE email = $1', [email]);
+                const otpRecord = otpResult.rows[0];
+
+                if (!otpRecord) {
+                    return res.status(400).json({ success: false, message: "OTP not found. Please request a new one." });
                 }
+
+                // 2. Check Security: Max 5 attempts (Requirement 10)
+                if (otpRecord.attempts >= 5) {
+                    return res.status(400).json({ success: false, message: "Too many failed attempts. Please request a new OTP." });
+                }
+
+                // 3. Check Expiry: 5 minutes (Requirement 4)
+                const createdAt = new Date(otpRecord.created_at);
+                const now = new Date();
+                const diffMinutes = (now - createdAt) / (1000 * 60);
+                
+                if (diffMinutes > 5) {
+                    return res.status(400).json({ success: false, message: "OTP expired, please resend OTP." });
+                }
+
+                // 4. Verify OTP (Requirement 4)
+                if (otpRecord.otp !== otp) {
+                    await query('UPDATE otps SET attempts = attempts + 1 WHERE email = $1', [email]);
+                    const remaining = 4 - otpRecord.attempts;
+                    return res.status(400).json({ success: false, message: "Invalid OTP. You have " + remaining + " attempts remaining." });
+                }
+
+                // 5. Success: Create Account (Requirement 5)
                 const hashedPassword = await hashPassword(password);
                 const generatedCollegeCode = 'ORG-' + Math.random().toString(36).substring(2, 8).toUpperCase();
                 
@@ -708,15 +748,12 @@ export default async function handler(req, res) {
                         'INSERT INTO admins (name, email, password, college_code) VALUES ($1, $2, $3, $4) RETURNING id, name, email, college_code',
                         [name, email, hashedPassword, generatedCollegeCode]
                     );
-                    
-                    // Removed default campus setup creation with dummy data
-                    // Admins will now see a clean empty state and must define their campus manually.
 
                     await query('DELETE FROM otps WHERE email = $1', [email]);
-                    return res.status(201).json({ success: true, data: result.rows[0] });
+                    return res.status(201).json({ success: true, data: result.rows[0], message: "Admin account created successfully!" });
                 } catch (e) {
                     console.error("Signup DB Error:", e);
-                    return res.status(400).json({ message: "An account with this email already exists." });
+                    return res.status(400).json({ success: false, message: "An account with this email already exists." });
                 }
             }
             else if (action === "forgotPassword") {
