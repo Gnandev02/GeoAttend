@@ -724,7 +724,8 @@ export default async function handler(req, res) {
                 try {
                     // Try to send real email (Requirement 6)
                     await sendVerificationEmail(email, generatedOtp);
-                    return res.status(200).json({ success: true, message: 'OTP sent to your email.' });
+                    console.log("OTP Sent Successfully to:", email);
+                    return res.status(200).json({ success: true, message: 'OTP sent successfully' });
                 } catch (err) {
                     console.error("OTP SEND ERROR:", err);
                     // Return failure, DO NOT allow bypass (Requirement 6)
@@ -1037,19 +1038,12 @@ if (!email) return res.status(400).json({ message: "Email is required" });
             
             try {
                 await sendVerificationEmail(user.email, generatedOtp);
-                return res.status(200).json({ success: true, message: 'OTP sent to email' });
+                return res.status(200).json({ success: true, message: 'OTP sent successfully' });
             } catch (err) {
                 console.error("Change Password OTP Email Fail:", err);
-                // Allow bypass with 123456 if email fails
-                await query(
-                    `UPDATE otps SET otp = '123456' WHERE email = $1`,
-                    [user.email]
-                );
-                return res.status(200).json({ 
-                    success: true, 
-                    emailError: true, 
-                    bypassOtp: '123456',
-                    message: "Email service unavailable. Use bypass code 123456 for testing." 
+                return res.status(500).json({ 
+                    success: false, 
+                    message: "OTP service unavailable. Please try again later." 
                 });
             }
         }

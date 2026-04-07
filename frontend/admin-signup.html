@@ -351,10 +351,10 @@
             successMsg.classList.add('hidden');
 
             try {
-                const response = await fetch('/api/main?action=sendAdminOtp', {
+                const response = await fetch('/api/send-otp', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, email, password, confirmPassword })
+                    body: JSON.stringify({ name, email, password })
                 });
 
                 const data = await response.json();
@@ -434,10 +434,10 @@
             resendBtn.textContent = 'Sending...';
 
             try {
-                const response = await fetch('/api/main?action=sendAdminOtp', {
+                const response = await fetch('/api/send-otp', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, email, password, confirmPassword })
+                    body: JSON.stringify({ name, email, password })
                 });
                 const data = await response.json();
                 if (response.ok) {
