@@ -1,6 +1,10 @@
 {
     "rewrites": [
         {
+            "source": "/admin/login",
+            "destination": "/api/main?action=adminLogin"
+        },
+        {
             "source": "/api/adminLogin",
             "destination": "/api/auth?action=adminLogin"
         },

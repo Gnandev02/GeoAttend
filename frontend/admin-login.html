@@ -117,7 +117,7 @@
                         <div>
                             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">Email
                                 Address</label>
-                            <input type="email" id="email" required class="saas-input" placeholder="Enter your email" autocomplete="email">
+                            <input type="email" id="email" name="email" required class="saas-input" placeholder="Enter your email" autocomplete="email">
                         </div>
                         <div>
                             <label
@@ -126,7 +126,7 @@
                                 <a href="javascript:void(0)" onclick="openResetModal()"
                                     class="text-[#0284c7] hover:text-[#0369a1] capitalize tracking-normal font-semibold">Forgot?</a>
                             </label>
-                            <input type="password" id="password" required class="saas-input" placeholder="Enter your password" autocomplete="current-password">
+                            <input type="password" id="password" name="password" required class="saas-input" placeholder="Enter your password" autocomplete="current-password">
                         </div>
                     </div>
 
@@ -214,16 +214,19 @@
             errorMsg.classList.add('hidden');
 
             try {
-                const response = await fetch('/api/main?action=adminLogin', {
+                // Sanitize input (Requirement 6)
+                const sanitizedEmail = email.toLowerCase().trim();
+
+                const response = await fetch('/admin/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
+                    body: JSON.stringify({ email: sanitizedEmail, password })
                 });
 
                 const data = await response.json();
 
                 if (!response.ok) {
-                    errorText.textContent = data.message || 'Invalid credentials';
+                    errorText.textContent = 'Invalid email or password';
                     errorMsg.classList.remove('hidden');
                     return;
                 }

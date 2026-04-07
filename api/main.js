@@ -645,33 +645,21 @@ export default async function handler(req, res) {
                 });
             }
             else if (action === "adminLogin") {
-                // ONLY Admins table
+                console.log("Admin Login Request Body:", req.body);
+                let { email, password } = req.body;
+
+                if (!email || !password) {
+                    return res.status(400).json({ success: false, message: "Email and password are required" });
+                }
+
+                // Fix case sensitivity and trim (Requirement 6)
+                email = email.toLowerCase().trim();
+
                 const result = await query('SELECT * FROM admins WHERE email = $1', [email]);
                 if (result.rows.length === 0) {
-                    return res.status(401).json({ success: false, message: 'Invalid admin credentials' });
+                    return res.status(401).json({ success: false, message: 'Invalid email or password' });
                 }
                 
-                if (await comparePassword(password, admin.password)) {
-                    const token = generateToken(admin.id, admin.email, admin.college_code, 'admin');
-                    return res.status(200).json({ 
-                        success: true,
-                        token,
-                        _id: admin.id, 
-                        name: admin.name, 
-                        email: admin.email, 
-                        role: 'admin', 
-                        collegeCode: admin.college_code,
-                        collegeName: admin.college_name
-                    });
-                }
-                return res.status(401).json({ success: false, message: 'Invalid admin credentials' });
-            }
-            else if (action === "adminLogin") {
-                const { email, password } = req.body;
-                const result = await query('SELECT * FROM admins WHERE email = $1', [email]);
-                if (result.rows.length === 0) {
-                    return res.status(401).json({ success: false, message: 'Admin account not found.' });
-                }
                 const admin = result.rows[0];
                 if (await comparePassword(password, admin.password)) {
                     const token = generateToken(admin.id, admin.email, admin.college_code, 'admin');
@@ -686,7 +674,8 @@ export default async function handler(req, res) {
                         collegeName: admin.college_name
                     });
                 }
-                return res.status(401).json({ success: false, message: 'Invalid admin credentials' });
+                // Generic error for security
+                return res.status(401).json({ success: false, message: 'Invalid email or password' });
             }
             else if (action === "sendAdminOtp") {
                 const { name, email, password, confirmPassword } = req.body;
