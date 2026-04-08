@@ -252,6 +252,37 @@
         let consecutiveMatches = 0;
         let currentLat = 0, currentLng = 0;
         let currentAccuracy = 0;
+        let hasMarkedInToday = false;
+        let attendanceWindow = { start: null, end: null };
+
+        function isWithinCollegeHours() {
+            if (!attendanceWindow.start || !attendanceWindow.end) return true;
+            
+            const now = new Date();
+            const IST = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Kolkata', hour: 'numeric', minute: 'numeric', hour12: false }).formatToParts(now);
+            const hours = parseInt(IST.find(p => p.type === 'hour').value);
+            const minutes = parseInt(IST.find(p => p.type === 'minute').value);
+            const currentMins = hours * 60 + minutes;
+
+            const parseToMins = (timeStr) => {
+                const [time, ampm] = timeStr.split(/\s+/);
+                let [h, m] = time.split(':').map(Number);
+                if (ampm) {
+                    if (ampm.toLowerCase() === 'pm' && h < 12) h += 12;
+                    if (ampm.toLowerCase() === 'am' && h === 12) h = 0;
+                }
+                return h * 60 + (m || 0);
+            };
+
+            const startMins = parseToMins(attendanceWindow.start);
+            const endMins = parseToMins(attendanceWindow.end);
+
+            if (startMins <= endMins) {
+                return currentMins >= startMins && currentMins <= endMins;
+            } else {
+                return currentMins >= startMins || currentMins <= endMins;
+            }
+        }
 
         // STEP 1: FETCH CAMPUS DATA FROM BACKEND
         async function initDashboard() {
@@ -307,6 +338,7 @@
                     radius = data.radius;
 
                     document.getElementById("campus-center").innerText = `${campusCenter.lat.toFixed(6)}, ${campusCenter.lng.toFixed(6)}`;
+                    attendanceWindow = { start: data.attendance_start_time, end: data.attendance_end_time };
 
                     // STEP 2: INITIALIZE MAP CORRECTLY (Radius Center)
                     if (!isGoogleMapsLoaded()) {
@@ -407,6 +439,7 @@
 
             // STEP 6: FIX ATTENDANCE LOGIC
             const currentStatus = isInside ? "IN" : "OUT";
+            const withinTime = isWithinCollegeHours();
             
             const badge = document.getElementById('presence-badge');
             if (isInside) {
@@ -417,13 +450,19 @@
                 badge.textContent = "❌ Outside Campus";
             }
 
-            // Hysteresis logic
+            // Automatic marking logic (Task 3)
+            if (isInside && withinTime && !hasMarkedInToday) {
+                console.log("Triggering auto-attendance: Inside and within hours.");
+                markAttendance("IN");
+            }
+
+            // Hysteresis logic for status changes (OUT tracking)
             if (currentStatus !== lastRealStatus) {
                 if (currentStatus === pendingStatus) {
                     consecutiveMatches++;
                     if (consecutiveMatches >= 2) {
                         lastRealStatus = currentStatus;
-                        markAttendance(currentStatus);
+                        if (currentStatus === "OUT") markAttendance("OUT");
                         consecutiveMatches = 0;
                     }
                 } else {
@@ -474,6 +513,13 @@
                         
                         if (data.action && data.action !== "none") {
                             showAlert(data.action === "checked-in" ? "✅ Checked In!" : "📤 Checked Out", true);
+                            if (data.action === "checked-in") {
+                                hasMarkedInToday = true;
+                                if (data.in_time) document.getElementById('display-checkin').textContent = data.in_time;
+                            }
+                            if (data.action === "checked-out") {
+                                if (data.out_time) document.getElementById('display-checkout').textContent = data.out_time;
+                            }
                         }
                     }
                 }
@@ -501,6 +547,7 @@
                 if (data.today) {
                     document.getElementById('display-checkin').textContent = data.today.check_in_time || '--:--';
                     document.getElementById('display-checkout').textContent = data.today.check_out_time || '--:--';
+                    if (data.today.check_in_time) hasMarkedInToday = true;
                 }
 
                 // Use logs from the same response (Task 5)

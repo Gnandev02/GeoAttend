@@ -290,7 +290,9 @@ export default async function handler(req, res) {
                 success: true,
                 distance: parseFloat(distance.toFixed(2)),
                 inside: isInside,
-                action: apiAction
+                action: apiAction,
+                in_time: todayRecord ? todayRecord.check_in_time : (apiAction === "checked-in" ? currentTime : null),
+                out_time: apiAction === "checked-out" ? currentTime : (todayRecord ? todayRecord.check_out_time : null)
             });
         }
 
