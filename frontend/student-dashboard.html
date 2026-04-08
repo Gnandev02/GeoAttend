@@ -166,6 +166,14 @@
             window.location.href = 'student-login.html';
         }
 
+        // --- DEVICE SECURITY: Generate unique device ID if not exists ---
+        let deviceId = localStorage.getItem('geoattend_device_id');
+        if (!deviceId) {
+            deviceId = "dev_" + Math.random().toString(36).substring(2, 15) + "_" + Date.now();
+            localStorage.setItem('geoattend_device_id', deviceId);
+        }
+        console.log("Device security active. ID:", deviceId);
+
         document.getElementById('user-name').textContent = user.name || 'Student';
         document.getElementById('user-info').textContent = `${user.rollNumber || ''} • ${user.email}`;
 
@@ -543,7 +551,8 @@
                     body: JSON.stringify({ 
                         lat: currentLat,
                         lng: currentLng,
-                        accuracy: currentAccuracy
+                        accuracy: currentAccuracy,
+                        device_id: localStorage.getItem('geoattend_device_id')
                     })
                 });
                 const data = await res.json();

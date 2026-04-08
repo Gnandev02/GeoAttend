@@ -210,15 +210,23 @@ export default async function handler(req, res) {
                 if (campus.attendance_end_date && today > new Date(campus.attendance_end_date)) return res.status(200).json({ success: false, message: "Academic period has ended." });
             }
 
+            const { device_id } = req.body;
+            if (!device_id) return res.status(400).json({ success: false, message: "Security failure: Missing device ID." });
+
             const check = await query('SELECT id FROM attendance WHERE student_id = $1 AND attendance_date = $2', [student.id, todayIST]);
             if (check.rows.length > 0) {
                 return res.status(200).json({ success: true, message: "Already marked today" });
             }
 
+            const deviceCheck = await query('SELECT id FROM attendance WHERE device_id = $1 AND attendance_date = $2', [device_id, todayIST]);
+            if (deviceCheck.rows.length > 0) {
+                return res.status(400).json({ success: false, message: "Proxy Alert: This device was already used to mark attendance today." });
+            }
+
             await query(
-                `INSERT INTO attendance (student_id, college_code, attendance_date, check_in_time, status, source)
-                 VALUES ($1, $2, $3, $4, 'Present', 'auto')`,
-                [student.id, student.college_code, todayIST, currentTime]
+                `INSERT INTO attendance (student_id, college_code, attendance_date, check_in_time, status, source, device_id)
+                 VALUES ($1, $2, $3, $4, 'Present', 'auto', $5)`,
+                [student.id, student.college_code, todayIST, currentTime, device_id]
             );
 
             console.log(`[Mark-Attendance] Success for student ${student.id} at ${currentTime}`);
@@ -229,10 +237,14 @@ export default async function handler(req, res) {
             const student = await protectStudent(req);
             if (!student) return res.status(401).json({ success: false, message: 'Not authorized as a student' });
 
-            const { lat, lng, accuracy } = req.body;
+            const { lat, lng, accuracy, device_id } = req.body;
             const latitude = Number(lat);
             const longitude = Number(lng);
             const userAccuracy = Number(accuracy) || null;
+
+            if (!device_id) {
+                return res.status(400).json({ success: false, message: "Security failure: Device validation missing." });
+            }
 
             if (isNaN(latitude) || isNaN(longitude)) {
                 return res.status(400).json({ success: false, message: "Invalid GPS coordinates" });
@@ -323,10 +335,16 @@ export default async function handler(req, res) {
             if (isInside) {
                 // IN LOGIC: Create check-in if none exists. If already checked in and marked as completed, do nothing for today.
                 if (!todayRecord) {
+                    // Check if device already used by someone else today
+                    const deviceCheck = await query('SELECT id FROM attendance WHERE device_id = $1 AND attendance_date = $2', [device_id, todayIST]);
+                    if (deviceCheck.rows.length > 0) {
+                        return res.status(400).json({ success: false, message: "Proxy alert: Device already used today by another student." });
+                    }
+
                     await query(
-                        `INSERT INTO attendance (student_id, college_code, attendance_date, check_in_time, status, location_accuracy, source) 
-                         VALUES ($1, $2, $3, $4, $5, $6, 'auto')`,
-                        [student.id, student.college_code, todayIST, currentTime, 'Present', userAccuracy]
+                        `INSERT INTO attendance (student_id, college_code, attendance_date, check_in_time, status, location_accuracy, source, device_id) 
+                         VALUES ($1, $2, $3, $4, $5, $6, 'auto', $7)`,
+                        [student.id, student.college_code, todayIST, currentTime, 'Present', userAccuracy, device_id]
                     );
                     apiAction = "checked-in";
                 } else {
