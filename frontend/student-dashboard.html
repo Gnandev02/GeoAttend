@@ -55,6 +55,16 @@
         <div class="flex-1 space-y-6">
             <!-- Dashboard Section -->
             <div id="dashboardSection" class="section space-y-6">
+                <div id="attendancePeriodBanner" class="hidden p-4 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center gap-3">
+                    <div class="p-2 rounded-lg bg-indigo-100 text-indigo-600">
+                        <i data-lucide="calendar" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-extrabold text-indigo-800 uppercase tracking-widest">Attendance Period</h4>
+                        <p id="attendancePeriodRange" class="text-[11px] text-indigo-600 font-medium">Loading period...</p>
+                    </div>
+                </div>
+
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <!-- Summary Cards -->
                 <div class="saas-card p-6 flex items-center gap-5">
@@ -339,6 +349,14 @@
 
                     document.getElementById("campus-center").innerText = `${campusCenter.lat.toFixed(6)}, ${campusCenter.lng.toFixed(6)}`;
                     attendanceWindow = { start: data.attendance_start_time, end: data.attendance_end_time };
+                    
+                    // Attendance Period Display (Task 5)
+                    if (data.attendance_start_date && data.attendance_end_date) {
+                        const start = new Date(data.attendance_start_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+                        const end = new Date(data.attendance_end_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+                        document.getElementById("attendancePeriodRange").innerText = `${start} – ${end}`;
+                        document.getElementById("attendancePeriodBanner").classList.remove("hidden");
+                    }
 
                     // STEP 2: INITIALIZE MAP CORRECTLY (Radius Center)
                     if (!isGoogleMapsLoaded()) {

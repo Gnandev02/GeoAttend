@@ -79,7 +79,9 @@ export default async function handler(req, res) {
             });
 
             const result = await query(
-                `SELECT name, latitude, longitude, radius, attendance_start_time, attendance_end_time, college_code, polygon_coordinates 
+                `SELECT name, latitude, longitude, radius, attendance_start_time, attendance_end_time, 
+                        attendance_start_date, attendance_end_date,
+                        college_code, polygon_coordinates 
                  FROM campus_setup 
                  WHERE college_code = $1`,
                 [user.college_code]
@@ -129,6 +131,8 @@ export default async function handler(req, res) {
                 radius: Number(row.radius),
                 attendance_start_time: row.attendance_start_time,
                 attendance_end_time: row.attendance_end_time,
+                attendance_start_date: row.attendance_start_date,
+                attendance_end_date: row.attendance_end_date,
                 college_code: row.college_code,
                 branch_code: row.college_code, // terminology match
                 college_name: collegeName,
@@ -207,11 +211,27 @@ export default async function handler(req, res) {
             const { date: todayIST, time: currentTime } = getIST();
 
             const geofenceQuery = await query(
-                'SELECT latitude, longitude, radius, attendance_start_time, attendance_end_time, polygon_coordinates FROM campus_setup WHERE college_code = $1', 
+                'SELECT latitude, longitude, radius, attendance_start_time, attendance_end_time, attendance_start_date, attendance_end_date, polygon_coordinates FROM campus_setup WHERE college_code = $1', 
                 [student.college_code]
             );
             if (geofenceQuery.rows.length === 0) return res.status(500).json({ success: false, message: 'Campus geofence not configured.' });
             const geofence = geofenceQuery.rows[0];
+
+            // Date Range Check (Requirement 4)
+            if (geofence.attendance_start_date && geofence.attendance_end_date) {
+                const today = new Date(todayIST);
+                const startDate = new Date(geofence.attendance_start_date);
+                const endDate = new Date(geofence.attendance_end_date);
+                
+                if (today < startDate || today > endDate) {
+                    return res.status(200).json({
+                        success: false,
+                        message: `Attendance is not allowed on this date (${todayIST}). Allowed: ${geofence.attendance_start_date.toISOString().split('T')[0]} to ${geofence.attendance_end_date.toISOString().split('T')[0]}`,
+                        tracking_inactive: true,
+                        action: "none"
+                    });
+                }
+            }
 
             let isInside = false;
             let distance = 0;
@@ -312,6 +332,18 @@ export default async function handler(req, res) {
                 return res.status(403).json({ success: false, message: 'Student not found in your institution.' });
             }
 
+            // Date Range Check
+            const campusQ = await query('SELECT attendance_start_date, attendance_end_date FROM campus_setup WHERE college_code = $1', [admin.college_code]);
+            if (campusQ.rows.length > 0) {
+                const { attendance_start_date, attendance_end_date } = campusQ.rows[0];
+                if (attendance_start_date && attendance_end_date) {
+                    const targetDate = new Date(date);
+                    if (targetDate < new Date(attendance_start_date) || targetDate > new Date(attendance_end_date)) {
+                        return res.status(400).json({ success: false, message: "Date is outside allowed attendance period." });
+                    }
+                }
+            }
+
             const existingRecord = await query('SELECT id FROM attendance WHERE student_id = $1 AND attendance_date = $2', [student_id, date]);
             
             let durationMinutes = 0;
@@ -330,7 +362,7 @@ export default async function handler(req, res) {
             } else {
                 await query(`
                     INSERT INTO attendance (student_id, college_code, attendance_date, check_in_time, check_out_time, status, duration_minutes, source) 
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, 'manual')
+                    SELECT $1, $2, $3, $4, $5, $6, $7, 'manual'
                 `, [student_id, admin.college_code, date, check_in, check_out || null, status, durationMinutes]);
             }
 
@@ -517,6 +549,21 @@ export default async function handler(req, res) {
 
             const { studentId, date, checkInTime, checkOutTime } = req.body;
             if (!studentId || !date) return res.status(400).json({ success: false, message: "Student ID and Date are required" });
+
+            // Date Range Check for Manual Mark
+            const campusQ = await query('SELECT attendance_start_date, attendance_end_date FROM campus_setup WHERE college_code = $1', [admin.college_code]);
+            if (campusQ.rows.length > 0) {
+                const config = campusQ.rows[0];
+                if (config.attendance_start_date && config.attendance_end_date) {
+                    const targetDate = new Date(date);
+                    if (targetDate < new Date(config.attendance_start_date) || targetDate > new Date(config.attendance_end_date)) {
+                        return res.status(400).json({ 
+                            success: false, 
+                            message: `Attendance date ${date} is outside the allowed academic period.` 
+                        });
+                    }
+                }
+            }
 
             // Verify student belongs to same college
             const checkStudent = await query('SELECT college_code FROM students WHERE id = $1', [studentId]);
@@ -979,7 +1026,6 @@ export default async function handler(req, res) {
                 
                 // Extra validation: email required
                 if (!email) return res.status(400).json({ message: "Email is required" });
-if (!email) return res.status(400).json({ message: "Email is required" });
 
                 // Multi-campus uniqueness check:
                 // Check if this student email already exists IN THIS COLLEGE.
@@ -1042,14 +1088,14 @@ if (!email) return res.status(400).json({ message: "Email is required" });
                     radius,
                     attendance_start_time,
                     attendance_end_time,
+                    attendance_start_date,
+                    attendance_end_date,
                     polygonCoordinates
                 } = req.body;
 
                 if (!admin.college_code) {
                     return res.status(400).json({ error: "Admin college code missing. Please contact support." });
                 }
-
-                console.log("Incoming Data:", req.body);
 
                 if (
                     latitude === undefined ||
@@ -1076,8 +1122,8 @@ if (!email) return res.status(400).json({ message: "Email is required" });
 
                 const result = await query(`
                     INSERT INTO campus_setup 
-                    (college_code, name, latitude, longitude, radius, attendance_start_time, attendance_end_time, polygon_coordinates)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                    (college_code, name, latitude, longitude, radius, attendance_start_time, attendance_end_time, attendance_start_date, attendance_end_date, polygon_coordinates)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
                     ON CONFLICT (college_code)
                     DO UPDATE SET
                         name = EXCLUDED.name,

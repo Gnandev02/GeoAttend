@@ -488,6 +488,17 @@
                                 <p class="text-[10px] text-slate-400 font-medium">Leave blank for anytime</p>
                             </div>
                         </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Attendance Start Date</label>
+                                <input id="geo-start-date" type="date" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all" />
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Attendance End Date</label>
+                                <input id="geo-end-date" type="date" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all" />
+                            </div>
+                        </div>
                         </fieldset>
 
                         <div class="pt-6 border-t border-slate-50 flex justify-end gap-4">
@@ -1071,12 +1082,19 @@
                 document.getElementById('geo-college-name').value = mainCampus.college_name || mainCampus.name || '';
                 document.getElementById('geo-college-code').value = mainCampus.college_code || '';
                 
-                document.getElementById('geo-lat').value = mainCampus.latitude || '0';
-                document.getElementById('geo-lng').value = mainCampus.longitude || '0';
-                document.getElementById('geo-radius').value = mainCampus.radius || '500';
+                document.getElementById('geo-start-time').value = mainCampus.attendance_start_time || '';
+                document.getElementById('geo-end-time').value = mainCampus.attendance_end_time || '';
                 
-                if (mainCampus.attendance_start_time) document.getElementById('geo-start-time').value = mainCampus.attendance_start_time;
-                if (mainCampus.attendance_end_time) document.getElementById('geo-end-time').value = mainCampus.attendance_end_time;
+                // Set dates
+                if (mainCampus.attendance_start_date) {
+                    const d = new Date(mainCampus.attendance_start_date);
+                    document.getElementById('geo-start-date').value = d.toISOString().split('T')[0];
+                }
+                if (mainCampus.attendance_end_date) {
+                    const d = new Date(mainCampus.attendance_end_date);
+                    document.getElementById('geo-end-date').value = d.toISOString().split('T')[0];
+                }
+                document.getElementById('geo-radius').value = mainCampus.radius || '500';
                 
                 // Polygon logic
                 currentPolygonPoints = [];
@@ -1156,6 +1174,16 @@
                 }
             }
 
+            const attendanceStartDate = document.getElementById('geo-start-date').value;
+            const attendanceEndDate = document.getElementById('geo-end-date').value;
+
+            if (attendanceStartDate && attendanceEndDate) {
+                if (new Date(attendanceStartDate) > new Date(attendanceEndDate)) {
+                    alert("Attendance End Date must be later than Start Date.");
+                    return;
+                }
+            }
+
             if (currentPolygonPoints.length < 3) {
                 alert("Please provide at least 3 points for the geofence boundary.");
                 return;
@@ -1170,6 +1198,8 @@
                 radius: 500,
                 attendance_start_time: attendanceStartTime,
                 attendance_end_time: attendanceEndTime,
+                attendance_start_date: attendanceStartDate,
+                attendance_end_date: attendanceEndDate,
                 polygonCoordinates: currentPolygonPoints
             };
 

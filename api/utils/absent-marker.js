@@ -10,7 +10,7 @@ async function markAbsentStudents() {
     try {
         // 1. Fetch all campuses that have an attendance_end_time configured
         const campuses = await query(`
-            SELECT college_code, attendance_end_time 
+            SELECT college_code, attendance_end_time, attendance_start_date, attendance_end_date
             FROM campus_setup 
             WHERE attendance_end_time IS NOT NULL AND attendance_end_time != ''
         `);
@@ -18,6 +18,17 @@ async function markAbsentStudents() {
         for (const campus of campuses.rows) {
             const endMins = timeStringToMinutes(campus.attendance_end_time);
             
+            // Check Date Range (Requirement 6)
+            if (campus.attendance_start_date && campus.attendance_end_date) {
+                const today = new Date(todayIST);
+                const start = new Date(campus.attendance_start_date);
+                const end = new Date(campus.attendance_end_date);
+                if (today < start || today > end) {
+                    console.log(`[Absent-Marker] Skipping Campus ${campus.college_code}: Outside Attendance Period.`);
+                    continue;
+                }
+            }
+
             // Check if global current time is past this campus's end time
             // Or if we are running at very late night (e.g., after 9 PM) we mark for all
             if (currMins > endMins || currMins < 300) { 
