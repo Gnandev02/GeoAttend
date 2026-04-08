@@ -564,6 +564,36 @@ export default async function handler(req, res) {
             return res.status(200).json({ success: true, message: "Attendance marked successfully" });
         }
 
+        // --- 3d. STUDENT PROFILE ---
+        else if (action === "get-student-profile") {
+            const student = await protectStudent(req);
+            if (!student) return res.status(401).json({ success: false, message: "Unauthorized" });
+
+            const result = await query(
+                `SELECT s.name, s.email, s.roll_number, s.department, s.college_code, s.profile_image, c.name as campus_name
+                 FROM students s
+                 LEFT JOIN campus_setup c ON s.college_code = c.college_code
+                 WHERE s.id = $1`,
+                [student.id]
+            );
+
+            if (result.rows.length === 0) return res.status(404).json({ success: false, message: "Student not found" });
+
+            return res.status(200).json({ success: true, data: result.rows[0] });
+        }
+
+        else if (action === "upload-student-image") {
+            const student = await protectStudent(req);
+            if (!student) return res.status(401).json({ success: false, message: "Unauthorized" });
+
+            const { profileImage } = req.body;
+            if (!profileImage) return res.status(400).json({ success: false, message: "No image provided" });
+
+            await query('UPDATE students SET profile_image = $1 WHERE id = $2', [profileImage, student.id]);
+
+            return res.status(200).json({ success: true, message: "Profile image updated" });
+        }
+
         // --- 4. AUTHENTICATION ---
         else if (action === "auth-login" || action === "studentLogin" || action === "adminLogin" || action === "adminSignup" || action === "sendAdminOtp" || action === "forgotPassword" || action === "verifyResetOTP" || action === "resetPassword") {
             // Move destructuring into specific actions to avoid shadowing and confusion

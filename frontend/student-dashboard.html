@@ -45,13 +45,16 @@
                 </button>
             </div>
             <div class="p-4 space-y-1.5 flex flex-col">
-                <button class="tab-btn active"><i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard</button>
+                <button id="nav-dashboard" onclick="showSection('dashboardSection')" class="tab-btn active"><i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard</button>
+                <button id="nav-profile" onclick="showSection('profileSection')" class="tab-btn inactive"><i data-lucide="user" class="w-4 h-4"></i> Profile</button>
                 <button onclick="window.location.href='student-attendance.html'" class="tab-btn inactive"><i data-lucide="clipboard-list" class="w-4 h-4"></i> Attendance Records</button>
                 <button onclick="window.location.href='change-password.html'" class="tab-btn inactive"><i data-lucide="lock" class="w-4 h-4"></i> Change Password</button>
             </div>
         </div>
 
         <div class="flex-1 space-y-6">
+            <!-- Dashboard Section -->
+            <div id="dashboardSection" class="section space-y-6">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <!-- Summary Cards -->
                 <div class="saas-card p-6 flex items-center gap-5">
@@ -108,6 +111,37 @@
                 <div id="logs-container" class="divide-y divide-slate-100"></div>
             </div>
         </div>
+
+            <!-- Profile Section -->
+            <div id="profileSection" class="section hidden space-y-6">
+                <div class="saas-card p-8 flex flex-col items-center">
+                    <div class="relative group">
+                        <img id="profileImg" src="https://ui-avatars.com/api/?name=S&background=random" class="w-32 h-32 rounded-full border-4 border-slate-50 object-cover shadow-lg">
+                        <label for="imageUpload" class="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
+                            <i data-lucide="camera" class="text-white w-6 h-6"></i>
+                            <input type="file" id="imageUpload" class="hidden" accept="image/*" onchange="previewAndUpload(event)">
+                        </label>
+                    </div>
+                    <h2 id="profileName" class="text-2xl font-bold text-slate-900 mt-6">Student Name</h2>
+                    <p id="profileRollNum" class="text-slate-500 font-medium">Roll Number</p>
+                    
+                    <div class="w-full max-w-md mt-8 space-y-4">
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Email Address</p>
+                            <p id="profileEmail" class="font-semibold text-slate-700">email@example.com</p>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Department</p>
+                            <p id="profileDept" class="font-semibold text-slate-700">Department Name</p>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Campus</p>
+                            <p id="profileCampus" class="font-semibold text-slate-700">Campus Name</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -120,6 +154,84 @@
 
         document.getElementById('user-name').textContent = user.name || 'Student';
         document.getElementById('user-info').textContent = `${user.rollNumber || ''} • ${user.email}`;
+
+        function showSection(sectionId) {
+            document.querySelectorAll(".section").forEach(sec => {
+                sec.classList.add("hidden");
+            });
+            document.getElementById(sectionId).classList.remove("hidden");
+
+            // Update Nav UI
+            document.querySelectorAll(".tab-btn").forEach(btn => {
+                btn.classList.replace("active", "inactive");
+            });
+            
+            if (sectionId === 'dashboardSection') {
+                document.getElementById('nav-dashboard').classList.replace("inactive", "active");
+            } else if (sectionId === 'profileSection') {
+                document.getElementById('nav-profile').classList.replace("inactive", "active");
+                fetchProfile();
+            }
+        }
+
+        async function fetchProfile() {
+            try {
+                const res = await fetch("/api/main?action=get-student-profile", {
+                    headers: { "Authorization": "Bearer " + token }
+                });
+                const { data } = await res.json();
+                if (data) {
+                    document.getElementById("profileName").innerText = data.name;
+                    document.getElementById("profileEmail").innerText = data.email;
+                    document.getElementById("profileRollNum").innerText = data.roll_number;
+                    document.getElementById("profileDept").innerText = data.department || 'Not Assigned';
+                    document.getElementById("profileCampus").innerText = data.campus_name || 'GeoAttend Campus';
+                    if (data.profile_image) {
+                        document.getElementById("profileImg").src = data.profile_image;
+                        document.getElementById("user-initial").innerHTML = `<img src="${data.profile_image}" class="w-full h-full rounded-full object-cover">`;
+                    } else {
+                        document.getElementById("profileImg").src = `https://ui-avatars.com/api/?name=${data.name}&background=random`;
+                    }
+                }
+            } catch (err) {
+                console.error("Profile fetch error:", err);
+            }
+        }
+
+        async function previewAndUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const base64 = e.target.result;
+                document.getElementById("profileImg").src = base64;
+                
+                // Upload to backend
+                try {
+                    const res = await fetch("/api/main?action=upload-student-image", {
+                        method: "POST",
+                        headers: { 
+                            "Content-Type": "application/json",
+                            "Authorization": "Bearer " + token 
+                        },
+                        body: JSON.stringify({ profileImage: base64 })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        showAlert("Profile image updated!", true);
+                        fetchProfile(); // refresh image in sidebar too
+                    } else {
+                        showAlert("Upload failed", false);
+                    }
+                } catch (err) {
+                    console.error("Upload error:", err);
+                    showAlert("An error occurred during upload", false);
+                }
+            };
+            reader.readAsDataURL(file);
+        }
 
         let map, marker, radius, campusCenter, campusPolygonData, campusPolygon;
         let lastRealStatus = null;
@@ -207,6 +319,7 @@
                 }
 
                 fetchTodayStats();
+                fetchProfile(); // Load profile image for sidebar
                 // Wait for user to click 'Start Tracking'
                 // startTracking();
                 
