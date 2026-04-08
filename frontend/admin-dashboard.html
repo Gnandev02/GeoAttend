@@ -1381,9 +1381,12 @@
                 console.log("Manual Attendance Response:", data);
 
                 if (res.ok && data.success) {
+                    console.log("Manual Attendance success - Refreshing UI");
                     document.getElementById('manualAttendanceModal').classList.add('hidden');
                     document.getElementById('manual-attendance-form').reset();
-                    fetchAdminData();
+                    await fetchAdminData();
+                    // Requirement 6: Real-time Sync
+                    window.location.reload(); 
                 } else {
                     alert(data.message || "Manual marking failed");
                 }
@@ -1498,8 +1501,11 @@
                 console.log("Attendance Update Response:", data);
 
                 if (res.ok && data.success) {
+                    console.log("Attendance update success - Refreshing UI");
                     document.getElementById('editAttendanceModal').classList.add('hidden');
-                    fetchAdminData();
+                    await fetchAdminData();
+                    // Requirement 6: Real-time Sync
+                    window.location.reload();
                 } else {
                     alert(data.message || "Update failed");
                 }

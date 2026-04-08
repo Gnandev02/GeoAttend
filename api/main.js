@@ -490,7 +490,7 @@ export default async function handler(req, res) {
                 // Ensure date comparison works with database date objects
                 const presentToday = result.rows.filter(r => {
                     const rDate = r.date instanceof Date ? r.date.toISOString().substring(0, 10) : String(r.date).substring(0, 10);
-                    return rDate === todayIST;
+                    return rDate === todayIST && (r.status === 'Present' || r.status === 'completed');
                 }).length;
 
                 // Task: Transform status for UI (Present/completed -> Present)
