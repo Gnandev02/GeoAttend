@@ -301,8 +301,21 @@
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.message);
 
-                if (data.polygon_coordinates && data.polygon_coordinates.length >= 3) {
-                    campusPolygonData = data.polygon_coordinates;
+                // Global configs (Task 1)
+                attendanceWindow = { start: data.attendance_start_time, end: data.attendance_end_time };
+                radius = data.radius;
+                const polygonPoints = data.polygon_coordinates || data.polygon_points || [];
+
+                // Attendance Period Display
+                if (data.attendance_start_date && data.attendance_end_date) {
+                    const start = new Date(data.attendance_start_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+                    const end = new Date(data.attendance_end_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+                    document.getElementById("attendancePeriodRange").innerText = `${start} – ${end}`;
+                    document.getElementById("attendancePeriodBanner").classList.remove("hidden");
+                }
+
+                if (polygonPoints.length >= 3) {
+                    campusPolygonData = polygonPoints;
                     
                     // Dynamically calculate campus center (centroid of polygon)
                     let latSum = 0, lngSum = 0;
@@ -345,18 +358,7 @@
 
                 } else {
                     campusCenter = { lat: parseFloat(data.latitude), lng: parseFloat(data.longitude) };
-                    radius = data.radius;
-
                     document.getElementById("campus-center").innerText = `${campusCenter.lat.toFixed(6)}, ${campusCenter.lng.toFixed(6)}`;
-                    attendanceWindow = { start: data.attendance_start_time, end: data.attendance_end_time };
-                    
-                    // Attendance Period Display (Task 5)
-                    if (data.attendance_start_date && data.attendance_end_date) {
-                        const start = new Date(data.attendance_start_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
-                        const end = new Date(data.attendance_end_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-                        document.getElementById("attendancePeriodRange").innerText = `${start} – ${end}`;
-                        document.getElementById("attendancePeriodBanner").classList.remove("hidden");
-                    }
 
                     // STEP 2: INITIALIZE MAP CORRECTLY (Radius Center)
                     if (!isGoogleMapsLoaded()) {
@@ -471,11 +473,12 @@
 
             if (campusPolygon) {
                 isInside = google.maps.geometry.poly.containsLocation(userPos, campusPolygon);
+                console.log(`[Geofence] Inside: ${isInside} | Student: ${lat},${lng} | Polygon vertices: ${campusPolygonData.length}`);
                 
                 if (isInside) {
                     document.getElementById("distance").innerText = "0 m";
                 } else {
-                    const d = getMinDistance({lat, lng}, currentPolygonPoints);
+                    const d = getMinDistance({lat, lng}, campusPolygonData);
                     document.getElementById("distance").innerText = `${d} m away`;
                 }
             } else {
