@@ -590,6 +590,16 @@
             }
         }
 
+        const fmtDate = (dateStr) => {
+            if (!dateStr) return 'N/A';
+            const date = new Date(dateStr);
+            return date.toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric"
+            });
+        };
+
         // STEP 8: REMOVE HARDCODED UI & FETCH FROM BACKEND
         async function fetchTodayStats() {
             try {
@@ -617,7 +627,7 @@
                     const container = document.getElementById('logs-container');
                     container.innerHTML = logs.map(l => `
                         <div class="p-4 flex justify-between items-center text-sm">
-                            <div><p class="font-bold text-slate-900">${l.date}</p><p class="text-slate-400">${l.in_time} - ${l.out_time || '...'}</p></div>
+                            <div><p class="font-bold text-slate-900">${fmtDate(l.date)}</p><p class="text-slate-400">${l.in_time} - ${l.out_time || '...'}</p></div>
                             <span class="${(l.status === 'Present' || l.status === 'completed') ? 'badge-success' : 'badge-danger'}">${l.status === 'completed' ? 'Present' : l.status}</span>
                         </div>`).join('');
                 }
