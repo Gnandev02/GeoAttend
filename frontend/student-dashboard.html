@@ -525,7 +525,11 @@
 
         // STEP 7: CALL BACKEND FOR ATTENDANCE
         async function markAttendance(type) {
+            // Task: Prevent redundant in-marking
+            if (type === "IN" && hasMarkedInToday) return;
+
             try {
+                console.log(`[Frontend] Attempting to mark attendance: ${type}`);
                 const res = await fetch("/api/main?action=track", {
                     method: "POST",
                     headers: { 
@@ -541,6 +545,12 @@
                 });
                 const data = await res.json();
                 console.log("Attendance response:", data);
+
+                if (res.ok && data.action === "checked-in") {
+                    hasMarkedInToday = true;
+                    console.log("[Frontend] Auto-attendance check-in successful.");
+                }
+
                 if (!res.ok) {
                     showAlert(data.message || data.error || "Attendance failed", false);
                 } else {

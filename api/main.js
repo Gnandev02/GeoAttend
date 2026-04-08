@@ -195,7 +195,37 @@ export default async function handler(req, res) {
         }
 
         // --- 2. ATTENDANCE MARKING / TRACKING (Unified Action) ---
-        else if (action === "mark-attendance" || action === "track" || action === "attendance") {
+        else if (action === "mark-attendance" || action === "mark") {
+            const student = await protectStudent(req);
+            if (!student) return res.status(401).json({ success: false, message: 'Not authorized as a student' });
+
+            const { date: todayIST, time: currentTime } = getIST();
+
+            // Check if campus is in active period (Task requirement 5)
+            const campusQ = await query('SELECT attendance_start_date, attendance_end_date, attendance_start_time, attendance_end_time FROM campus_setup WHERE college_code = $1', [student.college_code]);
+            if (campusQ.rows.length > 0) {
+                const campus = campusQ.rows[0];
+                const today = new Date(todayIST);
+                if (campus.attendance_start_date && today < new Date(campus.attendance_start_date)) return res.status(200).json({ success: false, message: "Academic period not started yet." });
+                if (campus.attendance_end_date && today > new Date(campus.attendance_end_date)) return res.status(200).json({ success: false, message: "Academic period has ended." });
+            }
+
+            const check = await query('SELECT id FROM attendance WHERE student_id = $1 AND attendance_date = $2', [student.id, todayIST]);
+            if (check.rows.length > 0) {
+                return res.status(200).json({ success: true, message: "Already marked today" });
+            }
+
+            await query(
+                `INSERT INTO attendance (student_id, college_code, attendance_date, check_in_time, status, source)
+                 VALUES ($1, $2, $3, $4, 'Present', 'auto')`,
+                [student.id, student.college_code, todayIST, currentTime]
+            );
+
+            console.log(`[Mark-Attendance] Success for student ${student.id} at ${currentTime}`);
+            return res.status(200).json({ success: true, message: "Attendance marked successfully" });
+        }
+
+        else if (action === "track" || action === "attendance") {
             const student = await protectStudent(req);
             if (!student) return res.status(401).json({ success: false, message: 'Not authorized as a student' });
 
@@ -236,8 +266,17 @@ export default async function handler(req, res) {
             let isInside = false;
             let distance = 0;
             
-            if (geofence.polygon_coordinates && Array.isArray(geofence.polygon_coordinates) && geofence.polygon_coordinates.length >= 3) {
-                isInside = isPointInPolygon(latitude, longitude, geofence.polygon_coordinates);
+            // Handle stringified polygon coordinates (Task 1)
+            let polygonPoints = [];
+            try {
+                polygonPoints = typeof geofence.polygon_coordinates === 'string' ? JSON.parse(geofence.polygon_coordinates) : (geofence.polygon_coordinates || []);
+            } catch (e) {
+                console.error("Polygon parsing error:", e);
+                polygonPoints = [];
+            }
+
+            if (polygonPoints.length >= 3) {
+                isInside = isPointInPolygon(latitude, longitude, polygonPoints);
             } else {
                 distance = calculateDistance(latitude, longitude, Number(geofence.latitude), Number(geofence.longitude));
                 if (distance === null) return res.status(400).json({ success: false, message: "Distance calculation failed" });
@@ -272,12 +311,14 @@ export default async function handler(req, res) {
 
             let apiAction = "none";
             
-            // Fetch today's record (Task 4: ensure only one per student per day)
+            // Fetch today's record (Task 2 & 4)
             const result = await query(
                 'SELECT * FROM attendance WHERE student_id = $1 AND attendance_date = $2 ORDER BY id DESC LIMIT 1', 
                 [student.id, todayIST]
             );
             const todayRecord = result.rows[0];
+
+            console.log(`[Tracking] Student ${student.id} | Inside: ${isInside} | Record Exists: ${!!todayRecord}`);
 
             if (isInside) {
                 // IN LOGIC: Create check-in if none exists. If already checked in and marked as completed, do nothing for today.
