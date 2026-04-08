@@ -6,7 +6,7 @@ const pool = new Pool({
 
 async function run() {
     try {
-        const studentEmail = 'geoattend20@gmail.com';
+        const studentEmail = 'geoattend01@gmail.com';
         console.log("--- Checking FALLBACK DB for student:", studentEmail);
         const stu = await pool.query("SELECT id, name, email, college_code FROM students WHERE email = $1", [studentEmail]);
         if (stu.rows.length === 0) {
