@@ -108,10 +108,10 @@ const DemoDashboard = () => {
                             </div>
                             <div className="divide-y divide-slate-100">
                                 {[
-                                    { name: "John Doe", time: "09:02 AM", status: "Present" },
-                                    { name: "Sarah Connor", time: "09:05 AM", status: "Present" },
-                                    { name: "Mike Wazowski", time: "09:12 AM", status: "Rejected" },
-                                    { name: "Peter Parker", time: "09:15 AM", status: "Present" },
+                                    { name: "Gnandev", time: "09:02 AM", status: "Present" },
+                                    { name: "Praveen", time: "09:05 AM", status: "Present" },
+                                    { name: "Charan", time: "09:12 AM", status: "Rejected" },
+                                    { name: "Kamal", time: "09:15 AM", status: "Present" },
                                 ].map((item, i) => (
                                     <div key={i} className="p-4 flex justify-between items-center hover:bg-slate-50 transition-colors">
                                         <div className="flex items-center gap-3">

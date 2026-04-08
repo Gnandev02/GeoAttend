@@ -698,20 +698,20 @@
         async function fetchAdminData() {
             if (isDemo) {
                 const studentsData = [
-                    { _id: '1', userId: { name: 'Alice Smith', email: 'alice@demo.edu' }, rollNumber: 'CS-001', department: 'Computer Science' },
-                    { _id: '2', userId: { name: 'Bob Jones', email: 'bob@demo.edu' }, rollNumber: 'CS-002', department: 'Computer Science' },
-                    { _id: '3', userId: { name: 'Charlie Brown', email: 'charlie@demo.edu' }, rollNumber: 'EE-001', department: 'Electrical' },
-                    { _id: '4', userId: { name: 'Diana Prince', email: 'diana@demo.edu' }, rollNumber: 'ME-001', department: 'Mechanical' },
+                    { _id: '1', userId: { name: 'Gnandev', email: 'gnandev@demo.edu' }, rollNumber: 'CS-001', department: 'Computer Science' },
+                    { _id: '2', userId: { name: 'Praveen', email: 'praveen@demo.edu' }, rollNumber: 'CS-002', department: 'Computer Science' },
+                    { _id: '3', userId: { name: 'Charan', email: 'charan@demo.edu' }, rollNumber: 'EE-001', department: 'Electrical' },
+                    { _id: '4', userId: { name: 'Kamal', email: 'kamal@demo.edu' }, rollNumber: 'ME-001', department: 'Mechanical' },
                     { _id: '5', userId: { name: 'Evan Wright', email: 'evan@demo.edu' }, rollNumber: 'CS-003', department: 'Computer Science' }
                 ];
                 
                 const statsData = { overall: { totalStudents: 142, Present: 128 } };
                 
                 allLogs = [
-                    { date: new Date().toISOString(), studentId: { name: 'Alice Smith', rollNumber: 'CS-001' }, checkinTime: '09:00 AM', checkoutTime: '04:00 PM', status: 'Present' },
-                    { date: new Date().toISOString(), studentId: { name: 'Bob Jones', rollNumber: 'CS-002' }, checkinTime: '09:15 AM', checkoutTime: '', status: 'Present' },
-                    { date: new Date().toISOString(), studentId: { name: 'Charlie Brown', rollNumber: 'EE-001' }, checkinTime: '10:00 AM', checkoutTime: '02:00 PM', status: 'Present' },
-                    { date: new Date(Date.now() - 86400000).toISOString(), studentId: { name: 'Diana Prince', rollNumber: 'ME-001' }, checkinTime: '', checkoutTime: '', status: 'Absent' }
+                    { date: new Date().toISOString(), studentId: { name: 'Gnandev', rollNumber: 'CS-001' }, checkinTime: '09:00 AM', checkoutTime: '04:00 PM', status: 'Present' },
+                    { date: new Date().toISOString(), studentId: { name: 'Praveen', rollNumber: 'CS-002' }, checkinTime: '09:15 AM', checkoutTime: '', status: 'Present' },
+                    { date: new Date().toISOString(), studentId: { name: 'Charan', rollNumber: 'EE-001' }, checkinTime: '10:00 AM', checkoutTime: '02:00 PM', status: 'Present' },
+                    { date: new Date(Date.now() - 86400000).toISOString(), studentId: { name: 'Kamal', rollNumber: 'ME-001' }, checkinTime: '', checkoutTime: '', status: 'Absent' }
                 ];
 
                 const campusData = { name: "Main Campus Geofence", latitude: 12.9716, longitude: 77.5946, radius: 500 };
