@@ -438,6 +438,30 @@
             calculateDistance(lat, lng);
         }
 
+        function getDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371e3;
+            const p1 = lat1 * Math.PI/180;
+            const p2 = lat2 * Math.PI/180;
+            const dPhi = (lat2-lat1) * Math.PI/180;
+            const dLambda = (lon2-lon1) * Math.PI/180;
+
+            const a = Math.sin(dPhi/2) * Math.sin(dPhi/2) +
+                      Math.cos(p1) * Math.cos(p2) *
+                      Math.sin(dLambda/2) * Math.sin(dLambda/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c; // meters
+        }
+
+        function getMinDistance(student, polygon) {
+            let min = Infinity;
+            if (!polygon || polygon.length === 0) return 0;
+            polygon.forEach(point => {
+                const d = getDistance(student.lat, student.lng, point.lat, point.lng);
+                if (d < min) min = d;
+            });
+            return Math.round(min);
+        }
+
         // STEP 5: FIX DISTANCE CALCULATION
         function calculateDistance(lat, lng) {
             if (!campusCenter) return;
@@ -447,7 +471,13 @@
 
             if (campusPolygon) {
                 isInside = google.maps.geometry.poly.containsLocation(userPos, campusPolygon);
-                document.getElementById("distance").innerText = isInside ? "Inside Campus" : "Outside Campus";
+                
+                if (isInside) {
+                    document.getElementById("distance").innerText = "0 m";
+                } else {
+                    const d = getMinDistance({lat, lng}, currentPolygonPoints);
+                    document.getElementById("distance").innerText = `${d} m away`;
+                }
             } else {
                 const campusPos = new google.maps.LatLng(campusCenter.lat, campusCenter.lng);
                 const distance = google.maps.geometry.spherical.computeDistanceBetween(userPos, campusPos);
