@@ -1132,6 +1132,8 @@ export default async function handler(req, res) {
                         radius = EXCLUDED.radius,
                         attendance_start_time = EXCLUDED.attendance_start_time,
                         attendance_end_time = EXCLUDED.attendance_end_time,
+                        attendance_start_date = EXCLUDED.attendance_start_date,
+                        attendance_end_date = EXCLUDED.attendance_end_date,
                         polygon_coordinates = EXCLUDED.polygon_coordinates
                     RETURNING *
                 `, [
@@ -1142,6 +1144,8 @@ export default async function handler(req, res) {
                     rad,
                     attendance_start_time || null,
                     attendance_end_time || null,
+                    attendance_start_date || null,
+                    attendance_end_date || null,
                     JSON.stringify(polygonCoordinates)
                 ]);
 
