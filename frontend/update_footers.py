@@ -30,8 +30,6 @@ new_footer = """    <!-- Footer -->
                     <ul class="space-y-2 text-sm text-slate-500">
                         <li><a href="about.html" class="hover:text-slate-900 transition-colors">About</a></li>
                         <li><a href="#contact" class="hover:text-slate-900 transition-colors">Contact</a></li>
-                        <li><a href="https://github.com/Gnandev12" target="_blank"
-                                class="hover:text-slate-900 transition-colors">GitHub</a></li>
                     </ul>
                 </div>
                 <div>
@@ -46,7 +44,6 @@ new_footer = """    <!-- Footer -->
                     <ul class="space-y-2 text-sm text-slate-500">
                         <li><span class="block text-slate-900 font-medium">Mobile:</span> +91 9121247185</li>
                         <li><span class="block text-slate-900 font-medium">Email:</span> <a href="mailto:geoattend20@gmail.com" class="hover:text-brand-600 transition-colors break-all">geoattend20@gmail.com</a></li>
-                        <li><span class="block text-slate-900 font-medium">GitHub:</span> <a href="https://github.com/Gnandev12" target="_blank" class="hover:text-brand-600 transition-colors break-all">github.com/Gnandev12</a></li>
                     </ul>
                 </div>
             </div>
@@ -58,7 +55,7 @@ new_footer = """    <!-- Footer -->
     </footer>"""
 
 files_to_update = ['compare.html', 'features.html', 'how-it-works.html', 'index.html']
-frontend_dir = r"c:\Users\Gnandev\Desktop\GEO INTEGRATED ATTENDENCE\frontend"
+frontend_dir = "frontend"
 
 # Regex pattern to match the entire footer block
 # from <footer ...> to </footer>

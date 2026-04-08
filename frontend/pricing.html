@@ -265,8 +265,6 @@
                     <ul class="space-y-2 text-sm text-slate-500">
                         <li><a href="about.html" class="hover:text-slate-900 transition-colors">About</a></li>
                         <li><a href="#contact" class="hover:text-slate-900 transition-colors">Contact</a></li>
-                        <li><a href="https://github.com/Gnandev12" target="_blank"
-                                class="hover:text-slate-900 transition-colors">GitHub</a></li>
                     </ul>
                 </div>
                 <div>
@@ -281,7 +279,6 @@
                     <ul class="space-y-2 text-sm text-slate-500">
                         <li><span class="block text-slate-900 font-medium">Mobile:</span> +91 9121247185</li>
                         <li><span class="block text-slate-900 font-medium">Email:</span> <a href="mailto:geoattend20@gmail.com" class="hover:text-brand-600 transition-colors break-all">geoattend20@gmail.com</a></li>
-                        <li><span class="block text-slate-900 font-medium">GitHub:</span> <a href="https://github.com/Gnandev12" target="_blank" class="hover:text-brand-600 transition-colors break-all">github.com/Gnandev12</a></li>
                     </ul>
                 </div>
             </div>
@@ -295,6 +292,41 @@
 </body>
 
 <script>
+    // Fetch live system stats
+    async function updateLiveStats() {
+        try {
+            const res = await fetch('/api/main?action=get-landing-stats');
+            const data = await res.json();
+            
+            if (data.success) {
+                // Setup live total verified count
+                const displayTotal = document.getElementById('live-total-verified');
+                if (data.total_attendance_count <= 500) displayTotal.textContent = data.total_attendance_count;
+                else displayTotal.textContent = "500+";
+                
+                // System accuracy (top card)
+                const displayAccuracy = document.getElementById('live-system-accuracy');
+                if (data.accuracy > 0) displayAccuracy.textContent = data.accuracy + '%';
+                else displayAccuracy.textContent = '0%';
+                
+                // Bottom stats bar
+                const statActiveStudents = document.getElementById('stat-active-students');
+                if (statActiveStudents) statActiveStudents.textContent = data.total_students <= 500 ? data.total_students : "500+";
+                
+                const statGeoAccuracy = document.getElementById('stat-geo-accuracy');
+                if (statGeoAccuracy) statGeoAccuracy.textContent = data.accuracy > 0 ? data.accuracy + '%' : '0%';
+                
+                const statProxyCases = document.getElementById('stat-proxy-cases');
+                if (statProxyCases) statProxyCases.textContent = data.manual_attendance_count;
+            }
+        } catch (error) {
+            console.error("Failed to fetch live stats:", error);
+        }
+    }
+    // Update immediately, then every 10 seconds
+    updateLiveStats();
+    setInterval(updateLiveStats, 10000);
+
     // Navigation Scroll Effect
     const nav = document.getElementById('main-nav');
     window.addEventListener('scroll', () => {

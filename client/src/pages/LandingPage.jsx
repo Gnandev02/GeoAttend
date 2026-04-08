@@ -733,7 +733,6 @@ const LandingPage = () => {
                         <a href="#" className="hover:text-brand-600 transition-colors">About</a>
                         <a href="#features" className="hover:text-brand-600 transition-colors">Features</a>
                         <a href="#" className="hover:text-brand-600 transition-colors">Contact</a>
-                        <a href="#" className="hover:text-brand-600 transition-colors">GitHub</a>
                         <a href="#" className="hover:text-brand-600 transition-colors">Privacy Policy</a>
                     </div>
                 </div>
