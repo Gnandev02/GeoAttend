@@ -138,6 +138,10 @@
                             <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Campus</p>
                             <p id="profileCampus" class="font-semibold text-slate-700">Campus Name</p>
                         </div>
+                        <div class="p-4 bg-blue-50 rounded-xl border border-blue-100">
+                            <p class="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-1">Your Attendance</p>
+                            <p id="attendancePercent" class="text-xl font-extrabold text-blue-700">0%</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -192,6 +196,15 @@
                     } else {
                         document.getElementById("profileImg").src = `https://ui-avatars.com/api/?name=${data.name}&background=random`;
                     }
+                }
+
+                // Fetch Attendance Percentage separately as requested
+                const attRes = await fetch("/api/main?action=attendance-percentage", {
+                    headers: { "Authorization": "Bearer " + token }
+                });
+                const attData = await attRes.json();
+                if (attData.success) {
+                    document.getElementById("attendancePercent").innerText = attData.percentage + "%";
                 }
             } catch (err) {
                 console.error("Profile fetch error:", err);

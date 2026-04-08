@@ -582,6 +582,23 @@ export default async function handler(req, res) {
             return res.status(200).json({ success: true, data: result.rows[0] });
         }
 
+        else if (action === "attendance-percentage") {
+            const student = await protectStudent(req);
+            if (!student) return res.status(401).json({ success: false, message: "Unauthorized" });
+
+            const statsQ = await query(
+                `SELECT COUNT(*) as total,
+                        SUM(CASE WHEN status = 'Present' OR status = 'completed' THEN 1 ELSE 0 END) as present
+                 FROM attendance WHERE student_id = $1`,
+                [student.id]
+            );
+            const total = parseInt(statsQ.rows[0].total) || 0;
+            const present = parseInt(statsQ.rows[0].present) || 0;
+            const percentage = total > 0 ? Math.round((present / total) * 100) : 0;
+
+            return res.status(200).json({ success: true, percentage });
+        }
+
         else if (action === "upload-student-image") {
             const student = await protectStudent(req);
             if (!student) return res.status(401).json({ success: false, message: "Unauthorized" });
