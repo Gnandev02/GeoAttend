@@ -1440,6 +1440,10 @@
             const log = allLogs.find(l => l.id === attendanceId);
             if (!log) return;
 
+            // Task: Store selected record globally for robust ID tracking
+            window.selectedRecord = log;
+            console.log("Edit Modal Opened. Selected Record:", window.selectedRecord);
+
             document.getElementById('edit-att-id').value = log.id;
             document.getElementById('edit-att-student-id').value = log.student_id || log.studentId;
             document.getElementById('edit-att-date-raw').value = log.date;
@@ -1462,17 +1466,19 @@
             }
 
             const payload = {
-                attendance_id: document.getElementById('edit-att-id').value,
-                student_id: document.getElementById('edit-att-student-id').value,
+                attendance_id: document.getElementById('edit-att-id').value || (window.selectedRecord ? window.selectedRecord.id : null),
+                student_id: document.getElementById('edit-att-student-id').value || (window.selectedRecord ? (window.selectedRecord.student_id || window.selectedRecord.studentId) : null),
                 date: document.getElementById('edit-att-date-raw').value,
                 status: document.getElementById('edit-att-status').value,
                 check_in: document.getElementById('edit-att-checkin').value,
                 check_out: document.getElementById('edit-att-checkout').value
             };
 
-            console.log("Attendance Update Payload:", payload);
+            console.log("Attendance Update - Selected Record State:", window.selectedRecord);
+            console.log("Attendance Update - Sending Payload:", payload);
 
             if (!payload.attendance_id || payload.attendance_id === "undefined" || !payload.student_id || payload.student_id === "undefined") {
+                console.error("Critical Failure: Missing IDs in payload", payload);
                 alert("Missing required data (Attendance/Student ID). Please refresh and try again.");
                 return;
             }

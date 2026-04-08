@@ -423,6 +423,10 @@ export default async function handler(req, res) {
                 return res.status(400).json({ success: false, message: 'Valid Attendance ID is required.' });
             }
 
+            if (!student_id || student_id === "undefined") {
+                return res.status(400).json({ success: false, message: 'Student ID is required.' });
+            }
+
             if (!status) {
                 return res.status(400).json({ success: false, message: 'Status is required.' });
             }
@@ -466,10 +470,13 @@ export default async function handler(req, res) {
                 
                 const result = await query(
                     `SELECT 
+                        a.id as id,
+                        s.id as student_id,
                         a.attendance_date as date,
                         a.check_in_time as in_time,
                         a.check_out_time as out_time,
                         a.status,
+                        a.source,
                         s.name,
                         s.roll_number
                      FROM attendance a
@@ -576,11 +583,15 @@ export default async function handler(req, res) {
             if (!admin) return res.status(401).json({ success: false, message: "Unauthorized" });
             const result = await query(
                 `SELECT 
+                    a.id as id,
+                    s.id as student_id,
                     a.attendance_date as date,
                     a.check_in_time as in_time,
                     a.check_out_time as out_time,
                     a.status,
-                    s.name
+                    a.source,
+                    s.name,
+                    s.roll_number
                  FROM attendance a
                  JOIN students s ON a.student_id = s.id
                  WHERE a.college_code = $1
