@@ -2,6 +2,13 @@ const { query } = require("./utils/db");
 const { protectAdmin, protectStudent, hashPassword, comparePassword, generateToken } = require("../utils/auth");
 const { sendVerificationEmail, sendResetEmail, sendOnboardingEmail } = require("./utils/email");
 const { calculateDistance, isPointInPolygon } = require("../utils/geoHelper");
+const crypto = require("crypto");
+let Razorpay;
+try {
+    Razorpay = require("razorpay");
+} catch (e) {
+    console.warn("Razorpay SDK not found, simulation mode active.");
+}
 
 function getIST() {
     const now = new Date();
@@ -798,9 +805,90 @@ export default async function handler(req, res) {
                 } catch (err) {
                     console.error("Reset Email Fail (Non-blocking):", err);
                 }
-                return res.status(200).json({ success: true, message: 'OTP sent' });
+                return res.status(200).json({ success: true, message: "OTP sent if account exists" });
             }
-            else if (action === "verifyResetOTP" || action === "resetPassword") {
+
+        // --- 5. PAYMENTS (Razorpay) ---
+        else if (action === "create-payment-order") {
+            const admin = await protectAdmin(req);
+            if (!admin) return res.status(401).json({ success: false, message: "Unauthorized Admin" });
+
+            const { plan, amount } = req.body; // amount in INR
+            if (!plan || !amount) return res.status(400).json({ success: false, message: "Plan and Amount are required" });
+
+            const key_id = process.env.RAZORPAY_KEY_ID;
+            const key_secret = process.env.RAZORPAY_KEY_SECRET;
+
+            if (!Razorpay || !key_id || !key_secret) {
+                // Simulation Mode
+                console.log("Simulating Razorpay Order for:", plan);
+                const simOrderId = "sim_order_" + Math.random().toString(36).substring(2, 10);
+                return res.status(200).json({ 
+                    success: true, 
+                    simulated: true, 
+                    order_id: simOrderId, 
+                    amount: amount * 100, 
+                    currency: "INR",
+                    key_id: "rzp_test_simulation"
+                });
+            }
+
+            const razorpay = new Razorpay({ key_id, key_secret });
+            const options = {
+                amount: amount * 100, // smallest currency unit
+                currency: "INR",
+                receipt: `receipt_${admin.id}_${Date.now()}`,
+            };
+
+            try {
+                const order = await razorpay.orders.create(options);
+                return res.status(200).json({ success: true, order_id: order.id, amount: order.amount, currency: order.currency, key_id });
+            } catch (err) {
+                console.error("Razorpay Order Error:", err);
+                return res.status(500).json({ success: false, message: "Failed to create payment order" });
+            }
+        }
+
+        else if (action === "verify-payment") {
+            const admin = await protectAdmin(req);
+            if (!admin) return res.status(401).json({ success: false, message: "Unauthorized Admin" });
+
+            const { razorpay_order_id, razorpay_payment_id, razorpay_signature, plan, amount, simulated } = req.body;
+
+            if (simulated) {
+                console.log("Verifying Simulated Payment...");
+                // Just update the plan
+                await query("UPDATE admins SET plan = $1 WHERE id = $2", [plan, admin.id]);
+                await query(
+                    "INSERT INTO payments (admin_id, order_id, payment_id, amount, plan, status) VALUES ($1, $2, $3, $4, $5, $6)",
+                    [admin.id, razorpay_order_id, "pay_simulated", amount, plan, "captured"]
+                );
+                return res.status(200).json({ success: true, message: "Plan activated successfully (Simulated)" });
+            }
+
+            if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+                return res.status(400).json({ success: false, message: "Missing payment details" });
+            }
+
+            const key_secret = process.env.RAZORPAY_KEY_SECRET;
+            const generated_signature = crypto
+                .createHmac("sha256", key_secret)
+                .update(razorpay_order_id + "|" + razorpay_payment_id)
+                .digest("hex");
+
+            if (generated_signature === razorpay_signature) {
+                console.log("Payment Verified Successfully");
+                await query("UPDATE admins SET plan = $1 WHERE id = $2", [plan, admin.id]);
+                await query(
+                    "INSERT INTO payments (admin_id, order_id, payment_id, signature, amount, plan, status) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+                    [admin.id, razorpay_order_id, razorpay_payment_id, razorpay_signature, amount, plan, "captured"]
+                );
+                return res.status(200).json({ success: true, message: "Payment successful. Your plan is now active." });
+            } else {
+                return res.status(400).json({ success: false, message: "Invalid payment signature" });
+            }
+        }
+        else if (action === "verifyResetOTP" || action === "resetPassword") {
                 const otpRecord = await query('SELECT * FROM otps WHERE email = $1 AND otp = $2', [email, otp]);
                 if (otpRecord.rows.length === 0) {
                     return res.status(400).json({ message: "Invalid or expired OTP" });

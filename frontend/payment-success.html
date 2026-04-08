@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Successful | GeoAttend</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        brand: { 50: '#eff6ff', 500: '#3b82f6', 600: '#2563eb' }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-white antialiased flex items-center justify-center min-h-screen p-6">
+    <div class="max-w-md w-full text-center">
+        <div class="mb-8 flex justify-center">
+            <div class="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center text-green-500 animate-bounce">
+                <svg class="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                </svg>
+            </div>
+        </div>
+        
+        <h1 class="text-3xl font-extrabold text-slate-900 mb-4">Payment Successful!</h1>
+        <p class="text-slate-500 mb-8 leading-relaxed">
+            Thank you for upgrading. Your new plan has been activated and your account has been updated with premium tracking capabilities.
+        </p>
+
+        <div class="p-6 bg-slate-50 rounded-2xl border border-slate-100 mb-10 text-left">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-sm text-slate-400">Plan Activated</span>
+                <span id="plan-name" class="text-sm font-bold text-brand-600 uppercase">PRO PLAN</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-sm text-slate-400">Status</span>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">
+                    <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span> Active
+                </span>
+            </div>
+        </div>
+
+        <a href="admin-dashboard.html" 
+           class="inline-block w-full py-4 px-6 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-all shadow-lg hover:shadow-slate-200">
+            Go to Admin Dashboard
+        </a>
+        
+        <p class="mt-8 text-sm text-slate-400">
+            A confirmation email has been sent to your registered address.
+        </p>
+    </div>
+
+    <script>
+        // Get plan from URL if present
+        const urlParams = new URLSearchParams(window.location.search);
+        const plan = urlParams.get('plan');
+        if (plan) {
+            document.getElementById('plan-name').textContent = plan.toUpperCase() + " PLAN";
+        }
+    </script>
+</body>
+</html>

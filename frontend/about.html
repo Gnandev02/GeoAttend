@@ -380,6 +380,14 @@
             iconBars.classList.remove('hidden');
         }
     });
+    // Start Free Trial Navigation
+    const startTrialBtn = document.getElementById("startTrial");
+    if (startTrialBtn) {
+        startTrialBtn.addEventListener("click", function (e) {
+            e.preventDefault();
+            window.location.href = "pricing.html";
+        });
+    }
 </script>
 
 </html>

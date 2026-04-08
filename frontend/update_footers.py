@@ -175,67 +175,169 @@ def get_body_content(page_id):
 '''
     elif page_id == 'pricing.html':
         return '''
+    <!-- Razorpay Checkout Script -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
     <!-- Pricing Content -->
     <section class="pt-32 pb-20 bg-white">
         <div class="max-w-7xl mx-auto px-6 text-center">
             <div class="mb-16">
                 <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 mb-6 tracking-tight">Simple Pricing</h1>
-                <p class="text-lg text-slate-500 max-w-2xl mx-auto">Choose a plan that fits your institution's size and needs.</p>
+                <p class="text-lg text-slate-500 max-w-2xl mx-auto">Scalable plans for institutions of all sizes.</p>
                 <div class="mt-6 inline-flex items-center gap-2 px-4 py-1.5 bg-amber-50 rounded-full border border-amber-100 text-amber-700 text-sm font-bold">
                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg>
-                    Pricing is for demonstration purposes
+                    Payment System in Test Mode
                 </div>
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-                <!-- Basic -->
+                <!-- Free -->
                 <div class="p-8 border border-slate-200 rounded-3xl bg-white flex flex-col items-center">
-                    <p class="text-sm font-bold text-slate-500 uppercase tracking-widest mb-4">Basic</p>
+                    <p class="text-sm font-bold text-slate-500 uppercase tracking-widest mb-4">Free</p>
                     <div class="flex items-baseline gap-1 mb-8">
-                        <span class="text-4xl font-extrabold text-slate-900">$0</span>
+                        <span class="text-4xl font-extrabold text-slate-900">₹0</span>
                         <span class="text-slate-400 font-medium">/mo</span>
                     </div>
                     <ul class="space-y-4 text-sm text-slate-600 mb-10 text-left w-full">
                         <li class="flex items-center gap-2 font-semibold italic"><svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>Up to 50 Students</li>
                         <li class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>1 Campus Support</li>
-                        <li class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>Basic Analytics</li>
                     </ul>
-                    <a href="admin-signup.html" class="w-full py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-colors">Start for Free</a>
+                    <a href="admin-signup.html" class="w-full py-3 bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 transition-colors">Current Plan</a>
                 </div>
-                <!-- Standard -->
+                <!-- Basic -->
                 <div class="p-8 border-2 border-brand-500 rounded-3xl bg-white flex flex-col items-center relative shadow-2xl shadow-brand-100 scale-105">
-                    <div class="absolute -top-4 bg-brand-500 text-white text-[10px] font-bold uppercase tracking-tighter px-4 py-1.5 rounded-full">Most Popular</div>
-                    <p class="text-sm font-bold text-brand-600 uppercase tracking-widest mb-4">Standard</p>
+                    <div class="absolute -top-4 bg-brand-500 text-white text-[10px] font-bold uppercase tracking-tighter px-4 py-1.5 rounded-full">Best Value</div>
+                    <p class="text-sm font-bold text-brand-600 uppercase tracking-widest mb-4">Basic</p>
                     <div class="flex items-baseline gap-1 mb-8">
-                        <span class="text-4xl font-extrabold text-slate-900">$49</span>
+                        <span class="text-4xl font-extrabold text-slate-900">₹99</span>
                         <span class="text-slate-400 font-medium">/mo</span>
                     </div>
                     <ul class="space-y-4 text-sm text-slate-600 mb-10 text-left w-full">
                         <li class="flex items-center gap-2 font-bold"><svg class="w-4 h-4 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>Up to 500 Students</li>
                         <li class="flex items-center gap-2"><svg class="w-4 h-4 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>Unlimited Campus</li>
-                        <li class="flex items-center gap-2"><svg class="w-4 h-4 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>Real-time Logs</li>
-                        <li class="flex items-center gap-2"><svg class="w-4 h-4 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>Priority Support</li>
                     </ul>
-                    <a href="admin-signup.html" class="w-full py-3 bg-brand-600 text-white rounded-xl font-bold hover:bg-brand-700 transition-colors">Upgrade Now</a>
+                    <button class="buy-btn w-full py-3 bg-brand-600 text-white rounded-xl font-bold hover:bg-brand-700 transition-colors" data-plan="basic" data-amount="99">Buy Now</button>
                 </div>
-                <!-- Premium -->
+                <!-- Pro -->
                 <div class="p-8 border border-slate-200 rounded-3xl bg-white flex flex-col items-center">
-                    <p class="text-sm font-bold text-slate-500 uppercase tracking-widest mb-4">Premium</p>
+                    <p class="text-sm font-bold text-slate-500 uppercase tracking-widest mb-4">Pro</p>
                     <div class="flex items-baseline gap-1 mb-8">
-                        <span class="text-4xl font-extrabold text-slate-900">$99</span>
+                        <span class="text-4xl font-extrabold text-slate-900">₹199</span>
                         <span class="text-slate-400 font-medium">/mo</span>
                     </div>
                     <ul class="space-y-4 text-sm text-slate-600 mb-10 text-left w-full">
                         <li class="flex items-center gap-2 font-bold"><svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>Unlimited Students</li>
-                        <li class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>Scale to 1000+ Students</li>
-                        <li class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>Enterprise Analytics</li>
-                        <li class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>Dedicated API Access</li>
+                        <li class="flex items-center gap-2 font-bold"><svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>Priority Support</li>
                     </ul>
-                    <a href="admin-signup.html" class="w-full py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-colors">Go Enterprise</a>
+                    <button class="buy-btn w-full py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-colors" data-plan="pro" data-amount="199">Buy Now</button>
                 </div>
             </div>
         </div>
     </section>
+
+    <script>
+        document.querySelectorAll(".buy-btn").forEach(btn => {
+            btn.addEventListener("click", function (e) {
+                e.preventDefault();
+                const plan = this.getAttribute("data-plan");
+                const amount = parseInt(this.getAttribute("data-amount"));
+                console.log("Starting payment for:", plan, amount);
+                startPayment(plan, amount);
+            });
+        });
+
+        async function startPayment(plan, amount) {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert("Please log in as an administrator to purchase a plan.");
+                window.location.href = "admin-login.html";
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/main?action=create-payment-order', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ plan, amount })
+                });
+
+                const data = await response.json();
+                if (!data.success) {
+                    alert(data.message || "Failed to initiate payment");
+                    return;
+                }
+
+                if (data.simulated) {
+                    // Logic for simulation
+                    const confirmSim = confirm("Simulation Mode: System keys not found. Do you want to simulate a successful payment for " + plan.toUpperCase() + "?");
+                    if (confirmSim) {
+                        const verifyRes = await fetch('/api/main?action=verify-payment', {
+                            method: 'POST',
+                            headers: { 
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({ 
+                                razorpay_order_id: data.order_id,
+                                plan: plan,
+                                amount: amount,
+                                simulated: true 
+                            })
+                        });
+                        const verifyData = await verifyRes.json();
+                        if (verifyData.success) {
+                            window.location.href = `payment-success.html?plan=${plan}`;
+                        } else {
+                            alert("Simulation verification failed");
+                        }
+                    }
+                    return;
+                }
+
+                // Razorpay real checkout logic
+                const options = {
+                    "key": data.key_id,
+                    "amount": data.amount,
+                    "currency": data.currency,
+                    "name": "GeoAttend",
+                    "description": "Upgrade to " + plan.toUpperCase() + " Plan",
+                    "order_id": data.order_id,
+                    "handler": async function (response) {
+                        const verifyRes = await fetch('/api/main?action=verify-payment', {
+                            method: 'POST',
+                            headers: { 
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature,
+                                plan: plan,
+                                amount: amount
+                            })
+                        });
+                        const verifyData = await verifyRes.json();
+                        if (verifyData.success) {
+                            window.location.href = `payment-success.html?plan=${plan}`;
+                        } else {
+                            alert("Payment verification failed. Please contact support.");
+                        }
+                    },
+                    "theme": { "color": "#3b82f6" }
+                };
+                const rzp = new Razorpay(options);
+                rzp.open();
+
+            } catch (err) {
+                console.error("Payment Process Error:", err);
+                alert("An error occurred during the payment process.");
+            }
+        }
+    </script>
 '''
     elif page_id == 'about.html':
         return '''
