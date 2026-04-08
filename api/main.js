@@ -726,9 +726,17 @@ export default async function handler(req, res) {
             // Move destructuring into specific actions to avoid shadowing and confusion
             
             if (action === "auth-login" || action === "studentLogin") {
-                const { email, password } = req.body;
-                const collegeCode = (req.body.collegeCode || req.body.college_code || "").toString();
+                let { email, password } = req.body;
+                const collegeCode = (req.body.collegeCode || req.body.college_code || "").toString().trim();
                 
+                if (!email || !password) {
+                    return res.status(400).json({ success: false, message: "Email and password are required." });
+                }
+
+                // FIX: Trim and Normalize (Requirement: Fix Incorrect Password)
+                email = email.trim().toLowerCase();
+                password = password.trim();
+
                 console.log(`[studentLogin] Attempt: Email=${email}, Campus=${collegeCode || 'none'}`);
 
                 // 1. Fetch ALL records with this email
@@ -746,6 +754,9 @@ export default async function handler(req, res) {
                     if (!student) {
                         return res.status(401).json({ success: false, message: 'Wrong campus selected.' });
                     }
+
+                    // Temporary Debug Log (Requirement 5)
+                    console.log(`[studentLogin] DEBUG: Entered Password="${password}", Stored Hash="${student.password.substring(0, 10)}..."`);
 
                     if (await comparePassword(password, student.password)) {
                         const token = generateToken(student.id, student.email, student.college_code, 'student');
@@ -809,15 +820,17 @@ export default async function handler(req, res) {
                 });
             }
             else if (action === "adminLogin") {
-                console.log("Admin Login Request Body:", req.body);
                 let { email, password } = req.body;
 
                 if (!email || !password) {
                     return res.status(400).json({ success: false, message: "Email and password are required" });
                 }
 
-                // Fix case sensitivity and trim (Requirement 6)
+                // FIX: Trim and Normalize (Requirement: Fix Incorrect Password)
                 email = email.toLowerCase().trim();
+                password = (password || "").toString().trim();
+
+                console.log("[adminLogin] Attempt for:", email);
 
                 const result = await query('SELECT * FROM admins WHERE email = $1', [email]);
                 if (result.rows.length === 0) {
@@ -825,6 +838,10 @@ export default async function handler(req, res) {
                 }
                 
                 const admin = result.rows[0];
+
+                // Temporary Debug Log (Requirement 5)
+                console.log(`[adminLogin] DEBUG: Entered Password="${password}", Stored Hash="${admin.password.substring(0, 10)}..."`);
+
                 if (await comparePassword(password, admin.password)) {
                     const token = generateToken(admin.id, admin.email, admin.college_code, 'admin');
                     return res.status(200).json({ 
@@ -1090,7 +1107,13 @@ export default async function handler(req, res) {
             }
 
             if (action === "addStudent") {
-                const { name, email, rollNumber, department } = req.body;
+                let { name, email, rollNumber, department } = req.body;
+
+                // FIX: Cleanup inputs (Requirement: Fix Incorrect Password/Login issues)
+                if (name) name = name.trim();
+                if (email) email = email.trim().toLowerCase();
+                if (rollNumber) rollNumber = rollNumber.trim();
+                if (department) department = department.trim();
 
                 // Requirement 6: Block addition if campus is not configured
                 const campusCheck = await query('SELECT latitude, longitude FROM campus_setup WHERE college_code = $1', [admin.college_code]);
