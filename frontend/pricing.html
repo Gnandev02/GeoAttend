@@ -221,17 +221,65 @@
         </div>
     </nav>
 
-    <!-- Main Content -->
-    <section class="pt-32 pb-20 bg-slate-50 min-h-[60vh] flex flex-col items-center justify-center">
-        <div class="max-w-3xl mx-auto px-6 text-center">
-            <h1 class="text-4xl md:text-5xl font-bold text-slate-900 mb-6">Pricing</h1>
-            <p class="text-lg text-slate-500 mb-8">Our pricing plans will be announced soon. Stay tuned!</p>
-            <a href="index.html" class="inline-flex items-center gap-2 text-brand-600 font-semibold hover:text-brand-700 transition-colors">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                Back to Home
-            </a>
+    <!-- Pricing Content -->
+    <section class="pt-32 pb-20 bg-white">
+        <div class="max-w-7xl mx-auto px-6 text-center">
+            <div class="mb-16">
+                <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 mb-6 tracking-tight">Simple Pricing</h1>
+                <p class="text-lg text-slate-500 max-w-2xl mx-auto">Choose a plan that fits your institution's size and needs.</p>
+                <div class="mt-6 inline-flex items-center gap-2 px-4 py-1.5 bg-amber-50 rounded-full border border-amber-100 text-amber-700 text-sm font-bold">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg>
+                    Pricing is for demonstration purposes
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                <!-- Basic -->
+                <div class="p-8 border border-slate-200 rounded-3xl bg-white flex flex-col items-center">
+                    <p class="text-sm font-bold text-slate-500 uppercase tracking-widest mb-4">Basic</p>
+                    <div class="flex items-baseline gap-1 mb-8">
+                        <span class="text-4xl font-extrabold text-slate-900">$0</span>
+                        <span class="text-slate-400 font-medium">/mo</span>
+                    </div>
+                    <ul class="space-y-4 text-sm text-slate-600 mb-10 text-left w-full">
+                        <li class="flex items-center gap-2 font-semibold italic"><svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>Up to 50 Students</li>
+                        <li class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>1 Campus Support</li>
+                        <li class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>Basic Analytics</li>
+                    </ul>
+                    <a href="admin-signup.html" class="w-full py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-colors">Start for Free</a>
+                </div>
+                <!-- Standard -->
+                <div class="p-8 border-2 border-brand-500 rounded-3xl bg-white flex flex-col items-center relative shadow-2xl shadow-brand-100 scale-105">
+                    <div class="absolute -top-4 bg-brand-500 text-white text-[10px] font-bold uppercase tracking-tighter px-4 py-1.5 rounded-full">Most Popular</div>
+                    <p class="text-sm font-bold text-brand-600 uppercase tracking-widest mb-4">Standard</p>
+                    <div class="flex items-baseline gap-1 mb-8">
+                        <span class="text-4xl font-extrabold text-slate-900">$49</span>
+                        <span class="text-slate-400 font-medium">/mo</span>
+                    </div>
+                    <ul class="space-y-4 text-sm text-slate-600 mb-10 text-left w-full">
+                        <li class="flex items-center gap-2 font-bold"><svg class="w-4 h-4 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>Up to 500 Students</li>
+                        <li class="flex items-center gap-2"><svg class="w-4 h-4 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>Unlimited Campus</li>
+                        <li class="flex items-center gap-2"><svg class="w-4 h-4 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>Real-time Logs</li>
+                        <li class="flex items-center gap-2"><svg class="w-4 h-4 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>Priority Support</li>
+                    </ul>
+                    <a href="admin-signup.html" class="w-full py-3 bg-brand-600 text-white rounded-xl font-bold hover:bg-brand-700 transition-colors">Upgrade Now</a>
+                </div>
+                <!-- Premium -->
+                <div class="p-8 border border-slate-200 rounded-3xl bg-white flex flex-col items-center">
+                    <p class="text-sm font-bold text-slate-500 uppercase tracking-widest mb-4">Premium</p>
+                    <div class="flex items-baseline gap-1 mb-8">
+                        <span class="text-4xl font-extrabold text-slate-900">$99</span>
+                        <span class="text-slate-400 font-medium">/mo</span>
+                    </div>
+                    <ul class="space-y-4 text-sm text-slate-600 mb-10 text-left w-full">
+                        <li class="flex items-center gap-2 font-bold"><svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>Unlimited Students</li>
+                        <li class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>Scale to 1000+ Students</li>
+                        <li class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>Enterprise Analytics</li>
+                        <li class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>Dedicated API Access</li>
+                    </ul>
+                    <a href="admin-signup.html" class="w-full py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-colors">Go Enterprise</a>
+                </div>
+            </div>
         </div>
     </section>
 

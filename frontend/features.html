@@ -1,115 +1,288 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Features | GeoAttend</title>
+    <meta name="description"
+        content="Eliminate proxy attendance with secure, browser-based location verification built for modern institutions.">
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
                     colors: {
-                        brand: { 50: '#eff6ff', 100: '#dbeafe', 500: '#3b82f6', 600: '#2563eb' }
+                        slate: {
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            300: '#cbd5e1',
+                            400: '#94a3b8',
+                            500: '#64748b',
+                            600: '#475569',
+                            700: '#334155',
+                            800: '#1e293b',
+                            900: '#0f172a',
+                        },
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb', // Deep blue main
+                            700: '#1d4ed8',
+                        }
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+                        'glow': '0 0 40px -10px rgba(37, 99, 235, 0.2)',
+                    },
+                    backgroundImage: {
+                        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+                        'subtle-grid': 'linear-gradient(to right, #f1f5f9 1px, transparent 1px), linear-gradient(to bottom, #f1f5f9 1px, transparent 1px)',
                     }
                 }
             }
         }
     </script>
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .glass-panel { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(226, 232, 240, 0.8); }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #ffffff;
+            color: #0f172a;
+        }
+
+        .grid-bg {
+            background-size: 40px 40px;
+            background-image:
+                linear-gradient(to right, rgba(226, 232, 240, 0.4) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(226, 232, 240, 0.4) 1px, transparent 1px);
+        }
+
+        .text-gradient {
+            background: linear-gradient(135deg, #0f172a 0%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
     </style>
 </head>
 
-<body class="bg-white antialiased">
-    <!-- Navbar -->
-    <nav class="fixed w-full top-0 z-50 glass-panel h-20">
-        <div class="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
-            <a href="index.html" class="flex items-center gap-2">
+<body class="antialiased selection:bg-brand-100 selection:text-brand-900">
+
+    <!-- Navigation -->
+    <nav class="fixed w-full top-0 z-50 glass-panel transition-all duration-300 border-b border-slate-100"
+        id="main-nav">
+        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+            <div class="flex items-center gap-2">
                 <div class="w-8 h-8 rounded-lg bg-brand-500 text-white flex items-center justify-center">
                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                 </div>
                 <span class="font-extrabold text-xl tracking-tight text-slate-900">GeoAttend</span>
-            </a>
-            <div class="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-500">
-                <a href="how-it-works.html" class="hover:text-slate-900 transition-colors">How it Works</a>
-                <a href="features.html" class="text-brand-600">Features</a>
-                <a href="compare.html" class="hover:text-slate-900 transition-colors">Compare</a>
-                <a href="admin-login.html" class="px-5 py-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition-all shadow-sm">Login</a>
+            </div>
+
+            <!-- Desktop Navigation Group -->
+            <div class="hidden md:flex items-center gap-10">
+                <div class="flex items-center gap-8 text-sm font-semibold text-slate-500">
+                    <a href="how-it-works.html" class="hover:text-slate-900 transition-colors">How it Works</a>
+                    <a href="features.html" class="hover:text-slate-900 transition-colors">Features</a>
+                    <a href="admin-signup.html" class="hover:text-slate-900 transition-colors">Sign Up</a>
+                </div>
+
+                <!-- Desktop CTA & Dropdown -->
+                <div class="flex items-center gap-6">
+                    <!-- Login Dropdown Wrapper -->
+                    <div class="relative group h-20 flex items-center">
+                        <button
+                            class="text-sm font-semibold text-slate-800 hover:text-brand-600 transition-colors flex items-center gap-1">
+                            Log in
+                            <svg class="w-4 h-4 text-slate-400 group-hover:text-brand-600 transition-colors" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7">
+                                </path>
+                            </svg>
+                        </button>
+                        <!-- Dropdown Menu -->
+                        <div
+                            class="absolute top-20 right-0 w-48 bg-white rounded-xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] border border-slate-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 py-2 z-50">
+                            <a href="student-login.html"
+                                class="block px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-brand-600 transition-colors">
+                                <div class="flex items-center gap-2">
+                                    <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24"
+                                        stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 14l9-5-9-5-9 5 9 5z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z">
+                                        </path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222">
+                                        </path>
+                                    </svg>
+                                    Student Login
+                                </div>
+                            </a>
+                            <a href="admin-login.html"
+                                class="block px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-brand-600 transition-colors">
+                                <div class="flex items-center gap-2">
+                                    <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24"
+                                        stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z">
+                                        </path>
+                                    </svg>
+                                    Admin Login
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mobile: Sign Up + Hamburger -->
+            <div class="md:hidden flex items-center gap-2">
+                <a href="admin-signup.html"
+                    class="text-sm font-bold text-white bg-brand-600 hover:bg-brand-700 px-4 py-2 rounded-lg transition-colors">
+                    Sign Up
+                </a>
+                <button id="mobile-menu-button"
+                    class="p-2 text-slate-600 hover:text-slate-900 focus:outline-none">
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path id="menu-icon-bars" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6h16M4 12h16M4 18h16" />
+                        <path id="menu-icon-close" class="hidden" stroke-linecap="round" stroke-linejoin="round"
+                            stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Quick Links Bar (below logo row) -->
+        <div class="md:hidden border-t border-slate-100 bg-white/95 backdrop-blur">
+            <div class="flex items-center justify-around px-4 py-2">
+                <a href="how-it-works.html"
+                    class="text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors py-1 px-2">How it Works</a>
+                <span class="text-slate-200">|</span>
+                <a href="features.html"
+                    class="text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors py-1 px-2">Features</a>
+                <span class="text-slate-200">|</span>
+                <a href="compare.html"
+                    class="text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors py-1 px-2">Compare</a>
+            </div>
+        </div>
+
+        <!-- Mobile Menu (Hidden by default) - Only Login Options -->
+        <div id="mobile-menu"
+            class="hidden md:hidden bg-white border-t border-slate-100 shadow-xl overflow-hidden transform transition-all duration-300 origin-top h-0">
+            <div class="px-6 py-4 space-y-3">
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Sign In</p>
+                <a href="student-login.html"
+                    class="flex items-center gap-3 text-sm font-semibold text-slate-700 hover:text-brand-600 transition-colors">
+                    <div
+                        class="w-8 h-8 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0">
+                        <svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path d="M12 14l9-5-9-5-9 5 9 5z"></path>
+                        </svg>
+                    </div>
+                    Student Login
+                </a>
+                <a href="admin-login.html"
+                    class="flex items-center gap-3 text-sm font-semibold text-slate-700 hover:text-brand-600 transition-colors">
+                    <div
+                        class="w-8 h-8 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0">
+                        <svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z">
+                            </path>
+                        </svg>
+                    </div>
+                    Admin Login
+                </a>
             </div>
         </div>
     </nav>
 
-    <main class="pt-32 pb-20">
+    <!-- Features Content -->
+    <section class="pt-32 pb-20 bg-white">
         <div class="max-w-7xl mx-auto px-6">
-            <div class="mb-16 text-center lg:text-left">
-                <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 mb-4 tracking-tight">Enterprise-Grade Features</h1>
-                <p class="text-slate-500 max-w-2xl text-lg">Built with exactly what administrators need, and nothing they don't.</p>
+            <div class="text-center mb-16">
+                <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 mb-6 tracking-tight">Powerful Features</h1>
+                <p class="text-lg text-slate-500 max-w-2xl mx-auto">Everything you need to automate attendance and eliminate proxy records with real-time GPS verification.</p>
             </div>
-
+            
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 <!-- Feature 1 -->
-                <div class="p-8 border border-slate-100 rounded-2xl bg-white hover:border-brand-100 hover:shadow-xl hover:shadow-brand-500/5 transition-all group">
-                    <div class="w-12 h-12 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center text-brand-600 mb-6 group-hover:bg-brand-50 transition-colors">
-                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <div class="p-8 border border-slate-100 rounded-3xl bg-white hover:border-brand-200 hover:shadow-xl transition-all group">
+                    <div class="w-14 h-14 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-600 mb-6 group-hover:scale-110 transition-transform">
+                        <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                     </div>
-                    <h3 class="text-lg font-bold text-slate-900 mb-2">Dynamic Geofencing</h3>
-                    <p class="text-slate-500 text-sm leading-relaxed">Define precise latitude, longitude, and radius for distinct campus boundaries globally.</p>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Real-time GPS Tracking</h3>
+                    <p class="text-slate-500 leading-relaxed">Secure, sub-15 second verification using precise device location data and real-time mapping.</p>
                 </div>
-
                 <!-- Feature 2 -->
-                <div class="p-8 border border-slate-100 rounded-2xl bg-white hover:border-brand-100 hover:shadow-xl hover:shadow-brand-500/5 transition-all group">
-                    <div class="w-12 h-12 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center text-brand-600 mb-6 group-hover:bg-brand-50 transition-colors">
-                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8V7a4 4 0 00-8 0v4h8z"></path></svg>
+                <div class="p-8 border border-slate-100 rounded-3xl bg-white hover:border-brand-200 hover:shadow-xl transition-all group">
+                    <div class="w-14 h-14 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-600 mb-6 group-hover:scale-110 transition-transform">
+                        <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A2 2 0 013 15.487V6.513a2 2 0 011.553-1.943L10 2l6.447 2.571A2 2 0 0118 6.513v8.974a2 2 0 01-1.553 1.943L12 20V10z" /></svg>
                     </div>
-                    <h3 class="text-lg font-bold text-slate-900 mb-2">Anti-Proxy Security</h3>
-                    <p class="text-slate-500 text-sm leading-relaxed">Physical presence validation guarantees zero proxy submissions during lecture hours.</p>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Geofencing Verification</h3>
+                    <p class="text-slate-500 leading-relaxed">Define precise institution boundaries. Attendance is only marked if the student is physically within the polygon.</p>
                 </div>
-
                 <!-- Feature 3 -->
-                <div class="p-8 border border-slate-100 rounded-2xl bg-white hover:border-brand-100 hover:shadow-xl hover:shadow-brand-500/5 transition-all group">
-                    <div class="w-12 h-12 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center text-brand-600 mb-6 group-hover:bg-brand-50 transition-colors">
-                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                <div class="p-8 border border-slate-100 rounded-3xl bg-white hover:border-brand-200 hover:shadow-xl transition-all group">
+                    <div class="w-14 h-14 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-600 mb-6 group-hover:scale-110 transition-transform">
+                        <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
                     </div>
-                    <h3 class="text-lg font-bold text-slate-900 mb-2">Admin Analytics</h3>
-                    <p class="text-slate-500 text-sm leading-relaxed">Comprehensive dashboard to track, filter, and export detailed attendance reports.</p>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Multi-campus Support</h3>
+                    <p class="text-slate-500 leading-relaxed">Manage multiple branches, departments, and buildings from a single administrative command center.</p>
                 </div>
-
                 <!-- Feature 4 -->
-                <div class="p-8 border border-slate-100 rounded-2xl bg-white hover:border-brand-100 hover:shadow-xl hover:shadow-brand-500/5 transition-all group">
-                    <div class="w-12 h-12 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center text-brand-600 mb-6 group-hover:bg-brand-50 transition-colors">
-                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                <div class="p-8 border border-slate-100 rounded-3xl bg-white hover:border-brand-200 hover:shadow-xl transition-all group">
+                    <div class="w-14 h-14 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-600 mb-6 group-hover:scale-110 transition-transform">
+                        <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
                     </div>
-                    <h3 class="text-lg font-bold text-slate-900 mb-2">Real-Time GPS Validation</h3>
-                    <p class="text-slate-500 text-sm leading-relaxed">Leverages modern HTML5 Geolocation API for sub-15 second verification times.</p>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Role-based Dashboards</h3>
+                    <p class="text-slate-500 leading-relaxed">Dedicated interfaces for Administrators and Students, tailored to their specific needs and management tasks.</p>
                 </div>
-
                 <!-- Feature 5 -->
-                <div class="p-8 border border-slate-100 rounded-2xl bg-white hover:border-brand-100 hover:shadow-xl hover:shadow-brand-500/5 transition-all group">
-                    <div class="w-12 h-12 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center text-brand-600 mb-6 group-hover:bg-brand-50 transition-colors">
-                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                <div class="p-8 border border-slate-100 rounded-3xl bg-white hover:border-brand-200 hover:shadow-xl transition-all group">
+                    <div class="w-14 h-14 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-600 mb-6 group-hover:scale-110 transition-transform">
+                        <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 002-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012-2" /></svg>
                     </div>
-                    <h3 class="text-lg font-bold text-slate-900 mb-2">Multi-Campus Support</h3>
-                    <p class="text-slate-500 text-sm leading-relaxed">Scale seamlessly across multiple geographical locations using a unified interface.</p>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Attendance Logs & Analytics</h3>
+                    <p class="text-slate-500 leading-relaxed">Generate detailed reports, track historical attendance trends, and export data for institutional records.</p>
                 </div>
-
                 <!-- Feature 6 -->
-                <div class="p-8 border border-slate-100 rounded-2xl bg-white hover:border-brand-100 hover:shadow-xl hover:shadow-brand-500/5 transition-all group">
-                    <div class="w-12 h-12 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center text-brand-600 mb-6 group-hover:bg-brand-50 transition-colors">
-                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                <div class="p-8 border border-slate-100 rounded-3xl bg-white hover:border-brand-200 hover:shadow-xl transition-all group">
+                    <div class="w-14 h-14 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-600 mb-6 group-hover:scale-110 transition-transform">
+                        <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
                     </div>
-                    <h3 class="text-lg font-bold text-slate-900 mb-2">Secure Authentication</h3>
-                    <p class="text-slate-500 text-sm leading-relaxed">Industry standard JWT token architecture with bcrypt password hashing.</p>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Secure Authentication</h3>
+                    <p class="text-slate-500 leading-relaxed">Protected by industry-standard JWT protocols and encrypted password hashing for maximum data security.</p>
                 </div>
             </div>
         </div>
-    </main>
+    </section>
+
+
     <!-- Footer -->
     <footer id="contact" class="bg-white border-t border-slate-200 pt-16 pb-8">
         <div class="max-w-7xl mx-auto px-6">
@@ -162,5 +335,86 @@
             </div>
         </div>
     </footer>
+
 </body>
+
+<script>
+    // Fetch live system stats
+    async function updateLiveStats() {
+        try {
+            const res = await fetch('/api/main?action=get-landing-stats');
+            const data = await res.json();
+            
+            if (data.success) {
+                // Setup live total verified count
+                const displayTotal = document.getElementById('live-total-verified');
+                if (data.total_attendance_count <= 500) displayTotal.textContent = data.total_attendance_count;
+                else displayTotal.textContent = "500+";
+                
+                // System accuracy (top card)
+                const displayAccuracy = document.getElementById('live-system-accuracy');
+                if (data.accuracy > 0) displayAccuracy.textContent = data.accuracy + '%';
+                else displayAccuracy.textContent = '0%';
+                
+                // Bottom stats bar
+                const statActiveStudents = document.getElementById('stat-active-students');
+                if (statActiveStudents) statActiveStudents.textContent = data.total_students <= 500 ? data.total_students : "500+";
+                
+                const statGeoAccuracy = document.getElementById('stat-geo-accuracy');
+                if (statGeoAccuracy) statGeoAccuracy.textContent = data.accuracy > 0 ? data.accuracy + '%' : '0%';
+                
+                const statProxyCases = document.getElementById('stat-proxy-cases');
+                if (statProxyCases) statProxyCases.textContent = data.manual_attendance_count;
+            }
+        } catch (error) {
+            console.error("Failed to fetch live stats:", error);
+        }
+    }
+    // Update immediately, then every 10 seconds
+    updateLiveStats();
+    setInterval(updateLiveStats, 10000);
+
+    // Navigation Scroll Effect
+    const nav = document.getElementById('main-nav');
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 20) {
+            nav.classList.add('shadow-sm');
+            nav.classList.replace('h-20', 'h-16');
+        } else {
+            nav.classList.remove('shadow-sm');
+            nav.classList.replace('h-16', 'h-20');
+        }
+    });
+
+    // Mobile Menu Toggle
+    const mobileMenuBtn = document.getElementById('mobile-menu-button');
+    const mobileMenu = document.getElementById('mobile-menu');
+    const iconBars = document.getElementById('menu-icon-bars');
+    const iconClose = document.getElementById('menu-icon-close');
+
+    mobileMenuBtn.addEventListener('click', () => {
+        const isHidden = mobileMenu.classList.contains('hidden');
+
+        if (isHidden) {
+            mobileMenu.classList.remove('hidden');
+            setTimeout(() => {
+                mobileMenu.style.height = 'auto';
+                const height = mobileMenu.scrollHeight + 'px';
+                mobileMenu.style.height = '0px';
+                mobileMenu.offsetHeight; // force reflow
+                mobileMenu.style.height = height;
+            }, 10);
+            iconBars.classList.add('hidden');
+            iconClose.classList.remove('hidden');
+        } else {
+            mobileMenu.style.height = '0px';
+            setTimeout(() => {
+                mobileMenu.classList.add('hidden');
+            }, 300);
+            iconClose.classList.add('hidden');
+            iconBars.classList.remove('hidden');
+        }
+    });
+</script>
+
 </html>

@@ -54,14 +54,279 @@ new_footer = """    <!-- Footer -->
         </div>
     </footer>"""
 
-files_to_update = ['compare.html', 'features.html', 'how-it-works.html', 'index.html']
 frontend_dir = "frontend"
 
+def get_body_content(page_id):
+    if page_id == 'features.html':
+        return '''
+    <!-- Features Content -->
+    <section class="pt-32 pb-20 bg-white">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 mb-6 tracking-tight">Powerful Features</h1>
+                <p class="text-lg text-slate-500 max-w-2xl mx-auto">Everything you need to automate attendance and eliminate proxy records with real-time GPS verification.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="p-8 border border-slate-100 rounded-3xl bg-white hover:border-brand-200 hover:shadow-xl transition-all group">
+                    <div class="w-14 h-14 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-600 mb-6 group-hover:scale-110 transition-transform">
+                        <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Real-time GPS Tracking</h3>
+                    <p class="text-slate-500 leading-relaxed">Secure, sub-15 second verification using precise device location data and real-time mapping.</p>
+                </div>
+                <!-- Feature 2 -->
+                <div class="p-8 border border-slate-100 rounded-3xl bg-white hover:border-brand-200 hover:shadow-xl transition-all group">
+                    <div class="w-14 h-14 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-600 mb-6 group-hover:scale-110 transition-transform">
+                        <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A2 2 0 013 15.487V6.513a2 2 0 011.553-1.943L10 2l6.447 2.571A2 2 0 0118 6.513v8.974a2 2 0 01-1.553 1.943L12 20V10z" /></svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Geofencing Verification</h3>
+                    <p class="text-slate-500 leading-relaxed">Define precise institution boundaries. Attendance is only marked if the student is physically within the polygon.</p>
+                </div>
+                <!-- Feature 3 -->
+                <div class="p-8 border border-slate-100 rounded-3xl bg-white hover:border-brand-200 hover:shadow-xl transition-all group">
+                    <div class="w-14 h-14 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-600 mb-6 group-hover:scale-110 transition-transform">
+                        <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Multi-campus Support</h3>
+                    <p class="text-slate-500 leading-relaxed">Manage multiple branches, departments, and buildings from a single administrative command center.</p>
+                </div>
+                <!-- Feature 4 -->
+                <div class="p-8 border border-slate-100 rounded-3xl bg-white hover:border-brand-200 hover:shadow-xl transition-all group">
+                    <div class="w-14 h-14 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-600 mb-6 group-hover:scale-110 transition-transform">
+                        <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Role-based Dashboards</h3>
+                    <p class="text-slate-500 leading-relaxed">Dedicated interfaces for Administrators and Students, tailored to their specific needs and management tasks.</p>
+                </div>
+                <!-- Feature 5 -->
+                <div class="p-8 border border-slate-100 rounded-3xl bg-white hover:border-brand-200 hover:shadow-xl transition-all group">
+                    <div class="w-14 h-14 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-600 mb-6 group-hover:scale-110 transition-transform">
+                        <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 002-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012-2" /></svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Attendance Logs & Analytics</h3>
+                    <p class="text-slate-500 leading-relaxed">Generate detailed reports, track historical attendance trends, and export data for institutional records.</p>
+                </div>
+                <!-- Feature 6 -->
+                <div class="p-8 border border-slate-100 rounded-3xl bg-white hover:border-brand-200 hover:shadow-xl transition-all group">
+                    <div class="w-14 h-14 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-600 mb-6 group-hover:scale-110 transition-transform">
+                        <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Secure Authentication</h3>
+                    <p class="text-slate-500 leading-relaxed">Protected by industry-standard JWT protocols and encrypted password hashing for maximum data security.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+'''
+    elif page_id == 'compare.html':
+        return '''
+    <!-- Comparison Content -->
+    <section class="pt-32 pb-20 bg-slate-50">
+        <div class="max-w-5xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 mb-6 tracking-tight">GeoAttend vs Traditional</h1>
+                <p class="text-lg text-slate-500 max-w-2xl mx-auto">See how GeoAttend eliminates the flaws of manual attendance records.</p>
+            </div>
+            
+            <div class="bg-white rounded-[2rem] border border-slate-200 shadow-2xl shadow-slate-200/50 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-900 text-white">
+                                <th class="py-6 px-10 text-sm font-bold uppercase tracking-wider">Metric</th>
+                                <th class="py-6 px-10 text-sm font-bold uppercase tracking-wider">Traditional Method</th>
+                                <th class="py-6 px-10 text-sm font-bold uppercase tracking-wider bg-brand-600">GeoAttend (Automated)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <tr>
+                                <td class="py-6 px-10 font-bold text-slate-900">Process Type</td>
+                                <td class="py-6 px-10 text-slate-500">Manual Paper/Digital Entry</td>
+                                <td class="py-6 px-10 font-bold text-brand-600">GPS & Geofence Verified</td>
+                            </tr>
+                            <tr>
+                                <td class="py-6 px-10 font-bold text-slate-900">Proxy Attendance</td>
+                                <td class="py-6 px-10 text-red-500 font-medium italic">High Risk (Easy to fake)</td>
+                                <td class="py-6 px-10 font-bold text-green-600">Zero Risk (Physical Presence)</td>
+                            </tr>
+                            <tr>
+                                <td class="py-6 px-10 font-bold text-slate-900">Verification Time</td>
+                                <td class="py-6 px-10 text-slate-500">10 - 20 Minutes per class</td>
+                                <td class="py-6 px-10 font-bold text-slate-900">&lt; 15 Seconds</td>
+                            </tr>
+                            <tr>
+                                <td class="py-6 px-10 font-bold text-slate-900">Data Accuracy</td>
+                                <td class="py-6 px-10 text-slate-500">Human Error Prone</td>
+                                <td class="py-6 px-10 font-bold text-slate-900">100% System Precision</td>
+                            </tr>
+                            <tr>
+                                <td class="py-6 px-10 font-bold text-slate-900">Reporting</td>
+                                <td class="py-6 px-10 text-slate-500">Manual Calculation</td>
+                                <td class="py-6 px-10 font-bold text-slate-900">Instant Real-time Analytics</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+'''
+    elif page_id == 'pricing.html':
+        return '''
+    <!-- Pricing Content -->
+    <section class="pt-32 pb-20 bg-white">
+        <div class="max-w-7xl mx-auto px-6 text-center">
+            <div class="mb-16">
+                <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 mb-6 tracking-tight">Simple Pricing</h1>
+                <p class="text-lg text-slate-500 max-w-2xl mx-auto">Choose a plan that fits your institution's size and needs.</p>
+                <div class="mt-6 inline-flex items-center gap-2 px-4 py-1.5 bg-amber-50 rounded-full border border-amber-100 text-amber-700 text-sm font-bold">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg>
+                    Pricing is for demonstration purposes
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                <!-- Basic -->
+                <div class="p-8 border border-slate-200 rounded-3xl bg-white flex flex-col items-center">
+                    <p class="text-sm font-bold text-slate-500 uppercase tracking-widest mb-4">Basic</p>
+                    <div class="flex items-baseline gap-1 mb-8">
+                        <span class="text-4xl font-extrabold text-slate-900">$0</span>
+                        <span class="text-slate-400 font-medium">/mo</span>
+                    </div>
+                    <ul class="space-y-4 text-sm text-slate-600 mb-10 text-left w-full">
+                        <li class="flex items-center gap-2 font-semibold italic"><svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>Up to 50 Students</li>
+                        <li class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>1 Campus Support</li>
+                        <li class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>Basic Analytics</li>
+                    </ul>
+                    <a href="admin-signup.html" class="w-full py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-colors">Start for Free</a>
+                </div>
+                <!-- Standard -->
+                <div class="p-8 border-2 border-brand-500 rounded-3xl bg-white flex flex-col items-center relative shadow-2xl shadow-brand-100 scale-105">
+                    <div class="absolute -top-4 bg-brand-500 text-white text-[10px] font-bold uppercase tracking-tighter px-4 py-1.5 rounded-full">Most Popular</div>
+                    <p class="text-sm font-bold text-brand-600 uppercase tracking-widest mb-4">Standard</p>
+                    <div class="flex items-baseline gap-1 mb-8">
+                        <span class="text-4xl font-extrabold text-slate-900">$49</span>
+                        <span class="text-slate-400 font-medium">/mo</span>
+                    </div>
+                    <ul class="space-y-4 text-sm text-slate-600 mb-10 text-left w-full">
+                        <li class="flex items-center gap-2 font-bold"><svg class="w-4 h-4 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>Up to 500 Students</li>
+                        <li class="flex items-center gap-2"><svg class="w-4 h-4 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>Unlimited Campus</li>
+                        <li class="flex items-center gap-2"><svg class="w-4 h-4 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>Real-time Logs</li>
+                        <li class="flex items-center gap-2"><svg class="w-4 h-4 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>Priority Support</li>
+                    </ul>
+                    <a href="admin-signup.html" class="w-full py-3 bg-brand-600 text-white rounded-xl font-bold hover:bg-brand-700 transition-colors">Upgrade Now</a>
+                </div>
+                <!-- Premium -->
+                <div class="p-8 border border-slate-200 rounded-3xl bg-white flex flex-col items-center">
+                    <p class="text-sm font-bold text-slate-500 uppercase tracking-widest mb-4">Premium</p>
+                    <div class="flex items-baseline gap-1 mb-8">
+                        <span class="text-4xl font-extrabold text-slate-900">$99</span>
+                        <span class="text-slate-400 font-medium">/mo</span>
+                    </div>
+                    <ul class="space-y-4 text-sm text-slate-600 mb-10 text-left w-full">
+                        <li class="flex items-center gap-2 font-bold"><svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>Unlimited Students</li>
+                        <li class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>Scale to 1000+ Students</li>
+                        <li class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>Enterprise Analytics</li>
+                        <li class="flex items-center gap-2"><svg class="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>Dedicated API Access</li>
+                    </ul>
+                    <a href="admin-signup.html" class="w-full py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-colors">Go Enterprise</a>
+                </div>
+            </div>
+        </div>
+    </section>
+'''
+    elif page_id == 'about.html':
+        return '''
+    <!-- About Content -->
+    <section class="pt-32 pb-20 bg-white">
+        <div class="max-w-4xl mx-auto px-6">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 mb-8 tracking-tight text-center">About GeoAttend</h1>
+            <div class="prose prose-slate max-w-none">
+                <p class="text-xl text-slate-600 leading-relaxed mb-8">
+                    GeoAttend is a geo-integrated attendance system designed to automate attendance using GPS and geofencing technology. Our mission is to eliminate proxy attendance and streamline institutional management through location-aware software.
+                </p>
+                
+                <div class="p-8 bg-slate-50 border border-slate-100 rounded-[2rem] mb-12">
+                    <h3 class="text-2xl font-bold text-slate-900 mb-4">Our Purpose</h3>
+                    <p class="text-slate-500 leading-relaxed">
+                        This application was developed as a comprehensive engineering project to showcase the power of modern web technologies like React, Node.js, and Geolocation APIs in solving real-world academic challenges. By requiring physical presence within a defined campus geofence, we ensure higher accuracy and accountability in attendance tracking.
+                    </p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+                    <div class="p-6 border border-slate-100 rounded-2xl">
+                        <h4 class="font-bold text-slate-900 mb-2">Student Led Project</h4>
+                        <p class="text-slate-500 text-sm italic underline">"Built by students, for students and administrators."</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+'''
+    elif page_id == 'privacy-policy.html':
+        return '''
+    <!-- Privacy Policy Content -->
+    <section class="pt-32 pb-20 bg-white">
+        <div class="max-w-4xl mx-auto px-6">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 mb-8 tracking-tight">Privacy Policy</h1>
+            <div class="space-y-12">
+                <section>
+                    <h2 class="text-2xl font-bold text-slate-900 mb-4">1. Data Collection</h2>
+                    <p class="text-slate-500 leading-relaxed">We collect basic user profile information (name, email, roll number) and physical location coordinates during the attendance marking process to verify your presence within the campus geofence.</p>
+                </section>
+                <section>
+                    <h2 class="text-2xl font-bold text-slate-900 mb-4">2. Location Usage</h2>
+                    <p class="text-slate-500 leading-relaxed">Your location is used <strong>only</strong> for the purpose of marking attendance. We do not track you outside of active attendance sessions or your institution's geofenced boundaries.</p>
+                </section>
+                <section>
+                    <h2 class="text-2xl font-bold text-slate-900 mb-4">3. Data Security</h2>
+                    <p class="text-slate-500 leading-relaxed">All user data is securely stored on our servers. We use industry-standard encryption protocols to protect your personal information from unauthorized access.</p>
+                </section>
+                <section>
+                    <h2 class="text-2xl font-bold text-slate-900 mb-4">4. Third-Party Sharing</h2>
+                    <p class="text-slate-500 leading-relaxed">We maintain a strict policy against sharing your personal or location data with any third-party marketing or profiling services.</p>
+                </section>
+            </div>
+        </div>
+    </section>
+'''
+    elif page_id == 'terms-of-service.html':
+        return '''
+    <!-- Terms of Service Content -->
+    <section class="pt-32 pb-20 bg-white">
+        <div class="max-w-4xl mx-auto px-6">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 mb-8 tracking-tight">Terms of Service</h1>
+            <div class="space-y-12">
+                <section>
+                    <h2 class="text-2xl font-bold text-slate-900 mb-4">1. Ethical Usage</h2>
+                    <p class="text-slate-500 leading-relaxed">Users are required to use the system ethically. Any attempts to spoof location data or manipulate attendance records will result in immediate suspension from the platform.</p>
+                </section>
+                <section>
+                    <h2 class="text-2xl font-bold text-slate-900 mb-4">2. Misuse of System</h2>
+                    <p class="text-slate-500 leading-relaxed">Misuse of the attendance system, including providing false login credentials or interfering with GPS services, is strictly prohibited.</p>
+                </section>
+                <section>
+                    <h2 class="text-2xl font-bold text-slate-900 mb-4">3. Administrative Controls</h2>
+                    <p class="text-slate-500 leading-relaxed">Administrators maintain full control over campus boundaries and student records. The system is provided specifically for academic use within registered institutions.</p>
+                </section>
+                <section>
+                    <h2 class="text-2xl font-bold text-slate-900 mb-4">4. Limitations of Liability</h2>
+                    <p class="text-slate-500 leading-relaxed">GeoAttend is an academic tool provided "as-is". While we strive for 100% accuracy, we are not responsible for discrepancies caused by hardware failures or network limitations.</p>
+                </section>
+            </div>
+        </div>
+    </section>
+'''
+    return "<!-- No content for this page -->"
+
 # Regex pattern to match the entire footer block
-# from <footer ...> to </footer>
 footer_pattern = re.compile(r'(\s*<!--\s*Footer\s*-->\s*)?<footer.*?</footer>', re.DOTALL)
 
-for filename in files_to_update:
+# Update core files first
+core_files = ['compare.html', 'features.html', 'how-it-works.html', 'index.html']
+for filename in core_files:
     filepath = os.path.join(frontend_dir, filename)
     if os.path.exists(filepath):
         with open(filepath, 'r', encoding='utf-8') as f:
@@ -74,21 +339,11 @@ for filename in files_to_update:
             f.write(new_content)
         print(f"Updated footer in {filename}")
 
-# Generate template files from index.html (or features.html)
-# Let's use index.html to ensure nav + new footer, and strip out the middle part.
-
+# Get common components from index.html for generation
 with open(os.path.join(frontend_dir, 'index.html'), 'r', encoding='utf-8') as f:
     index_content = f.read()
 
-# Try to extract everything before Hero section as the header (up to </nav>)
-header_match = re.search(r'(.*?</nav>)', index_content, re.DOTALL)
-header_html = header_match.group(1) if header_match else ""
-
-# The footer is already updated in index_content from the loop above, wait no the loop modifies the file, index_content read here might not have updated footer if we didn't read after loop. Let's read it again.
-with open(os.path.join(frontend_dir, 'index.html'), 'r', encoding='utf-8') as f:
-    index_content = f.read()
-
-# Extract header
+# Extract header (up to </nav>)
 header_match = re.search(r'(.*?</nav>)', index_content, re.DOTALL)
 header_html = header_match.group(1) if header_match else ""
 
@@ -96,22 +351,8 @@ header_html = header_match.group(1) if header_match else ""
 footer_match = re.search(r'(<!-- Footer -->.*)', index_content, re.DOTALL)
 footer_html = footer_match.group(1) if footer_match else ""
 
-def generate_placeholder_page(filename, title, description):
-    body = f'''
-    <!-- Main Content -->
-    <section class="pt-32 pb-20 bg-slate-50 min-h-[60vh] flex flex-col items-center justify-center">
-        <div class="max-w-3xl mx-auto px-6 text-center">
-            <h1 class="text-4xl md:text-5xl font-bold text-slate-900 mb-6">{title}</h1>
-            <p class="text-lg text-slate-500 mb-8">{description}</p>
-            <a href="index.html" class="inline-flex items-center gap-2 text-brand-600 font-semibold hover:text-brand-700 transition-colors">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                Back to Home
-            </a>
-        </div>
-    </section>
-'''
+def generate_page(filename, title):
+    body = get_body_content(filename)
     full_html = f"{header_html}\n{body}\n\n    {footer_html}"
     
     # Update <title>
@@ -119,16 +360,18 @@ def generate_placeholder_page(filename, title, description):
     
     with open(os.path.join(frontend_dir, filename), 'w', encoding='utf-8') as f:
         f.write(full_html)
-    print(f"Created {filename}")
+    print(f"Generated {filename}")
 
-placeholders = {
-    'pricing.html': ('Pricing', 'Our pricing plans will be announced soon. Stay tuned!'),
-    'about.html': ('About Us', 'Learn more about GeoAttend and our mission to secure campus attendance.'),
-    'privacy-policy.html': ('Privacy Policy', 'Our privacy policy details how we handle your data.'),
-    'terms-of-service.html': ('Terms of Service', 'Read our terms of service and user agreements.')
+pages = {
+    'features.html': 'Features',
+    'compare.html': 'Comparison',
+    'pricing.html': 'Pricing',
+    'about.html': 'About Us',
+    'privacy-policy.html': 'Privacy Policy',
+    'terms-of-service.html': 'Terms of Service'
 }
 
-for filename, (title, desc) in placeholders.items():
-    generate_placeholder_page(filename, title, desc)
+for filename, title in pages.items():
+    generate_page(filename, title)
 
-print("All tasks completed.")
+print("All footer pages updated with rich content.")
