@@ -374,9 +374,16 @@ export default async function handler(req, res) {
             const admin = await protectAdmin(req);
             if (!admin) return res.status(401).json({ success: false, message: 'Not authorized as admin' });
 
-            const { attendance_id, status, check_in, check_out } = req.body;
-            if (!attendance_id || !status) {
-                return res.status(400).json({ success: false, message: 'Attendance ID and Status are required.' });
+            const { attendance_id, student_id, status, check_in, check_out } = req.body;
+            console.log("Updating attendance:", { attendance_id, student_id, check_in, check_out, status });
+
+            const id = parseInt(attendance_id);
+            if (!attendance_id || isNaN(id) || attendance_id === "undefined") {
+                return res.status(400).json({ success: false, message: 'Valid Attendance ID is required.' });
+            }
+
+            if (!status) {
+                return res.status(400).json({ success: false, message: 'Status is required.' });
             }
 
             // Verify admin owns this record via student college_code

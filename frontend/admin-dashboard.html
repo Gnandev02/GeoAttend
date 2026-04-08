@@ -1472,6 +1472,11 @@
 
             console.log("Attendance Update Payload:", payload);
 
+            if (!payload.attendance_id || payload.attendance_id === "undefined" || !payload.student_id || payload.student_id === "undefined") {
+                alert("Missing required data (Attendance/Student ID). Please refresh and try again.");
+                return;
+            }
+
             const btn = e.submitter;
             btn.disabled = true;
             btn.textContent = 'Updating...';
