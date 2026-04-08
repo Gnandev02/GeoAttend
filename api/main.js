@@ -2,36 +2,14 @@ const { query } = require("./utils/db");
 const { protectAdmin, protectStudent, hashPassword, comparePassword, generateToken } = require("../utils/auth");
 const { sendVerificationEmail, sendResetEmail, sendOnboardingEmail } = require("./utils/email");
 const { calculateDistance, isPointInPolygon } = require("../utils/geoHelper");
+const { getIST, timeStringToMinutes } = require("./utils/time");
+const { markAbsentStudents } = require("./utils/absent-marker");
 const crypto = require("crypto");
 let Razorpay;
 try {
     Razorpay = require("razorpay");
 } catch (e) {
     console.warn("Razorpay SDK not found, simulation mode active.");
-}
-
-function getIST() {
-    const now = new Date();
-    const IST = { timeZone: 'Asia/Kolkata' };
-    const date = now.toLocaleDateString('en-CA', IST); // YYYY-MM-DD
-    const time = now.toLocaleTimeString('en-US', { ...IST, hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    return { date, time, raw: now };
-}
-
-// Helpers for time calculation
-function timeStringToMinutes(timeStr) {
-    if (!timeStr) return 0;
-    const str = String(timeStr).trim();
-    const match = str.match(/(\d+):(\d+):?(\d+)?\s*(AM|PM|am|pm)?/);
-    if (!match) return 0;
-    let [ , h, m, , ampm ] = match;
-    h = parseInt(h);
-    m = parseInt(m);
-    if (ampm) {
-        if (ampm.toLowerCase() === 'pm' && h < 12) h += 12;
-        if (ampm.toLowerCase() === 'am' && h === 12) h = 0;
-    }
-    return h * 60 + m;
 }
 
 /* --- HELPER: ENFORCE ABSENCES INTERNALLY --- */
@@ -83,6 +61,12 @@ export default async function handler(req, res) {
     const { action } = req.query;
 
     try {
+        // --- 0. CRON: MARK ABSENT ---
+        if (action === "mark-absent") {
+            const result = await markAbsentStudents();
+            return res.status(result.success ? 200 : 500).json(result);
+        }
+
         // --- 1. CAMPUS DATA (Student Dashboard) ---
         if (action === "get-campus" || action === "getCampus") {
             const student = await protectStudent(req);
