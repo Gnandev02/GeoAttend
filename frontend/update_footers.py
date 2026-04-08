@@ -49,7 +49,7 @@ new_footer = """    <!-- Footer -->
             </div>
             <div class="pt-8 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4">
                 <p class="text-sm text-slate-400">© 2026 GeoAttend. All rights reserved.</p>
-                <div class="text-sm text-slate-400">Built on the MERN Stack</div>
+                <div class="text-sm text-slate-400">Built using modern full-stack web technologies</div>
             </div>
         </div>
     </footer>"""

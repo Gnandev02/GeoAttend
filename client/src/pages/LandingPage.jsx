@@ -423,13 +423,8 @@ const LandingPage = () => {
                     </div>
                     <div className="hidden sm:block w-px h-8 bg-slate-200"></div>
                     <div className="flex flex-col items-center">
-                        <div className="flex items-center gap-2">
-                            <svg className="h-6 w-6 text-brand-600" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                strokeWidth="2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M12 5l7 7-7 7" />
-                            </svg>
-                        </div>
-                        <div className="text-sm font-medium text-slate-500 mt-1">Built on MERN Stack</div>
+                        <div className="font-sans font-bold text-3xl text-slate-900">Full Stack</div>
+                        <div className="text-sm font-medium text-slate-500 mt-1">Modern Web Technologies</div>
                     </div>
                 </div>
             </section >
