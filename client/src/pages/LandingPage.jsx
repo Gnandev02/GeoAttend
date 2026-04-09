@@ -11,7 +11,6 @@ const LandingPage = () => {
     const [totalVerified, setTotalVerified] = useState("...");
     const [systemAccuracy, setSystemAccuracy] = useState("...");
     const [activeStudents, setActiveStudents] = useState("...");
-    const [proxyCases, setProxyCases] = useState("...");
 
     useEffect(() => {
         const fetchStats = async () => {
@@ -23,7 +22,6 @@ const LandingPage = () => {
                     setTotalVerified(data.total_attendance_count <= 500 ? data.total_attendance_count : "500+");
                     setSystemAccuracy(data.accuracy > 0 ? `${data.accuracy}%` : '0%');
                     setActiveStudents(data.total_students <= 500 ? data.total_students : "500+");
-                    setProxyCases(data.manual_attendance_count);
                 }
             } catch (err) {
                 console.error("Failed to fetch landing stats:", err);
@@ -415,11 +413,6 @@ const LandingPage = () => {
                     <div className="flex flex-col items-center">
                         <div className="font-sans font-bold text-3xl text-slate-900">{systemAccuracy}</div>
                         <div className="text-sm font-medium text-slate-500 mt-1">GeoAttend Accuracy</div>
-                    </div>
-                    <div className="hidden sm:block w-px h-8 bg-slate-200"></div>
-                    <div className="flex flex-col items-center">
-                        <div className="font-sans font-bold text-3xl text-slate-900">{proxyCases}</div>
-                        <div className="text-sm font-medium text-slate-500 mt-1">Proxy Cases</div>
                     </div>
                     <div className="hidden sm:block w-px h-8 bg-slate-200"></div>
                     <div className="flex flex-col items-center">

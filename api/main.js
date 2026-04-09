@@ -81,7 +81,7 @@ export default async function handler(req, res) {
             const result = await query(
                 `SELECT name, latitude, longitude, radius, attendance_start_time, attendance_end_time, 
                         attendance_start_date, attendance_end_date,
-                        college_code, polygon_coordinates 
+                        college_code, branch_code, polygon_coordinates 
                  FROM campus_setup 
                  WHERE college_code = $1`,
                 [user.college_code]
@@ -134,7 +134,7 @@ export default async function handler(req, res) {
                 attendance_start_date: row.attendance_start_date,
                 attendance_end_date: row.attendance_end_date,
                 college_code: row.college_code,
-                branch_code: row.college_code, // terminology match
+                branch_code: row.branch_code || row.college_code, 
                 college_name: collegeName,
                 polygon_coordinates: row.polygon_coordinates,
                 polygon_points: polygonPoints,
@@ -168,8 +168,7 @@ export default async function handler(req, res) {
             const attendanceResult = await query(`
                 SELECT 
                     COUNT(*) as total_attendance,
-                    COUNT(CASE WHEN source = 'auto' THEN 1 END) as auto_attendance,
-                    COUNT(CASE WHEN source = 'manual' THEN 1 END) as manual_attendance
+                    COUNT(CASE WHEN source = 'auto' THEN 1 END) as auto_attendance
                 FROM attendance
                 WHERE status IN ('Present', 'Absent', 'completed')
             `);
@@ -177,7 +176,6 @@ export default async function handler(req, res) {
             const totalStudents = parseInt(studentResult.rows[0].total_students) || 0;
             const totalAttendance = parseInt(attendanceResult.rows[0].total_attendance) || 0;
             const autoAttendance = parseInt(attendanceResult.rows[0].auto_attendance) || 0;
-            const manualAttendance = parseInt(attendanceResult.rows[0].manual_attendance) || 0;
             
             let accuracy = 0;
             if (totalAttendance > 0) {
@@ -189,7 +187,6 @@ export default async function handler(req, res) {
                 total_students: totalStudents,
                 total_attendance_count: totalAttendance,
                 auto_attendance_count: autoAttendance,
-                manual_attendance_count: manualAttendance,
                 accuracy: accuracy
             });
         }
@@ -206,8 +203,35 @@ export default async function handler(req, res) {
             if (campusQ.rows.length > 0) {
                 const campus = campusQ.rows[0];
                 const today = new Date(todayIST);
-                if (campus.attendance_start_date && today < new Date(campus.attendance_start_date)) return res.status(200).json({ success: false, message: "Academic period not started yet." });
-                if (campus.attendance_end_date && today > new Date(campus.attendance_end_date)) return res.status(200).json({ success: false, message: "Academic period has ended." });
+                
+                // Date Check
+                if (campus.attendance_start_date && today < new Date(campus.attendance_start_date)) {
+                    return res.status(400).json({ success: false, message: "Academic period not started yet." });
+                }
+                if (campus.attendance_end_date && today > new Date(campus.attendance_end_date)) {
+                    return res.status(400).json({ success: false, message: "Academic period has ended." });
+                }
+
+                // Time Check
+                if (campus.attendance_start_time && campus.attendance_end_time) {
+                    const startMins = timeStringToMinutes(campus.attendance_start_time);
+                    const endMins = timeStringToMinutes(campus.attendance_end_time);
+                    const currMins = timeStringToMinutes(currentTime);
+
+                    let isTrackingHours = false;
+                    if (startMins <= endMins) {
+                        isTrackingHours = currMins >= startMins && currMins <= endMins;
+                    } else {
+                        isTrackingHours = currMins >= startMins || currMins <= endMins;
+                    }
+
+                    if (!isTrackingHours) {
+                        return res.status(400).json({ 
+                            success: false, 
+                            message: `Outside of allowed tracking hours (${campus.attendance_start_time} - ${campus.attendance_end_time})` 
+                        });
+                    }
+                }
             }
 
             const { device_id } = req.body;
@@ -1144,7 +1168,11 @@ export default async function handler(req, res) {
                     [name, email, hashedPassword, rollNumber, department || 'General', admin.college_code]
                 );
                 try {
-                    await sendOnboardingEmail(email, name, tempPassword, admin.college_code, `${req.headers.origin || 'https://geoattend.vercel.app'}/student-login.html`);
+                    // Fetch configured branch code for emails (Requirement 11)
+                    const cRes = await query('SELECT branch_code FROM campus_setup WHERE college_code = $1', [admin.college_code]);
+                    const emailBranchCode = (cRes.rows.length > 0 && cRes.rows[0].branch_code) ? cRes.rows[0].branch_code : admin.college_code;
+
+                    await sendOnboardingEmail(email, name, tempPassword, emailBranchCode, `${req.headers.origin || 'https://geoattend.vercel.app'}/student-login.html`);
                 } catch (e) { 
                     console.error("Email fail for student creation (Logged only):", e); 
                     // Non-blocking: Requirement 4 & 8
@@ -1190,11 +1218,18 @@ export default async function handler(req, res) {
                     attendance_end_time,
                     attendance_start_date,
                     attendance_end_date,
-                    polygonCoordinates
+                    polygonCoordinates,
+                    branchCode // Extract branchCode from body (Requirement 11)
                 } = req.body;
+                
+                const branch_code = (branchCode || req.body.collegeCode || "").toString().trim();
 
                 if (!admin.college_code) {
                     return res.status(400).json({ error: "Admin college code missing. Please contact support." });
+                }
+
+                if (!branch_code) {
+                    return res.status(400).json({ error: "Validation failed", message: "Branch code is required" });
                 }
 
                 if (
@@ -1222,8 +1257,8 @@ export default async function handler(req, res) {
 
                 const result = await query(`
                     INSERT INTO campus_setup 
-                    (college_code, name, latitude, longitude, radius, attendance_start_time, attendance_end_time, attendance_start_date, attendance_end_date, polygon_coordinates)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                    (college_code, name, latitude, longitude, radius, attendance_start_time, attendance_end_time, attendance_start_date, attendance_end_date, polygon_coordinates, branch_code)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
                     ON CONFLICT (college_code)
                     DO UPDATE SET
                         name = EXCLUDED.name,
@@ -1234,7 +1269,8 @@ export default async function handler(req, res) {
                         attendance_end_time = EXCLUDED.attendance_end_time,
                         attendance_start_date = EXCLUDED.attendance_start_date,
                         attendance_end_date = EXCLUDED.attendance_end_date,
-                        polygon_coordinates = EXCLUDED.polygon_coordinates
+                        polygon_coordinates = EXCLUDED.polygon_coordinates,
+                        branch_code = EXCLUDED.branch_code
                     RETURNING *
                 `, [
                     admin.college_code,
@@ -1246,7 +1282,8 @@ export default async function handler(req, res) {
                     attendance_end_time || null,
                     attendance_start_date || null,
                     attendance_end_date || null,
-                    JSON.stringify(polygonCoordinates)
+                    JSON.stringify(polygonCoordinates),
+                    branch_code
                 ]);
 
                 if (req.body.collegeName) {

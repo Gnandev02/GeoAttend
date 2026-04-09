@@ -1082,7 +1082,7 @@
             if (hasData) {
                 // Support both college_name and name (campus name) as fallback
                 document.getElementById('geo-college-name').value = mainCampus.college_name || mainCampus.name || '';
-                document.getElementById('geo-college-code').value = mainCampus.college_code || '';
+                document.getElementById('geo-college-code').value = mainCampus.branch_code || mainCampus.college_code || '';
                 
                 document.getElementById('geo-start-time').value = mainCampus.attendance_start_time || '';
                 document.getElementById('geo-end-time').value = mainCampus.attendance_end_time || '';
@@ -1402,8 +1402,8 @@
         });
 
         function switchTab(tabId) {
-            // Requirement 7: Auto-redirect if campus not set
-            if (!isCampusConfigured && (tabId === 'students' || tabId === 'logs' || tabId === 'overview')) {
+            // Requirement 7: Auto-redirect if campus not set (Bypassed if in Demo mode to allow UI inspection)
+            if (!isDemo && !isCampusConfigured && (tabId === 'students' || tabId === 'logs' || tabId === 'overview')) {
                 alert("Please complete your Campus Setup (Geofence & Name) before accessing this section.");
                 tabId = 'geofence';
             }
@@ -1411,12 +1411,14 @@
             ['overview', 'students', 'logs', 'geofence'].forEach(id => {
                 const btn = document.getElementById(`tab-${id}`);
                 const content = document.getElementById(`content-${id}`);
-                btn.classList.remove('active');
-                content.style.display = 'none';
+                if (btn) btn.classList.remove('active');
+                if (content) content.style.display = 'none';
             });
             
-            document.getElementById(`tab-${tabId}`).classList.add('active');
-            document.getElementById(`content-${tabId}`).style.display = 'block';
+            const activeBtn = document.getElementById(`tab-${tabId}`);
+            const activeContent = document.getElementById(`content-${tabId}`);
+            if (activeBtn) activeBtn.classList.add('active');
+            if (activeContent) activeContent.style.display = 'block';
             
             if (window.innerWidth < 768) toggleSidebar(false);
         }

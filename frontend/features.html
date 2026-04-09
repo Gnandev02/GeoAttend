@@ -362,9 +362,6 @@
                 
                 const statGeoAccuracy = document.getElementById('stat-geo-accuracy');
                 if (statGeoAccuracy) statGeoAccuracy.textContent = data.accuracy > 0 ? data.accuracy + '%' : '0%';
-                
-                const statProxyCases = document.getElementById('stat-proxy-cases');
-                if (statProxyCases) statProxyCases.textContent = data.manual_attendance_count;
             }
         } catch (error) {
             console.error("Failed to fetch live stats:", error);
