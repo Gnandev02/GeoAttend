@@ -33,9 +33,9 @@
         .tab-btn.inactive:hover { background: #f8fafc; color: #1e293b; }
         
         /* Face Auth Styles */
-        #video-container { position: relative; width: 100%; max-width: 440px; border-radius: 1rem; background: #000; margin: 0 auto; overflow: hidden; border: 4px solid #f1f5f9; }
-        #webcam-video { width: 100%; height: auto; display: block; background: #000; }
-        .face-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; }
+        #video-container { position: relative; width: 100%; max-width: 440px; min-height: 300px; border-radius: 1rem; background: #f8fafc; margin: 0 auto; overflow: hidden; border: 4px solid #f1f5f9; display: flex; align-items: center; justify-content: center; }
+        #webcam-video { width: 100%; height: 100%; object-fit: cover; display: block; background: #f8fafc; z-index: 100; transform: scaleX(-1); }
+        .face-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 110; }
     </style>
 </head>
 
@@ -220,8 +220,7 @@
             
             <div class="p-8 flex flex-col items-center">
                 <div id="video-container">
-                    <video id="webcam-video" autoplay muted playsinline></video>
-                    <div id="face-overlay" class="face-overlay"></div>
+                    <video id="webcam-video" autoplay muted playsinline class="bg-slate-50"></video>
                 </div>
                 
                 <div id="face-feedback" class="mt-6 px-4 py-2 rounded-full bg-slate-100 text-slate-600 text-xs font-bold uppercase tracking-widest">
@@ -859,54 +858,78 @@
             document.getElementById('captureBtn').disabled = true;
 
             const loaded = await loadFaceModels();
-            if (!loaded) return closeFaceModal();
-
+            if (!loaded) return;
+            
             try {
                 const video = document.getElementById('webcam-video');
+                const feedbackEl = document.getElementById('face-feedback');
+                
                 document.getElementById('faceModalSub').textContent = "Requesting Camera...";
                 
-                // Simplified constraints for maximum compatibility
+                // Set strict attributes via JS
+                video.autoplay = true;
+                video.muted = true;
+                video.playsInline = true;
+
+                // 1. Basic Constraints for maximum reliability
                 const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { 
-                        facingMode: "user",
-                        width: { ideal: 640 }
-                    } 
+                    video: true,
+                    audio: false
                 });
                 
                 video.srcObject = stream;
                 
-                // Mirror the video for better UX
+                // 2. Mirror and Style
                 video.style.transform = "scaleX(-1)";
                 
-                // Direct play call
-                await video.play();
-                console.log("Webcam live");
+                // 3. Play with explicit monitoring
+                await new Promise((resolve, reject) => {
+                    video.onplaying = () => {
+                        console.log("Video started playing");
+                        resolve();
+                    };
+                    video.onloadeddata = () => video.play().catch(reject);
+                    video.onerror = (e) => reject(new Error("Video Error: " + (e.message || "Unknown")));
+                    
+                    // Fallback play trigger
+                    setTimeout(() => {
+                        video.play().then(resolve).catch(reject);
+                    }, 500);
+                });
 
                 document.getElementById('faceModalSub').textContent = "Camera Active";
                 
+                // 4. Initial Frame Check
+                if (video.videoWidth === 0) {
+                    console.warn("Video dimension delayed...");
+                    await new Promise(r => setTimeout(r, 1000));
+                }
+
                 // Detection loop
-                const feedbackEl = document.getElementById('face-feedback');
                 let detectionInterval = setInterval(async () => {
                     if (video.paused || video.ended || !faceModelsLoaded) return;
                     
-                    const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions());
-                    if (detection) {
-                        feedbackEl.textContent = "Face Detected - Hold Still";
-                        feedbackEl.className = "mt-6 px-4 py-2 rounded-full bg-green-100 text-green-600 text-xs font-bold uppercase tracking-widest";
-                        document.getElementById('captureBtn').disabled = false;
-                    } else {
-                        feedbackEl.textContent = "Position your face in the frame";
-                        feedbackEl.className = "mt-6 px-4 py-2 rounded-full bg-slate-100 text-slate-600 text-xs font-bold uppercase tracking-widest";
-                        document.getElementById('captureBtn').disabled = true;
-                    }
+                    try {
+                        const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions());
+                        if (detection) {
+                            feedbackEl.textContent = "Face Detected - Hold Still";
+                            feedbackEl.className = "mt-6 px-4 py-2 rounded-full bg-green-100 text-green-600 text-xs font-bold uppercase tracking-widest";
+                            document.getElementById('captureBtn').disabled = false;
+                        } else {
+                            feedbackEl.textContent = "Position your face in the frame";
+                            feedbackEl.className = "mt-6 px-4 py-2 rounded-full bg-slate-100 text-slate-600 text-xs font-bold uppercase tracking-widest";
+                            document.getElementById('captureBtn').disabled = true;
+                        }
+                    } catch (e) { console.warn("Detection skipped frame", e); }
                 }, 500);
                 
                 video.dataset.interval = detectionInterval;
             } catch (err) {
-                console.error("Camera Error:", err);
-                document.getElementById('faceModalSub').textContent = "Camera Error";
-                alert("Could not access camera. Please ensure permissions are granted and no other app is using it.");
-                closeFaceModal();
+                console.error("Camera Error Details:", err);
+                document.getElementById('faceModalSub').textContent = "Camera Access Error";
+                document.getElementById('face-feedback').textContent = "ERROR: " + (err.message || "Permission Denied or Device Busy");
+                document.getElementById('face-feedback').className = "mt-6 px-4 py-2 rounded-full bg-red-100 text-red-600 text-xs font-bold uppercase tracking-widest";
+                alert("Camera Error: " + (err.message || "Could not access camera. Please check permissions."));
             }
         }
 
