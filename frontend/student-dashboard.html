@@ -300,6 +300,17 @@
         document.getElementById('user-name').textContent = user.name || 'Student';
         document.getElementById('user-info').textContent = `${user.rollNumber || ''} • ${user.email}`;
 
+        // Initialize real data loading immediately
+        async function initStudentData() {
+            try {
+                await fetchProfile();
+                await fetchTodayStats();
+            } catch (err) {
+                console.error("Initial data load error:", err);
+            }
+        }
+        initStudentData();
+
         function showSection(sectionId) {
             document.querySelectorAll(".section").forEach(sec => {
                 sec.classList.add("hidden");
@@ -326,17 +337,25 @@
                     headers: { "Authorization": "Bearer " + token }
                 });
                 const { data } = await res.json();
-                if (data) {
-                    document.getElementById("profileName").innerText = data.name;
-                    document.getElementById("profileEmail").innerText = data.email;
-                    document.getElementById("profileRollNum").innerText = data.roll_number;
-                    document.getElementById("profileDept").innerText = data.department || 'Not Assigned';
-                    document.getElementById("profileCampus").innerText = data.campus_name || 'GeoAttend Campus';
-                    if (data.profile_image) {
-                        document.getElementById("profileImg").src = data.profile_image;
-                        document.getElementById("user-initial").innerHTML = `<img src="${data.profile_image}" class="w-full h-full rounded-full object-cover">`;
-                    } else {
-                        document.getElementById("profileImg").src = `https://ui-avatars.com/api/?name=${data.name}&background=random`;
+                    if (data) {
+                        document.getElementById("profileName").innerText = data.name;
+                        document.getElementById("profileEmail").innerText = data.email;
+                        document.getElementById("profileRollNum").innerText = data.roll_number;
+                        document.getElementById("profileDept").innerText = data.department || 'Not Assigned';
+                        document.getElementById("profileCampus").innerText = data.campus_name || 'GeoAttend Campus';
+                        
+                        // Update Sidebar as well
+                        document.getElementById('user-name').textContent = data.name;
+                        document.getElementById('user-info').textContent = `${data.roll_number || ''} • ${data.email}`;
+                        
+                        if (data.profile_image) {
+                            document.getElementById("profileImg").src = data.profile_image;
+                            document.getElementById("user-initial").innerHTML = `<img src="${data.profile_image}" class="w-full h-full rounded-full object-cover">`;
+                        } else {
+                            const nameChar = data.name ? data.name.charAt(0).toUpperCase() : 'S';
+                            document.getElementById("user-initial").innerText = nameChar;
+                            document.getElementById("profileImg").src = `https://ui-avatars.com/api/?name=${data.name}&background=random`;
+                        }
                     }
 
                     // Handle Face Status
@@ -548,15 +567,10 @@
                     });
                 }
 
-                fetchTodayStats();
-                fetchProfile(); // Load profile image for sidebar
-                // Wait for user to click 'Start Tracking'
-                // startTracking();
-                
                 // Real-time update (TASK 7 & 9)
                 setInterval(() => {
                     fetchTodayStats();
-                }, 5000); 
+                }, 10000); 
             } catch (err) {
                 console.error("Initialization error:", err);
                 showAlert("Could not load campus data.", false);

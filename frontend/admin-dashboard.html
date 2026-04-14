@@ -1120,6 +1120,12 @@
                 }
                 document.getElementById('geo-radius').value = mainCampus.radius || '500';
                 
+                // Set Face Auth Toggle
+                const faceAuthToggle = document.getElementById('geo-face-auth');
+                if (faceAuthToggle) {
+                    faceAuthToggle.checked = !!mainCampus.face_auth_enabled;
+                }
+                
                 // Polygon logic
                 currentPolygonPoints = [];
                 if (mainCampus.polygon_coordinates && mainCampus.polygon_coordinates.length >= 3) {
@@ -1224,7 +1230,8 @@
                 attendance_end_time: attendanceEndTime,
                 attendance_start_date: attendanceStartDate,
                 attendance_end_date: attendanceEndDate,
-                polygonCoordinates: currentPolygonPoints
+                polygonCoordinates: currentPolygonPoints,
+                face_auth_enabled: document.getElementById('geo-face-auth').checked
             };
 
             const btn = e.submitter;
