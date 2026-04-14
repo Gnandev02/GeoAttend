@@ -33,11 +33,9 @@
         .tab-btn.inactive:hover { background: #f8fafc; color: #1e293b; }
         
         /* Face Auth Styles */
-        #video-container { position: relative; width: 100%; max-width: 400px; min-height: 250px; overflow: hidden; border-radius: 1rem; background: #222; margin: 0 auto; line-height: 0; }
-        #webcam-video { width: 100% !important; height: auto !important; display: block; transform: scaleX(-1); background: transparent; }
-        .face-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; border: 2px solid rgba(255,255,255,0.1); z-index: 10; }
-        .scanner-line { position: absolute; width: 100%; height: 2px; background: rgba(59, 130, 246, 0.8); box-shadow: 0 0 15px 5px rgba(59, 130, 246, 0.5); animation: scan 2s linear infinite; z-index: 20; }
-        @keyframes scan { from { top: 0; } to { top: 100%; } }
+        #video-container { position: relative; width: 100%; max-width: 440px; border-radius: 1rem; background: #000; margin: 0 auto; overflow: hidden; border: 4px solid #f1f5f9; }
+        #webcam-video { width: 100%; height: auto; display: block; background: #000; }
+        .face-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; }
     </style>
 </head>
 
@@ -223,9 +221,7 @@
             <div class="p-8 flex flex-col items-center">
                 <div id="video-container">
                     <video id="webcam-video" autoplay muted playsinline></video>
-                    <div class="face-overlay">
-                        <div class="scanner-line"></div>
-                    </div>
+                    <div id="face-overlay" class="face-overlay"></div>
                 </div>
                 
                 <div id="face-feedback" class="mt-6 px-4 py-2 rounded-full bg-slate-100 text-slate-600 text-xs font-bold uppercase tracking-widest">
@@ -881,31 +877,17 @@
                 
                 // Mirror the video for better UX
                 video.style.transform = "scaleX(-1)";
-                video.setAttribute('playsinline', '');
-                video.setAttribute('muted', '');
-                video.setAttribute('autoplay', '');
                 
-                // Wait for frames to actually arrive
-                document.getElementById('faceModalSub').textContent = "Streaming face...";
-                await new Promise((resolve) => {
-                    const checkFrame = () => {
-                        if (video.videoWidth > 0 && video.currentTime > 0) {
-                            resolve();
-                        } else {
-                            video.play().catch(() => {});
-                            setTimeout(checkFrame, 200);
-                        }
-                    };
-                    checkFrame();
-                    setTimeout(resolve, 3000); // 3s max wait
-                });
+                // Direct play call
+                await video.play();
+                console.log("Webcam live");
 
-                document.getElementById('faceModalSub').textContent = "Camera Ready";
+                document.getElementById('faceModalSub').textContent = "Camera Active";
                 
                 // Detection loop
                 const feedbackEl = document.getElementById('face-feedback');
                 let detectionInterval = setInterval(async () => {
-                    if (video.paused || video.ended || !faceModelsLoaded || video.currentTime === 0) return;
+                    if (video.paused || video.ended || !faceModelsLoaded) return;
                     
                     const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions());
                     if (detection) {
