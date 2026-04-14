@@ -9,7 +9,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
     <script src="js/map-config.js"></script>
     <script>
         tailwind.config = {
@@ -48,7 +47,6 @@
             <div class="p-4 space-y-1.5 flex flex-col">
                 <button id="nav-dashboard" onclick="showSection('dashboardSection')" class="tab-btn active"><i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard</button>
                 <button id="nav-profile" onclick="showSection('profileSection')" class="tab-btn inactive"><i data-lucide="user" class="w-4 h-4"></i> Profile</button>
-                <button id="nav-face" onclick="showSection('faceSection')" class="tab-btn inactive"><i data-lucide="scan-face" class="w-4 h-4"></i> Face Verification</button>
                 <button onclick="window.location.href='student-attendance.html'" class="tab-btn inactive"><i data-lucide="clipboard-list" class="w-4 h-4"></i> Attendance Records</button>
                 <button onclick="window.location.href='change-password.html'" class="tab-btn inactive"><i data-lucide="lock" class="w-4 h-4"></i> Change Password</button>
             </div>
@@ -124,77 +122,6 @@
             </div>
         </div>
 
-            <div id="faceSection" class="section hidden space-y-6">
-                <!-- Status Card -->
-                <div class="saas-card p-8 flex flex-col items-center text-center">
-                    <div id="faceStatusIconMain" class="w-24 h-24 rounded-full bg-slate-50 flex items-center justify-center mb-6 border-4 border-white shadow-md">
-                        <i data-lucide="scan-face" id="f-icon" class="w-12 h-12 text-slate-400"></i>
-                    </div>
-                    <h2 class="text-2xl font-bold text-slate-900">Face Authentication</h2>
-                    <p class="text-slate-500 mt-2 max-w-sm">Manage your face biometric data for secure attendance verification.</p>
-                    
-                    <div id="faceStatusBadge" class="mt-6 px-4 py-1.5 rounded-full text-xs font-extrabold uppercase tracking-widest bg-slate-100 text-slate-500">
-                        Checking Status...
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-2xl mt-10">
-                        <!-- Register/Update Button -->
-                        <button id="btn-face-action" onclick="toggleFaceRegistration()" class="p-6 bg-white border border-slate-200 rounded-2xl hover:border-blue-400 hover:shadow-xl hover:shadow-blue-500/10 group transition-all text-left flex items-start gap-4">
-                            <div class="p-3 bg-blue-50 text-blue-600 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                                <i data-lucide="camera" class="w-6 h-6"></i>
-                            </div>
-                            <div>
-                                <h4 id="btn-face-title" class="font-bold text-slate-900">Register Face</h4>
-                                <p id="btn-face-desc" class="text-xs text-slate-500 mt-1">Setup your biometric identity for attendance.</p>
-                            </div>
-                        </button>
-
-                        <!-- Verify Test Button -->
-                        <button onclick="openFaceVerify(true)" class="p-6 bg-white border border-slate-200 rounded-2xl hover:border-emerald-400 hover:shadow-xl hover:shadow-emerald-500/10 group transition-all text-left flex items-start gap-4">
-                            <div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl group-hover:bg-emerald-600 group-hover:text-white transition-colors">
-                                <i data-lucide="shield-check" class="w-6 h-6"></i>
-                            </div>
-                            <div>
-                                <h4 class="font-bold text-slate-900">Verify Identity</h4>
-                                <p class="text-xs text-slate-500 mt-1">Test your biometric match accuracy.</p>
-                            </div>
-                        </button>
-
-                        <!-- Delete Button (Only if registered) -->
-                        <button id="btn-face-delete" onclick="showDeleteConfirm()" class="hidden p-6 bg-white border border-slate-200 rounded-2xl hover:border-red-400 hover:shadow-xl hover:shadow-red-500/10 group transition-all text-left flex items-start gap-4">
-                            <div class="p-3 bg-red-50 text-red-600 rounded-xl group-hover:bg-red-600 group-hover:text-white transition-colors">
-                                <i data-lucide="trash-2" class="w-6 h-6"></i>
-                            </div>
-                            <div>
-                                <h4 class="font-bold text-slate-900">Delete Face Data</h4>
-                                <p class="text-xs text-slate-500 mt-1">Permanently remove your facial biometric records.</p>
-                            </div>
-                        </button>
-                    </div>
-
-                    <!-- Face Registration UI (Hidden Initially) -->
-                    <div id="face-registration-container" class="hidden w-full max-w-xl mt-10 p-6 bg-slate-50 rounded-3xl border border-slate-200 space-y-4 animate-in fade-in duration-300">
-                        <div class="relative rounded-2xl overflow-hidden bg-slate-800 aspect-video shadow-2xl">
-                            <video id="regVideo" autoplay muted playsinline class="w-full h-full object-cover"></video>
-                            <canvas id="regCanvas" class="absolute inset-0"></canvas>
-                            <div id="regLoader" class="absolute inset-0 bg-slate-900/80 flex flex-col items-center justify-center text-white gap-3">
-                                <div class="animate-spin rounded-full h-10 w-10 border-4 border-blue-500 border-t-transparent"></div>
-                                <p class="text-sm font-bold tracking-widest uppercase">Initializing AI Module...</p>
-                            </div>
-                        </div>
-                        <div id="regInfo" class="p-3 bg-white rounded-xl border text-xs font-bold text-slate-500 text-center">
-                            Scanning environment...
-                        </div>
-                        <div class="flex gap-3">
-                            <button onclick="stopFaceRegistration()" class="flex-1 py-3 text-sm font-bold text-slate-500 hover:bg-slate-200 rounded-xl transition-all">Cancel</button>
-                            <button id="captureFaceBtn" disabled class="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-indigo-200 transition-all disabled:opacity-50">
-                                Capture & Save
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <!-- Profile Section -->
             <div id="profileSection" class="section hidden space-y-6">
                 <div class="saas-card p-8 flex flex-col items-center">
@@ -231,56 +158,6 @@
         </div>
     </div>
 
-    <!-- Face Verification Modal (Before Attendance) -->
-    <div id="faceVerifyModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-in zoom-in duration-300">
-            <div class="p-6 text-center border-b border-slate-50">
-                <h3 class="text-lg font-extrabold text-slate-900">Face Authentication</h3>
-                <p id="verifyModalStatus" class="text-xs text-slate-500 mt-1 font-medium">Verifying your identity...</p>
-            </div>
-            <div class="p-8 space-y-6">
-                <div class="relative rounded-2xl overflow-hidden bg-slate-900 aspect-square shadow-inner">
-                    <video id="verifyVideo" autoplay muted playsinline class="w-full h-full object-cover"></video>
-                    <canvas id="verifyCanvas" class="absolute inset-0"></canvas>
-                    <div id="verifyOverlay" class="absolute inset-0 flex items-center justify-center bg-slate-900/40">
-                         <div id="verifyScanner" class="w-48 h-48 border-2 border-blue-400/50 rounded-full relative">
-                             <div class="absolute inset-0 border-t-2 border-blue-400 rounded-full animate-[spin_3s_linear_infinite]"></div>
-                         </div>
-                    </div>
-                    <div id="verifySuccessIcon" class="hidden absolute inset-0 bg-emerald-500/90 flex flex-col items-center justify-center text-white p-6 animate-in fade-in duration-300">
-                        <i data-lucide="check-circle" class="w-16 h-16 mb-4"></i>
-                        <h4 class="text-xl font-bold">Verified!</h4>
-                        <p class="text-xs opacity-90 text-center mt-2">Identity confirmed. Marking attendance...</p>
-                    </div>
-                </div>
-                
-                <div id="verifyErrorBox" class="hidden p-3 bg-red-50 text-red-700 rounded-xl border border-red-100 text-[11px] font-bold text-center">
-                    Face mismatch. Please try again.
-                </div>
-
-                <div class="flex gap-3">
-                    <button id="verifyCancelBtn" onclick="closeFaceVerify()" class="flex-1 py-3 text-sm font-bold text-slate-500 hover:bg-slate-50 rounded-xl transition-all">Cancel</button>
-                    <button id="retryVerifyBtn" onclick="startFaceVerification()" class="hidden flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl transition-all">Retry</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Confirm Delete Modal -->
-    <div id="confirmDeleteModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[200] hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl p-6 text-center animate-in zoom-in duration-200">
-             <div class="p-4 bg-red-50 text-red-600 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                 <i data-lucide="alert-triangle" class="w-8 h-8"></i>
-             </div>
-             <h3 class="text-lg font-bold text-slate-900">Remove Biometric Data?</h3>
-             <p class="text-sm text-slate-500 mt-2">Are you sure you want to remove your registered face data? You will need to re-register before marking attendance if Face Auth is enabled.</p>
-             <div class="flex gap-3 mt-8">
-                 <button onclick="hideDeleteConfirm()" class="flex-1 py-3 text-sm font-bold text-slate-500 bg-slate-50 hover:bg-slate-100 rounded-xl transition-all">Cancel</button>
-                 <button onclick="processDeleteFace()" class="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-xl transition-all">Yes, Delete</button>
-             </div>
-        </div>
-    </div>
-
     <script>
         lucide.createIcons();
         const token = localStorage.getItem('token');
@@ -300,35 +177,23 @@
         document.getElementById('user-name').textContent = user.name || 'Student';
         document.getElementById('user-info').textContent = `${user.rollNumber || ''} • ${user.email}`;
 
-        // Initialize real data loading immediately
-        async function initStudentData() {
-            try {
-                await fetchProfile();
-                await fetchTodayStats();
-            } catch (err) {
-                console.error("Initial data load error:", err);
-            }
-        }
-        initStudentData();
-
         function showSection(sectionId) {
             document.querySelectorAll(".section").forEach(sec => {
                 sec.classList.add("hidden");
             });
             document.getElementById(sectionId).classList.remove("hidden");
 
+            // Update Nav UI
             document.querySelectorAll(".tab-btn").forEach(btn => {
-                btn.classList.add("inactive");
-                btn.classList.remove("active");
+                btn.classList.replace("active", "inactive");
             });
-            const activeNav = {
-                'dashboardSection': 'nav-dashboard',
-                'profileSection': 'nav-profile',
-                'faceSection': 'nav-face'
-            }[sectionId];
-            if (activeNav) document.getElementById(activeNav).classList.add("active");
             
-            if (sectionId === 'faceSection') fetchProfile();
+            if (sectionId === 'dashboardSection') {
+                document.getElementById('nav-dashboard').classList.replace("inactive", "active");
+            } else if (sectionId === 'profileSection') {
+                document.getElementById('nav-profile').classList.replace("inactive", "active");
+                fetchProfile();
+            }
         }
 
         async function fetchProfile() {
@@ -337,54 +202,18 @@
                     headers: { "Authorization": "Bearer " + token }
                 });
                 const { data } = await res.json();
-                    if (data) {
-                        document.getElementById("profileName").innerText = data.name;
-                        document.getElementById("profileEmail").innerText = data.email;
-                        document.getElementById("profileRollNum").innerText = data.roll_number;
-                        document.getElementById("profileDept").innerText = data.department || 'Not Assigned';
-                        document.getElementById("profileCampus").innerText = data.campus_name || 'GeoAttend Campus';
-                        
-                        // Update Sidebar as well
-                        document.getElementById('user-name').textContent = data.name;
-                        document.getElementById('user-info').textContent = `${data.roll_number || ''} • ${data.email}`;
-                        
-                        if (data.profile_image) {
-                            document.getElementById("profileImg").src = data.profile_image;
-                            document.getElementById("user-initial").innerHTML = `<img src="${data.profile_image}" class="w-full h-full rounded-full object-cover">`;
-                        } else {
-                            const nameChar = data.name ? data.name.charAt(0).toUpperCase() : 'S';
-                            document.getElementById("user-initial").innerText = nameChar;
-                            document.getElementById("profileImg").src = `https://ui-avatars.com/api/?name=${data.name}&background=random`;
-                        }
-                    }
-
-                    // Handle Face Status
-                    const statusBadge = document.getElementById('faceStatusBadge');
-                    const faceIconDiv = document.getElementById('faceStatusIconMain');
-                    const btnActionTitle = document.getElementById('btn-face-title');
-                    const btnActionDesc = document.getElementById('btn-face-desc');
-                    const btnDelete = document.getElementById('btn-face-delete');
-                    
-                    if (data.has_face) {
-                        statusBadge.innerText = 'Registered';
-                        statusBadge.className = 'mt-6 px-4 py-1.5 rounded-full text-xs font-extrabold uppercase tracking-widest bg-emerald-100 text-emerald-600 border border-emerald-200';
-                        faceIconDiv.className = 'w-24 h-24 rounded-full bg-emerald-50 flex items-center justify-center mb-6 border-4 border-white shadow-md text-emerald-600';
-                        faceIconDiv.innerHTML = '<i data-lucide="check-circle" class="w-12 h-12"></i>';
-                        btnActionTitle.innerText = 'Update Face Data';
-                        btnActionDesc.innerText = 'Re-scan your face to improve accuracy.';
-                        btnDelete.classList.remove('hidden');
-                        isFaceRegistered = true;
+                if (data) {
+                    document.getElementById("profileName").innerText = data.name;
+                    document.getElementById("profileEmail").innerText = data.email;
+                    document.getElementById("profileRollNum").innerText = data.roll_number;
+                    document.getElementById("profileDept").innerText = data.department || 'Not Assigned';
+                    document.getElementById("profileCampus").innerText = data.campus_name || 'GeoAttend Campus';
+                    if (data.profile_image) {
+                        document.getElementById("profileImg").src = data.profile_image;
+                        document.getElementById("user-initial").innerHTML = `<img src="${data.profile_image}" class="w-full h-full rounded-full object-cover">`;
                     } else {
-                        statusBadge.innerText = 'Not Registered';
-                        statusBadge.className = 'mt-6 px-4 py-1.5 rounded-full text-xs font-extrabold uppercase tracking-widest bg-red-100 text-red-600 border border-red-200';
-                        faceIconDiv.className = 'w-24 h-24 rounded-full bg-red-50 flex items-center justify-center mb-6 border-4 border-white shadow-md text-red-600';
-                        faceIconDiv.innerHTML = '<i data-lucide="scan-face" class="w-12 h-12"></i>';
-                        btnActionTitle.innerText = 'Register Face';
-                        btnActionDesc.innerText = 'Setup your biometric identity for attendance.';
-                        btnDelete.classList.add('hidden');
-                        isFaceRegistered = false;
+                        document.getElementById("profileImg").src = `https://ui-avatars.com/api/?name=${data.name}&background=random`;
                     }
-                    lucide.createIcons();
                 }
 
                 // Fetch Attendance Percentage separately as requested
@@ -439,14 +268,10 @@
         let lastRealStatus = null;
         let pendingStatus = null;
         let consecutiveMatches = 0;
+        let currentLat = 0, currentLng = 0;
         let currentAccuracy = 0;
         let hasMarkedInToday = false;
         let attendanceWindow = { start: null, end: null };
-        let faceAuthEnabled = false;
-        let faceModelsLoaded = false;
-        let isFaceVerifying = false;
-        let isFaceRegistered = false;
-        let isVerifyDemoMode = false;
 
         function isWithinCollegeHours() {
             if (!attendanceWindow.start || !attendanceWindow.end) return true;
@@ -487,7 +312,6 @@
                 // Global configs (Task 1)
                 attendanceWindow = { start: data.attendance_start_time, end: data.attendance_end_time };
                 radius = data.radius;
-                faceAuthEnabled = !!data.face_auth_enabled;
                 const polygonPoints = data.polygon_coordinates || data.polygon_points || [];
 
                 // Attendance Period Display
@@ -567,10 +391,15 @@
                     });
                 }
 
+                fetchTodayStats();
+                fetchProfile(); // Load profile image for sidebar
+                // Wait for user to click 'Start Tracking'
+                // startTracking();
+                
                 // Real-time update (TASK 7 & 9)
                 setInterval(() => {
                     fetchTodayStats();
-                }, 10000); 
+                }, 5000); 
             } catch (err) {
                 console.error("Initialization error:", err);
                 showAlert("Could not load campus data.", false);
@@ -682,12 +511,8 @@
 
             // Automatic marking logic (Task 3)
             if (isInside && withinTime && !hasMarkedInToday) {
-                console.log("Triggering attendance flow: Inside and within hours.");
-                if (faceAuthEnabled) {
-                    if (!isFaceVerifying) openFaceVerify();
-                } else {
-                    markAttendance("IN");
-                }
+                console.log("Triggering auto-attendance: Inside and within hours.");
+                markAttendance("IN");
             }
 
             // Hysteresis logic for status changes (OUT tracking)
@@ -771,250 +596,6 @@
                 fetchTodayStats();
             } catch (err) {
                 console.error("Mark attendance error:", err);
-            }
-        }
-
-
-        // --- FACE API LOGIC ---
-        const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights/';
-
-        async function loadFaceModels() {
-            if (faceModelsLoaded) return;
-            try {
-                await Promise.all([
-                    faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-                    faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-                    faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
-                ]);
-                faceModelsLoaded = true;
-                console.log("Face models loaded");
-                const loader = document.getElementById('regLoader');
-                if (loader) loader.classList.add('hidden');
-            } catch (err) {
-                console.error("Model loading error:", err);
-                showAlert("Face recognition models failed to load", false);
-            }
-        }
-
-        let regStream = null;
-        async function toggleFaceRegistration() {
-            const container = document.getElementById('face-registration-container');
-            const video = document.getElementById('regVideo');
-            
-            if (container.classList.contains('hidden')) {
-                container.classList.remove('hidden');
-                document.getElementById('regBtnText')?.innerText = 'Cancel Registration';
-                await loadFaceModels();
-                
-                try {
-                    regStream = await navigator.mediaDevices.getUserMedia({ video: {} });
-                    video.srcObject = regStream;
-                    startFaceDetection(video, 'regCanvas', 'captureFaceBtn', 'regInfo');
-                } catch (err) {
-                    console.error("Webcam error:", err);
-                    showAlert("Camera permission denied", false);
-                }
-            } else {
-                stopFaceRegistration();
-            }
-        }
-
-        function stopFaceRegistration() {
-            const container = document.getElementById('face-registration-container');
-            container.classList.add('hidden');
-            if (regStream) {
-                regStream.getTracks().forEach(track => track.stop());
-                regStream = null;
-            }
-        }
-
-        let detectionInterval = null;
-        function startFaceDetection(video, canvasId, buttonId, infoId) {
-            const canvas = document.getElementById(canvasId);
-            const button = document.getElementById(buttonId);
-            const info = document.getElementById(infoId);
-            
-            detectionInterval = setInterval(async () => {
-                const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
-                    .withFaceLandmarks()
-                    .withFaceDescriptor();
-                
-                if (detection) {
-                    info.innerText = "✅ Face detected. Ready to capture.";
-                    info.className = "text-[10px] text-center text-emerald-600 font-bold";
-                    button.disabled = false;
-                    
-                    // Attach click handler once
-                    button.onclick = () => saveFaceDescriptor(detection.descriptor);
-                } else {
-                    info.innerText = "🔍 Searching for face...";
-                    info.className = "text-[10px] text-center text-slate-500 font-medium";
-                    button.disabled = true;
-                }
-            }, 500);
-        }
-
-        async function saveFaceDescriptor(descriptor) {
-            const descriptorStr = descriptor.join(',');
-            const endpoint = isFaceRegistered ? "/api/main?action=face-update" : "/api/main?action=face-register";
-            
-            try {
-                const res = await fetch(endpoint, {
-                    method: "POST",
-                    headers: { 
-                        "Content-Type": "application/json",
-                        "Authorization": "Bearer " + token 
-                    },
-                    body: JSON.stringify({ descriptor: descriptorStr })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    showAlert(isFaceRegistered ? "Biometric record updated!" : "Face registered successfully!", true);
-                    stopFaceRegistration();
-                    fetchProfile();
-                } else {
-                    showAlert(data.message, false);
-                }
-            } catch (err) {
-                console.error("Save descriptor error:", err);
-            }
-        }
-
-        // DELETE FACE LOGIC
-        function showDeleteConfirm() {
-            document.getElementById('confirmDeleteModal').classList.remove('hidden');
-        }
-        function hideDeleteConfirm() {
-            document.getElementById('confirmDeleteModal').classList.add('hidden');
-        }
-        async function processDeleteFace() {
-            try {
-                const res = await fetch("/api/main?action=face-delete", {
-                    method: "POST",
-                    headers: { "Authorization": "Bearer " + token }
-                });
-                const data = await res.json();
-                if (data.success) {
-                    showAlert("Face data permanently removed.", true);
-                    hideDeleteConfirm();
-                    fetchProfile();
-                }
-            } catch (err) {
-                console.error("Delete face error:", err);
-            }
-        }
-
-        // VERIFICATION FLOW
-        let verifyStream = null;
-        async function openFaceVerify(demo = false) {
-            if (!isFaceRegistered && demo) {
-                showAlert("Please register your face first", false);
-                return;
-            }
-            isVerifyDemoMode = demo;
-            isFaceVerifying = true;
-            document.getElementById('faceVerifyModal').classList.remove('hidden');
-            document.getElementById('verifyCancelBtn').classList.remove('hidden');
-            document.getElementById('verifySuccessIcon').classList.add('hidden');
-            document.getElementById('retryVerifyBtn').classList.add('hidden');
-            document.getElementById('verifyErrorBox').classList.add('hidden');
-            document.getElementById('verifyModalStatus').innerText = "Opening camera...";
-            
-            await loadFaceModels();
-            startFaceVerification();
-        }
-
-        async function startFaceVerification() {
-            const video = document.getElementById('verifyVideo');
-            document.getElementById('retryVerifyBtn').classList.add('hidden');
-            document.getElementById('verifyErrorBox').classList.add('hidden');
-            document.getElementById('verifyModalStatus').innerText = "Position your face...";
-
-            try {
-                verifyStream = await navigator.mediaDevices.getUserMedia({ video: {} });
-                video.srcObject = verifyStream;
-                
-                let attemptCount = 0;
-                const checkInterval = setInterval(async () => {
-                    if (!isFaceVerifying) {
-                        clearInterval(checkInterval);
-                        return;
-                    }
-
-                    const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
-                        .withFaceLandmarks()
-                        .withFaceDescriptor();
-                    
-                    if (detection) {
-                        document.getElementById('verifyModalStatus').innerText = "Verifying identity...";
-                        const verified = await callVerifyAPI(detection.descriptor);
-                        
-                        if (verified) {
-                            clearInterval(checkInterval);
-                            showVerifySuccess();
-                        } else {
-                            attemptCount++;
-                            if (attemptCount >= 3) {
-                                clearInterval(checkInterval);
-                                showVerifyFailure();
-                            }
-                        }
-                    }
-                }, 1000);
-
-            } catch (err) {
-                console.error("Verify camera error:", err);
-                document.getElementById('verifyModalStatus').innerText = "Camera access denied";
-            }
-        }
-
-        async function callVerifyAPI(descriptor) {
-            const descriptorStr = descriptor.join(',');
-            try {
-                const res = await fetch("/api/main?action=face-verify", {
-                    method: "POST",
-                    headers: { 
-                        "Content-Type": "application/json",
-                        "Authorization": "Bearer " + token 
-                    },
-                    body: JSON.stringify({ descriptor: descriptorStr })
-                });
-                const data = await res.json();
-                return data.verified;
-            } catch (err) {
-                console.error("Verify API error:", err);
-                return false;
-            }
-        }
-
-        function showVerifySuccess() {
-            document.getElementById('verifySuccessIcon').classList.remove('hidden');
-            lucide.createIcons();
-            setTimeout(() => {
-                closeFaceVerify();
-                if (!isVerifyDemoMode) {
-                    markAttendance("IN"); // Only mark attendance if NOT in demo mode
-                } else {
-                    showAlert("Verification successful! Accuracy high.", true);
-                }
-            }, 2000);
-        }
-
-        function showVerifyFailure() {
-            document.getElementById('verifyErrorBox').classList.remove('hidden');
-            document.getElementById('retryVerifyBtn').classList.remove('hidden');
-            document.getElementById('verifyModalStatus').innerText = "Verification failed";
-            if (verifyStream) {
-                verifyStream.getTracks().forEach(track => track.stop());
-            }
-        }
-
-        function closeFaceVerify() {
-            isFaceVerifying = false;
-            document.getElementById('faceVerifyModal').classList.add('hidden');
-            if (verifyStream) {
-                verifyStream.getTracks().forEach(track => track.stop());
-                verifyStream = null;
             }
         }
 

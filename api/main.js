@@ -98,8 +98,7 @@ export default async function handler(req, res) {
                     attendance_start_time: null,
                     attendance_end_time: null,
                     college_code: user.college_code,
-                    polygon_coordinates: null,
-                    face_auth_enabled: false
+                    polygon_coordinates: null
                 };
             } else {
                 row = result.rows[0];
@@ -139,7 +138,6 @@ export default async function handler(req, res) {
                 college_name: collegeName,
                 polygon_coordinates: row.polygon_coordinates,
                 polygon_points: polygonPoints,
-                face_auth_enabled: !!row.face_auth_enabled,
                 is_ready: isReady
             });
         }
@@ -397,8 +395,7 @@ export default async function handler(req, res) {
                 inside: isInside,
                 action: apiAction,
                 in_time: todayRecord ? todayRecord.check_in_time : (apiAction === "checked-in" ? currentTime : null),
-                out_time: apiAction === "checked-out" ? currentTime : (todayRecord ? todayRecord.check_out_time : null),
-                face_auth_enabled: !!row.face_auth_enabled
+                out_time: apiAction === "checked-out" ? currentTime : (todayRecord ? todayRecord.check_out_time : null)
             });
         }
 
@@ -707,10 +704,8 @@ export default async function handler(req, res) {
             if (!student) return res.status(401).json({ success: false, message: "Unauthorized" });
 
             const result = await query(
-                `SELECT s.name, s.email, s.roll_number, s.department, s.college_code, s.profile_image, 
-                        sf.face_descriptor, c.name as campus_name, c.face_auth_enabled
+                `SELECT s.name, s.email, s.roll_number, s.department, s.college_code, s.profile_image, c.name as campus_name
                  FROM students s
-                 LEFT JOIN student_face_profiles sf ON s.id = sf.student_id
                  LEFT JOIN campus_setup c ON s.college_code = c.college_code
                  WHERE s.id = $1`,
                 [student.id]
@@ -718,14 +713,7 @@ export default async function handler(req, res) {
 
             if (result.rows.length === 0) return res.status(404).json({ success: false, message: "Student not found" });
 
-            const data = result.rows[0];
-            return res.status(200).json({ 
-                success: true, 
-                data: {
-                    ...data,
-                    has_face: !!data.face_descriptor
-                } 
-            });
+            return res.status(200).json({ success: true, data: result.rows[0] });
         }
 
         else if (action === "attendance-percentage") {
@@ -1269,8 +1257,8 @@ export default async function handler(req, res) {
 
                 const result = await query(`
                     INSERT INTO campus_setup 
-                    (college_code, name, latitude, longitude, radius, attendance_start_time, attendance_end_time, attendance_start_date, attendance_end_date, polygon_coordinates, branch_code, face_auth_enabled)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+                    (college_code, name, latitude, longitude, radius, attendance_start_time, attendance_end_time, attendance_start_date, attendance_end_date, polygon_coordinates, branch_code)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
                     ON CONFLICT (college_code)
                     DO UPDATE SET
                         name = EXCLUDED.name,
@@ -1282,8 +1270,7 @@ export default async function handler(req, res) {
                         attendance_start_date = EXCLUDED.attendance_start_date,
                         attendance_end_date = EXCLUDED.attendance_end_date,
                         polygon_coordinates = EXCLUDED.polygon_coordinates,
-                        branch_code = EXCLUDED.branch_code,
-                        face_auth_enabled = EXCLUDED.face_auth_enabled
+                        branch_code = EXCLUDED.branch_code
                     RETURNING *
                 `, [
                     admin.college_code,
@@ -1296,8 +1283,7 @@ export default async function handler(req, res) {
                     attendance_start_date || null,
                     attendance_end_date || null,
                     JSON.stringify(polygonCoordinates),
-                    branch_code,
-                    req.body.face_auth_enabled || false
+                    branch_code
                 ]);
 
                 if (req.body.collegeName) {
@@ -1388,81 +1374,6 @@ export default async function handler(req, res) {
             await query('DELETE FROM otps WHERE email = $1', [user.email]);
 
             return res.status(200).json({ message: "Password updated successfully" });
-        }
-
-        // --- 6. FACE AUTHENTICATION ---
-        else if (action === "face-register") {
-            const student = await protectStudent(req);
-            if (!student) return res.status(401).json({ success: false, message: "Unauthorized" });
-
-            const { descriptor } = req.body;
-            if (!descriptor) return res.status(400).json({ success: false, message: "Face descriptor required" });
-
-            await query(`
-                INSERT INTO student_face_profiles (student_id, face_descriptor) 
-                VALUES ($1, $2)
-                ON CONFLICT (student_id) DO UPDATE SET face_descriptor = EXCLUDED.face_descriptor, updated_at = CURRENT_TIMESTAMP
-            `, [student.id, descriptor]);
-            
-            return res.status(200).json({ success: true, message: "Face registered successfully" });
-        }
-
-        else if (action === "face-update") {
-            const student = await protectStudent(req);
-            if (!student) return res.status(401).json({ success: false, message: "Unauthorized" });
-
-            const { descriptor } = req.body;
-            if (!descriptor) return res.status(400).json({ success: false, message: "Face descriptor required" });
-
-            const result = await query('UPDATE student_face_profiles SET face_descriptor = $1, updated_at = CURRENT_TIMESTAMP WHERE student_id = $2', [descriptor, student.id]);
-            if (result.rowCount === 0) {
-                return res.status(400).json({ success: false, message: "Face not registered yet. Use register instead." });
-            }
-            return res.status(200).json({ success: true, message: "Face profile updated successfully" });
-        }
-
-        else if (action === "face-delete") {
-            const student = await protectStudent(req);
-            if (!student) return res.status(401).json({ success: false, message: "Unauthorized" });
-
-            await query('DELETE FROM student_face_profiles WHERE student_id = $1', [student.id]);
-            return res.status(200).json({ success: true, message: "Face data removed successfully" });
-        }
-
-        else if (action === "face-verify") {
-            const student = await protectStudent(req);
-            if (!student) return res.status(401).json({ success: false, message: "Unauthorized" });
-
-            const { descriptor } = req.body;
-            if (!descriptor) return res.status(400).json({ success: false, message: "Face descriptor required" });
-
-            const result = await query('SELECT face_descriptor FROM student_face_profiles WHERE student_id = $1', [student.id]);
-            const storedDescriptorStr = result.rows[0]?.face_descriptor;
-
-            if (!storedDescriptorStr) {
-                return res.status(400).json({ success: false, message: "Face not registered. Please register your face first." });
-            }
-
-            // Simple Euclidean Distance Comparison
-            const storedDescriptor = storedDescriptorStr.split(',').map(Number);
-            const currentDescriptor = descriptor.split(',').map(Number);
-
-            if (storedDescriptor.length !== currentDescriptor.length) {
-                return res.status(400).json({ success: false, message: "Descriptor format mismatch" });
-            }
-
-            let sum = 0;
-            for (let i = 0; i < storedDescriptor.length; i++) {
-                sum += Math.pow(storedDescriptor[i] - currentDescriptor[i], 2);
-            }
-            const distance = Math.sqrt(sum);
-            const threshold = 0.6; // face-api.js default threshold
-
-            if (distance < threshold) {
-                return res.status(200).json({ success: true, verified: true, distance });
-            } else {
-                return res.status(200).json({ success: true, verified: false, distance, message: "Face mismatch. Please try again." });
-            }
         }
         else {
             return res.status(400).json({ error: "Invalid action: " + action });
