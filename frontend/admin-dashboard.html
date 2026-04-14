@@ -501,6 +501,24 @@
                                 <input id="geo-end-date" type="date" class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:ring-4 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition-all" />
                             </div>
                         </div>
+
+                        <div class="p-6 bg-blue-50/50 rounded-2xl border border-blue-100/50 space-y-4">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="p-2 rounded-lg bg-blue-100 text-blue-600">
+                                        <i data-lucide="scan-face" class="w-5 h-5"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-sm font-bold text-slate-900">Enable Face Authentication</h4>
+                                        <p class="text-[10px] text-slate-500 font-medium">Require students to verify their face before marking attendance.</p>
+                                    </div>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="geo-face-auth" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                </label>
+                            </div>
+                        </div>
                         </fieldset>
 
                         <div class="pt-6 border-t border-slate-50 flex justify-end gap-4">
@@ -761,6 +779,10 @@
                 // Update local user object if college name is returned
                 if (campusData && campusData.college_name) {
                     user.collegeName = campusData.college_name;
+                    document.getElementById('geo-start-date').value = campusData.attendance_start_date ? campusData.attendance_start_date.substring(0, 10) : '';
+                    document.getElementById('geo-end-date').value = campusData.attendance_end_date ? campusData.attendance_end_date.substring(0, 10) : '';
+                    document.getElementById('geo-face-auth').checked = !!campusData.face_auth_enabled;
+                    
                     localStorage.setItem('student', JSON.stringify(user));
                     
                     // Update sidebar display
