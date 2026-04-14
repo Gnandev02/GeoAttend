@@ -48,6 +48,7 @@
             <div class="p-4 space-y-1.5 flex flex-col">
                 <button id="nav-dashboard" onclick="showSection('dashboardSection')" class="tab-btn active"><i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard</button>
                 <button id="nav-profile" onclick="showSection('profileSection')" class="tab-btn inactive"><i data-lucide="user" class="w-4 h-4"></i> Profile</button>
+                <button id="nav-face" onclick="showSection('faceSection')" class="tab-btn inactive"><i data-lucide="scan-face" class="w-4 h-4"></i> Face Verification</button>
                 <button onclick="window.location.href='student-attendance.html'" class="tab-btn inactive"><i data-lucide="clipboard-list" class="w-4 h-4"></i> Attendance Records</button>
                 <button onclick="window.location.href='change-password.html'" class="tab-btn inactive"><i data-lucide="lock" class="w-4 h-4"></i> Change Password</button>
             </div>
@@ -123,6 +124,77 @@
             </div>
         </div>
 
+            <div id="faceSection" class="section hidden space-y-6">
+                <!-- Status Card -->
+                <div class="saas-card p-8 flex flex-col items-center text-center">
+                    <div id="faceStatusIconMain" class="w-24 h-24 rounded-full bg-slate-50 flex items-center justify-center mb-6 border-4 border-white shadow-md">
+                        <i data-lucide="scan-face" id="f-icon" class="w-12 h-12 text-slate-400"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-slate-900">Face Authentication</h2>
+                    <p class="text-slate-500 mt-2 max-w-sm">Manage your face biometric data for secure attendance verification.</p>
+                    
+                    <div id="faceStatusBadge" class="mt-6 px-4 py-1.5 rounded-full text-xs font-extrabold uppercase tracking-widest bg-slate-100 text-slate-500">
+                        Checking Status...
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-2xl mt-10">
+                        <!-- Register/Update Button -->
+                        <button id="btn-face-action" onclick="toggleFaceRegistration()" class="p-6 bg-white border border-slate-200 rounded-2xl hover:border-blue-400 hover:shadow-xl hover:shadow-blue-500/10 group transition-all text-left flex items-start gap-4">
+                            <div class="p-3 bg-blue-50 text-blue-600 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                <i data-lucide="camera" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <h4 id="btn-face-title" class="font-bold text-slate-900">Register Face</h4>
+                                <p id="btn-face-desc" class="text-xs text-slate-500 mt-1">Setup your biometric identity for attendance.</p>
+                            </div>
+                        </button>
+
+                        <!-- Verify Test Button -->
+                        <button onclick="openFaceVerify(true)" class="p-6 bg-white border border-slate-200 rounded-2xl hover:border-emerald-400 hover:shadow-xl hover:shadow-emerald-500/10 group transition-all text-left flex items-start gap-4">
+                            <div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                                <i data-lucide="shield-check" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-900">Verify Identity</h4>
+                                <p class="text-xs text-slate-500 mt-1">Test your biometric match accuracy.</p>
+                            </div>
+                        </button>
+
+                        <!-- Delete Button (Only if registered) -->
+                        <button id="btn-face-delete" onclick="showDeleteConfirm()" class="hidden p-6 bg-white border border-slate-200 rounded-2xl hover:border-red-400 hover:shadow-xl hover:shadow-red-500/10 group transition-all text-left flex items-start gap-4">
+                            <div class="p-3 bg-red-50 text-red-600 rounded-xl group-hover:bg-red-600 group-hover:text-white transition-colors">
+                                <i data-lucide="trash-2" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-900">Delete Face Data</h4>
+                                <p class="text-xs text-slate-500 mt-1">Permanently remove your facial biometric records.</p>
+                            </div>
+                        </button>
+                    </div>
+
+                    <!-- Face Registration UI (Hidden Initially) -->
+                    <div id="face-registration-container" class="hidden w-full max-w-xl mt-10 p-6 bg-slate-50 rounded-3xl border border-slate-200 space-y-4 animate-in fade-in duration-300">
+                        <div class="relative rounded-2xl overflow-hidden bg-slate-800 aspect-video shadow-2xl">
+                            <video id="regVideo" autoplay muted playsinline class="w-full h-full object-cover"></video>
+                            <canvas id="regCanvas" class="absolute inset-0"></canvas>
+                            <div id="regLoader" class="absolute inset-0 bg-slate-900/80 flex flex-col items-center justify-center text-white gap-3">
+                                <div class="animate-spin rounded-full h-10 w-10 border-4 border-blue-500 border-t-transparent"></div>
+                                <p class="text-sm font-bold tracking-widest uppercase">Initializing AI Module...</p>
+                            </div>
+                        </div>
+                        <div id="regInfo" class="p-3 bg-white rounded-xl border text-xs font-bold text-slate-500 text-center">
+                            Scanning environment...
+                        </div>
+                        <div class="flex gap-3">
+                            <button onclick="stopFaceRegistration()" class="flex-1 py-3 text-sm font-bold text-slate-500 hover:bg-slate-200 rounded-xl transition-all">Cancel</button>
+                            <button id="captureFaceBtn" disabled class="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-indigo-200 transition-all disabled:opacity-50">
+                                Capture & Save
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Profile Section -->
             <div id="profileSection" class="section hidden space-y-6">
                 <div class="saas-card p-8 flex flex-col items-center">
@@ -152,37 +224,6 @@
                         <div class="p-4 bg-blue-50 rounded-xl border border-blue-100">
                             <p class="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-1">Your Attendance</p>
                             <p id="attendancePercent" class="text-xl font-extrabold text-blue-700">0%</p>
-                        </div>
-                        
-                        <!-- NEW: Face Registration Card -->
-                        <div class="p-5 bg-white rounded-xl border border-slate-200 shadow-sm space-y-4">
-                            <div class="flex items-center gap-3">
-                                <div id="face-status-icon" class="p-2 rounded-lg bg-slate-100 text-slate-500">
-                                    <i data-lucide="scan-face" class="w-5 h-5"></i>
-                                </div>
-                                <div>
-                                    <h4 class="text-sm font-bold text-slate-900">Face Recognition</h4>
-                                    <p id="face-status-text" class="text-[10px] text-slate-500 font-medium">Not Registered</p>
-                                </div>
-                            </div>
-                            <button id="registerFaceBtn" onclick="toggleFaceRegistration()" class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2">
-                                <i data-lucide="camera" class="w-4 h-4"></i> Register Your Face
-                            </button>
-                            
-                            <div id="face-registration-container" class="hidden space-y-3 pt-2">
-                                <div class="relative rounded-lg overflow-hidden bg-slate-100 aspect-video flex items-center justify-center">
-                                    <video id="regVideo" autoplay muted playsinline class="w-full h-full object-cover"></video>
-                                    <canvas id="regCanvas" class="absolute inset-0"></canvas>
-                                    <div id="regLoader" class="absolute inset-0 bg-white/80 flex flex-col items-center justify-center gap-2">
-                                        <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
-                                        <p class="text-[10px] font-bold text-indigo-600">Loading Models...</p>
-                                    </div>
-                                </div>
-                                <p id="regInfo" class="text-[10px] text-center text-slate-500 font-medium">Position your face in the center</p>
-                                <button id="captureFaceBtn" disabled class="w-full py-2 px-4 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                                    Capture & Save
-                                </button>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -218,10 +259,25 @@
                 </div>
 
                 <div class="flex gap-3">
-                    <button onclick="closeFaceVerify()" class="flex-1 py-3 text-sm font-bold text-slate-500 hover:bg-slate-50 rounded-xl transition-all">Cancel</button>
+                    <button id="verifyCancelBtn" onclick="closeFaceVerify()" class="flex-1 py-3 text-sm font-bold text-slate-500 hover:bg-slate-50 rounded-xl transition-all">Cancel</button>
                     <button id="retryVerifyBtn" onclick="startFaceVerification()" class="hidden flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl transition-all">Retry</button>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Confirm Delete Modal -->
+    <div id="confirmDeleteModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[200] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl p-6 text-center animate-in zoom-in duration-200">
+             <div class="p-4 bg-red-50 text-red-600 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                 <i data-lucide="alert-triangle" class="w-8 h-8"></i>
+             </div>
+             <h3 class="text-lg font-bold text-slate-900">Remove Biometric Data?</h3>
+             <p class="text-sm text-slate-500 mt-2">Are you sure you want to remove your registered face data? You will need to re-register before marking attendance if Face Auth is enabled.</p>
+             <div class="flex gap-3 mt-8">
+                 <button onclick="hideDeleteConfirm()" class="flex-1 py-3 text-sm font-bold text-slate-500 bg-slate-50 hover:bg-slate-100 rounded-xl transition-all">Cancel</button>
+                 <button onclick="processDeleteFace()" class="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-xl transition-all">Yes, Delete</button>
+             </div>
         </div>
     </div>
 
@@ -250,17 +306,18 @@
             });
             document.getElementById(sectionId).classList.remove("hidden");
 
-            // Update Nav UI
             document.querySelectorAll(".tab-btn").forEach(btn => {
-                btn.classList.replace("active", "inactive");
+                btn.classList.add("inactive");
+                btn.classList.remove("active");
             });
+            const activeNav = {
+                'dashboardSection': 'nav-dashboard',
+                'profileSection': 'nav-profile',
+                'faceSection': 'nav-face'
+            }[sectionId];
+            if (activeNav) document.getElementById(activeNav).classList.add("active");
             
-            if (sectionId === 'dashboardSection') {
-                document.getElementById('nav-dashboard').classList.replace("inactive", "active");
-            } else if (sectionId === 'profileSection') {
-                document.getElementById('nav-profile').classList.replace("inactive", "active");
-                fetchProfile();
-            }
+            if (sectionId === 'faceSection') fetchProfile();
         }
 
         async function fetchProfile() {
@@ -283,21 +340,32 @@
                     }
 
                     // Handle Face Status
-                    const faceStatusIcon = document.getElementById('face-status-icon');
-                    const faceStatusText = document.getElementById('face-status-text');
-                    const regBtn = document.getElementById('registerFaceBtn');
+                    const statusBadge = document.getElementById('faceStatusBadge');
+                    const faceIconDiv = document.getElementById('faceStatusIconMain');
+                    const btnActionTitle = document.getElementById('btn-face-title');
+                    const btnActionDesc = document.getElementById('btn-face-desc');
+                    const btnDelete = document.getElementById('btn-face-delete');
                     
                     if (data.has_face) {
-                        faceStatusIcon.className = 'p-2 rounded-lg bg-emerald-100 text-emerald-600';
-                        faceStatusText.innerText = 'Face Registered';
-                        faceStatusText.className = 'text-[10px] text-emerald-600 font-bold';
-                        regBtn.innerText = 'Update Registered Face';
-                        regBtn.className = 'w-full py-2.5 px-4 border border-indigo-200 text-indigo-600 text-xs font-bold rounded-lg hover:bg-indigo-50 transition-all flex items-center justify-center gap-2';
+                        statusBadge.innerText = 'Registered';
+                        statusBadge.className = 'mt-6 px-4 py-1.5 rounded-full text-xs font-extrabold uppercase tracking-widest bg-emerald-100 text-emerald-600 border border-emerald-200';
+                        faceIconDiv.className = 'w-24 h-24 rounded-full bg-emerald-50 flex items-center justify-center mb-6 border-4 border-white shadow-md text-emerald-600';
+                        faceIconDiv.innerHTML = '<i data-lucide="check-circle" class="w-12 h-12"></i>';
+                        btnActionTitle.innerText = 'Update Face Data';
+                        btnActionDesc.innerText = 'Re-scan your face to improve accuracy.';
+                        btnDelete.classList.remove('hidden');
+                        isFaceRegistered = true;
                     } else {
-                        faceStatusIcon.className = 'p-2 rounded-lg bg-amber-100 text-amber-600';
-                        faceStatusText.innerText = 'Face Registration Required';
-                        faceStatusText.className = 'text-[10px] text-amber-600 font-bold';
+                        statusBadge.innerText = 'Not Registered';
+                        statusBadge.className = 'mt-6 px-4 py-1.5 rounded-full text-xs font-extrabold uppercase tracking-widest bg-red-100 text-red-600 border border-red-200';
+                        faceIconDiv.className = 'w-24 h-24 rounded-full bg-red-50 flex items-center justify-center mb-6 border-4 border-white shadow-md text-red-600';
+                        faceIconDiv.innerHTML = '<i data-lucide="scan-face" class="w-12 h-12"></i>';
+                        btnActionTitle.innerText = 'Register Face';
+                        btnActionDesc.innerText = 'Setup your biometric identity for attendance.';
+                        btnDelete.classList.add('hidden');
+                        isFaceRegistered = false;
                     }
+                    lucide.createIcons();
                 }
 
                 // Fetch Attendance Percentage separately as requested
@@ -358,6 +426,8 @@
         let faceAuthEnabled = false;
         let faceModelsLoaded = false;
         let isFaceVerifying = false;
+        let isFaceRegistered = false;
+        let isVerifyDemoMode = false;
 
         function isWithinCollegeHours() {
             if (!attendanceWindow.start || !attendanceWindow.end) return true;
@@ -772,8 +842,10 @@
 
         async function saveFaceDescriptor(descriptor) {
             const descriptorStr = descriptor.join(',');
+            const endpoint = isFaceRegistered ? "/api/main?action=face-update" : "/api/main?action=face-register";
+            
             try {
-                const res = await fetch("/api/main?action=face-register", {
+                const res = await fetch(endpoint, {
                     method: "POST",
                     headers: { 
                         "Content-Type": "application/json",
@@ -783,7 +855,7 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    showAlert("Face registered successfully!", true);
+                    showAlert(isFaceRegistered ? "Biometric record updated!" : "Face registered successfully!", true);
                     stopFaceRegistration();
                     fetchProfile();
                 } else {
@@ -794,11 +866,41 @@
             }
         }
 
+        // DELETE FACE LOGIC
+        function showDeleteConfirm() {
+            document.getElementById('confirmDeleteModal').classList.remove('hidden');
+        }
+        function hideDeleteConfirm() {
+            document.getElementById('confirmDeleteModal').classList.add('hidden');
+        }
+        async function processDeleteFace() {
+            try {
+                const res = await fetch("/api/main?action=face-delete", {
+                    method: "POST",
+                    headers: { "Authorization": "Bearer " + token }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showAlert("Face data permanently removed.", true);
+                    hideDeleteConfirm();
+                    fetchProfile();
+                }
+            } catch (err) {
+                console.error("Delete face error:", err);
+            }
+        }
+
         // VERIFICATION FLOW
         let verifyStream = null;
-        async function openFaceVerify() {
+        async function openFaceVerify(demo = false) {
+            if (!isFaceRegistered && demo) {
+                showAlert("Please register your face first", false);
+                return;
+            }
+            isVerifyDemoMode = demo;
             isFaceVerifying = true;
             document.getElementById('faceVerifyModal').classList.remove('hidden');
+            document.getElementById('verifyCancelBtn').classList.remove('hidden');
             document.getElementById('verifySuccessIcon').classList.add('hidden');
             document.getElementById('retryVerifyBtn').classList.add('hidden');
             document.getElementById('verifyErrorBox').classList.add('hidden');
@@ -876,7 +978,11 @@
             lucide.createIcons();
             setTimeout(() => {
                 closeFaceVerify();
-                markAttendance("IN"); // Finally mark attendance
+                if (!isVerifyDemoMode) {
+                    markAttendance("IN"); // Only mark attendance if NOT in demo mode
+                } else {
+                    showAlert("Verification successful! Accuracy high.", true);
+                }
             }, 2000);
         }
 

@@ -707,8 +707,10 @@ export default async function handler(req, res) {
             if (!student) return res.status(401).json({ success: false, message: "Unauthorized" });
 
             const result = await query(
-                `SELECT s.name, s.email, s.roll_number, s.department, s.college_code, s.profile_image, s.face_descriptor, c.name as campus_name, c.face_auth_enabled
+                `SELECT s.name, s.email, s.roll_number, s.department, s.college_code, s.profile_image, 
+                        sf.face_descriptor, c.name as campus_name, c.face_auth_enabled
                  FROM students s
+                 LEFT JOIN student_face_profiles sf ON s.id = sf.student_id
                  LEFT JOIN campus_setup c ON s.college_code = c.college_code
                  WHERE s.id = $1`,
                 [student.id]
@@ -1396,8 +1398,35 @@ export default async function handler(req, res) {
             const { descriptor } = req.body;
             if (!descriptor) return res.status(400).json({ success: false, message: "Face descriptor required" });
 
-            await query('UPDATE students SET face_descriptor = $1 WHERE id = $2', [descriptor, student.id]);
+            await query(`
+                INSERT INTO student_face_profiles (student_id, face_descriptor) 
+                VALUES ($1, $2)
+                ON CONFLICT (student_id) DO UPDATE SET face_descriptor = EXCLUDED.face_descriptor, updated_at = CURRENT_TIMESTAMP
+            `, [student.id, descriptor]);
+            
             return res.status(200).json({ success: true, message: "Face registered successfully" });
+        }
+
+        else if (action === "face-update") {
+            const student = await protectStudent(req);
+            if (!student) return res.status(401).json({ success: false, message: "Unauthorized" });
+
+            const { descriptor } = req.body;
+            if (!descriptor) return res.status(400).json({ success: false, message: "Face descriptor required" });
+
+            const result = await query('UPDATE student_face_profiles SET face_descriptor = $1, updated_at = CURRENT_TIMESTAMP WHERE student_id = $2', [descriptor, student.id]);
+            if (result.rowCount === 0) {
+                return res.status(400).json({ success: false, message: "Face not registered yet. Use register instead." });
+            }
+            return res.status(200).json({ success: true, message: "Face profile updated successfully" });
+        }
+
+        else if (action === "face-delete") {
+            const student = await protectStudent(req);
+            if (!student) return res.status(401).json({ success: false, message: "Unauthorized" });
+
+            await query('DELETE FROM student_face_profiles WHERE student_id = $1', [student.id]);
+            return res.status(200).json({ success: true, message: "Face data removed successfully" });
         }
 
         else if (action === "face-verify") {
@@ -1407,7 +1436,7 @@ export default async function handler(req, res) {
             const { descriptor } = req.body;
             if (!descriptor) return res.status(400).json({ success: false, message: "Face descriptor required" });
 
-            const result = await query('SELECT face_descriptor FROM students WHERE id = $1', [student.id]);
+            const result = await query('SELECT face_descriptor FROM student_face_profiles WHERE student_id = $1', [student.id]);
             const storedDescriptorStr = result.rows[0]?.face_descriptor;
 
             if (!storedDescriptorStr) {
