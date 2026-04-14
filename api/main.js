@@ -262,7 +262,7 @@ export default async function handler(req, res) {
             const student = await protectStudent(req);
             if (!student) return res.status(401).json({ success: false, message: 'Not authorized as a student' });
 
-            const { lat, lng, accuracy, device_id } = req.body;
+            const { lat, lng, accuracy, face_verified, device_id } = req.body;
             const latitude = Number(lat);
             const longitude = Number(lng);
             const userAccuracy = Number(accuracy) || null;
@@ -278,11 +278,19 @@ export default async function handler(req, res) {
             const { date: todayIST, time: currentTime } = getIST();
 
             const geofenceQuery = await query(
-                'SELECT latitude, longitude, radius, attendance_start_time, attendance_end_time, attendance_start_date, attendance_end_date, polygon_coordinates FROM campus_setup WHERE college_code = $1', 
+                'SELECT latitude, longitude, radius, attendance_start_time, attendance_end_time, attendance_start_date, attendance_end_date, polygon_coordinates, face_auth_enabled FROM campus_setup WHERE college_code = $1', 
                 [student.college_code]
             );
             if (geofenceQuery.rows.length === 0) return res.status(500).json({ success: false, message: 'Campus geofence not configured.' });
             const geofence = geofenceQuery.rows[0];
+
+            // --- SECURITY: FACE AUTH GATE ---
+            if (geofence.face_auth_enabled && !face_verified) {
+                return res.status(403).json({ 
+                    success: false, 
+                    message: "Face verification is mandatory for this institution. Please verify your identity." 
+                });
+            }
 
             // Date Range Check (Requirement 4)
             if (geofence.attendance_start_date && geofence.attendance_end_date) {
@@ -507,7 +515,7 @@ export default async function handler(req, res) {
             const admin = await protectAdmin(req);
             const student = await protectStudent(req);
 
-            if (admin && (!student || !req.headers.referer?.includes('student-dashboard'))) {
+            if (admin && (!student || !req.headers.referer?.includes('student-dashboard.html'))) {
                 await enforceAbsences(admin.college_code);
                 const { date: todayIST } = getIST();
                 
