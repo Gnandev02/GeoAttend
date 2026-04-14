@@ -262,7 +262,7 @@ export default async function handler(req, res) {
             const student = await protectStudent(req);
             if (!student) return res.status(401).json({ success: false, message: 'Not authorized as a student' });
 
-            const { lat, lng, accuracy, face_verified, device_id } = req.body;
+            const { lat, lng, accuracy, device_id, face_verified } = req.body;
             const latitude = Number(lat);
             const longitude = Number(lng);
             const userAccuracy = Number(accuracy) || null;
@@ -283,12 +283,13 @@ export default async function handler(req, res) {
             );
             if (geofenceQuery.rows.length === 0) return res.status(500).json({ success: false, message: 'Campus geofence not configured.' });
             const geofence = geofenceQuery.rows[0];
-
-            // --- SECURITY: FACE AUTH GATE ---
+            
+            // --- 🔒 FACE AUTHENTICATION GATE ---
             if (geofence.face_auth_enabled && !face_verified) {
+                console.warn(`[Security] Student ${student.id} attempted tracking without face verification.`);
                 return res.status(403).json({ 
                     success: false, 
-                    message: "Face verification is mandatory for this institution. Please verify your identity." 
+                    message: "Face verification required. Please restart tracking and verify your identity." 
                 });
             }
 

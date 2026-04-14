@@ -99,10 +99,10 @@
                 <div class="saas-card p-6 bg-slate-900 flex items-center justify-between text-white overflow-hidden group">
                     <div class="relative z-10 w-full">
                         <h3 class="font-bold mb-1">Campus Tracker</h3>
-                        <p id="tracking-status" class="text-xs text-blue-100 mb-4 font-medium opacity-90">Auto Attendance Detection</p>
-                        <button onclick="handleStartTracking()" id="startTrackingBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-xl text-sm flex items-center justify-center gap-2 shadow-sm">
-                            <i data-lucide="navigation" class="w-4 h-4"></i> <span id="markText">Start Tracking</span>
-                        </button>
+                                <p id="tracking-status" class="text-xs text-blue-100 mb-4 font-medium opacity-90">Auto Attendance Detection</p>
+                                <button onclick="handleStartTracking()" id="startTrackingBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-xl text-sm flex items-center justify-center gap-2 shadow-sm">
+                                    <i data-lucide="navigation" class="w-4 h-4"></i> <span id="markText">Start Tracking</span>
+                                </button>
                     </div>
                 </div>
             </div>
@@ -352,10 +352,10 @@
         let hasMarkedInToday = false;
         let attendanceWindow = { start: null, end: null };
         let faceAuthEnabled = false;
-        let isFaceVerifiedToday = false;
         let faceModelsLoaded = false;
         let currentFaceAction = null; // 'register' or 'verify' or 'mark' or 'gate'
         let markTypePending = null; // 'IN' or 'OUT'
+        let isFaceVerifiedToday = false;
 
         function isWithinCollegeHours() {
             if (!attendanceWindow.start || !attendanceWindow.end) return true;
@@ -492,50 +492,37 @@
             }
         }
 
-        // STEP 2.5: HANDLE TRACKING START (WITH FACE GATE)
+        // STEP 2.5: HANDLE START TRACKING GATE
         async function handleStartTracking() {
-            const startBtn = document.getElementById('startTrackingBtn');
-            const markText = document.getElementById('markText');
-            
-            // 1. Fetch latest settings just to be sure we have the right config
-            try {
-                const res = await fetch("/api/main?action=get-campus", { headers: { "Authorization": "Bearer " + token } });
-                const config = await res.json();
-                faceAuthEnabled = !!config.face_auth_enabled;
-            } catch (e) { console.warn("Could not sync latest campus settings, using cached state."); }
-
             if (!faceAuthEnabled) {
                 startTracking();
                 return;
             }
 
-            // 2. Face Auth is Enabled - Check if already verified in this session
-            if (isFaceVerifiedToday) {
-                startTracking();
-                return;
-            }
-
-            // 3. Trigger Verification Gate
-            fetch("/api/main?action=face-status", { headers: { "Authorization": "Bearer " + token } })
-                .then(r => r.json())
-                .then(data => {
-                    if (!data.registered) {
-                        if (confirm("Your institution requires Face Authentication for tracking, but you haven't registered your face yet. Click OK to register now.")) {
-                            showSection('faceSection');
-                        }
-                    } else {
-                        markText.textContent = "Verifying Identity...";
-                        startBtn.classList.replace('bg-blue-600', 'bg-indigo-600');
-                        startFaceAction('gate');
+            // Face Auth Enabled - Check Registration
+            try {
+                const res = await fetch("/api/main?action=face-status", { headers: { "Authorization": "Bearer " + token } });
+                const data = await res.json();
+                
+                if (!data.registered) {
+                    if (confirm("Face Authentication is required to start tracking, but you haven't registered your face yet. Go to Face Verification to register?")) {
+                        showSection('faceSection');
                     }
-                });
+                    return;
+                }
+
+                // Register successfully, start gate verification
+                startFaceAction('gate');
+            } catch (err) {
+                console.error("Gate check error:", err);
+                showAlert("Could not verify face settings. Try again.", false);
+            }
         }
 
         // STEP 3: FIX GPS TRACKING
         function startTracking() {
             document.getElementById('markText').textContent = "Tracking Active";
-            document.getElementById('startTrackingBtn').classList.remove('bg-blue-600', 'bg-indigo-600');
-            document.getElementById('startTrackingBtn').classList.add('bg-green-600');
+            document.getElementById('startTrackingBtn').classList.replace('bg-blue-600', 'bg-green-600');
             document.getElementById('startTrackingBtn').disabled = true;
 
             navigator.geolocation.watchPosition(
@@ -548,10 +535,6 @@
                 (err) => {
                     console.error(err);
                     showAlert("Please Enable GPS Permission", false);
-                    // Reset button if permit denied
-                    document.getElementById('markText').textContent = "Start Tracking";
-                    document.getElementById('startTrackingBtn').classList.replace('bg-green-600', 'bg-blue-600');
-                    document.getElementById('startTrackingBtn').disabled = false;
                 },
                 { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
             );
@@ -694,8 +677,8 @@
                         lat: currentLat,
                         lng: currentLng,
                         accuracy: currentAccuracy,
-                        face_verified: isFaceVerifiedToday, // Pass Face Verification status
-                        device_id: localStorage.getItem('geoattend_device_id')
+                        device_id: localStorage.getItem('geoattend_device_id'),
+                        face_verified: isFaceVerifiedToday
                     })
                 });
                 const data = await res.json();
@@ -997,30 +980,20 @@
                     });
                     const data = await res.json();
                     if (data.success && data.verified) {
-                        if (currentFaceAction === 'mark') {
-                            closeFaceModal();
-                            markAttendance(markTypePending);
-                        } else if (currentFaceAction === 'gate') {
+                        if (currentFaceAction === 'gate') {
                             isFaceVerifiedToday = true;
+                            alert("Identity Verified! Starting Tracking...");
                             closeFaceModal();
                             startTracking();
+                        } else if (currentFaceAction === 'mark') {
+                            closeFaceModal();
+                            markAttendance(markTypePending);
                         } else {
                             alert("Identity Verified Successfully!");
                             closeFaceModal();
                         }
                     } else {
-                        const startBtn = document.getElementById('startTrackingBtn');
-                        const markText = document.getElementById('markText');
-                        if (currentFaceAction === 'gate') {
-                            markText.textContent = "Face Not Matched";
-                            startBtn.classList.replace('bg-indigo-600', 'bg-red-600');
-                            setTimeout(() => {
-                                markText.textContent = "Start Tracking";
-                                startBtn.classList.replace('bg-red-600', 'bg-blue-600');
-                            }, 3000);
-                        }
                         alert(data.message || "Face identity mismatch. Access denied.");
-                        closeFaceModal();
                     }
                 }
             } catch (err) {
