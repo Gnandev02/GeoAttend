@@ -756,23 +756,51 @@
 
         // --- FACE API LOGIC ---
 
+        const LOCAL_MODEL_URL = '/models';
+        const CDN_MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights/';
+
         async function loadFaceModels() {
             if (faceModelsLoaded) return true;
-            try {
-                const MODEL_URL = '/public/models';
-                document.getElementById('faceModalSub').textContent = "Loading Models...";
-                await Promise.all([
-                    faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-                    faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-                    faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
-                ]);
-                faceModelsLoaded = true;
-                return true;
-            } catch (err) {
-                console.error("Face models load error:", err);
-                alert("Failed to load Face Recognition models. Please ensure they are uploaded to /public/models/");
-                return false;
+            
+            const subEl = document.getElementById('faceModalSub');
+            
+            async function tryLoad(url, sourceName) {
+                try {
+                    subEl.innerText = `Loading Engine (${sourceName})...`;
+                    await Promise.all([
+                        faceapi.nets.tinyFaceDetector.loadFromUri(url),
+                        faceapi.nets.faceLandmark68Net.loadFromUri(url),
+                        faceapi.nets.faceRecognitionNet.loadFromUri(url)
+                    ]);
+                    faceModelsLoaded = true;
+                    console.log(`Face models loaded from ${sourceName}`);
+                    return true;
+                } catch (err) {
+                    console.error(`Failed to load from ${sourceName}:`, err);
+                    return false;
+                }
             }
+
+            // 1. Try Local
+            let success = await tryLoad(LOCAL_MODEL_URL, "Local");
+            
+            // 2. Try CDN Fallback
+            if (!success) {
+                success = await tryLoad(CDN_MODEL_URL, "CDN Fallback");
+            }
+
+            if (!success) {
+                subEl.innerText = "Error: Models failed to load";
+                subEl.className = "text-[10px] text-red-500 font-bold uppercase tracking-widest mt-0.5";
+                document.getElementById('face-feedback').innerHTML = `
+                    <div class="flex flex-col items-center gap-2">
+                        <span>Connection Failed</span>
+                        <button onclick="startFaceAction(currentFaceAction, markTypePending)" class="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-[10px]">Retry</button>
+                    </div>
+                `;
+            }
+
+            return success;
         }
 
         function showSection(sectionId) {
@@ -839,14 +867,32 @@
 
             try {
                 const video = document.getElementById('webcam-video');
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+                document.getElementById('faceModalSub').textContent = "Requesting Camera...";
+                
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: { ideal: 640 }, 
+                        height: { ideal: 480 },
+                        facingMode: "user"
+                    } 
+                });
+                
                 video.srcObject = stream;
-                document.getElementById('faceModalSub').textContent = "Camera Ready";
+                
+                // Wait for video to actually start playing
+                await new Promise((resolve) => {
+                    video.onloadedmetadata = () => {
+                        video.play().then(resolve);
+                    };
+                });
+
+                document.getElementById('faceModalSub').textContent = "Camera Active";
                 
                 // Detection loop
                 const feedbackEl = document.getElementById('face-feedback');
                 let detectionInterval = setInterval(async () => {
                     if (video.paused || video.ended || !faceModelsLoaded) return;
+                    
                     const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions());
                     if (detection) {
                         feedbackEl.textContent = "Face Detected - Hold Still";
@@ -861,8 +907,9 @@
                 
                 video.dataset.interval = detectionInterval;
             } catch (err) {
-                console.error(err);
-                alert("Could not access camera. Please check permissions.");
+                console.error("Camera Error:", err);
+                document.getElementById('faceModalSub').textContent = "Camera Error";
+                alert("Could not access camera. Please ensure permissions are granted and no other app is using it.");
                 closeFaceModal();
             }
         }
