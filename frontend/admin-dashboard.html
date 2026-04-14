@@ -478,6 +478,22 @@
                             <p class="text-[10px] font-medium text-slate-400">Clicking on the map adds a new point. You can drag the polygon corners to adjust the shape.</p>
                         </div>
 
+                        <div class="px-6 py-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 flex items-center justify-between group transition-all hover:bg-indigo-50 mb-8">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-indigo-600 shadow-sm group-hover:scale-110 transition-transform">
+                                    <i data-lucide="scan-face" class="w-5 h-5"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <h4 class="text-xs font-extrabold text-slate-800 uppercase tracking-wider">Face Authentication</h4>
+                                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Require face verification for attendance</p>
+                                </div>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="geo-face-auth" class="sr-only peer">
+                                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600 disabled:opacity-50 transition-all"></div>
+                            </label>
+                        </div>
+
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                             <div class="space-y-2">
                                 <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Attendance Start Time</label>
@@ -1097,6 +1113,8 @@
                     document.getElementById('geo-end-date').value = d.toISOString().split('T')[0];
                 }
                 document.getElementById('geo-radius').value = mainCampus.radius || '500';
+                document.getElementById('geo-face-auth').checked = !!mainCampus.face_auth_enabled;
+                document.getElementById('geo-face-auth').disabled = true;
                 
                 // Polygon logic
                 currentPolygonPoints = [];
@@ -1146,6 +1164,7 @@
         function toggleGeofenceEdit() {
             isEditingGeofence = true;
             document.getElementById('geofence-fieldset').disabled = false;
+            document.getElementById('geo-face-auth').disabled = false;
             document.getElementById('geo-edit-btn').classList.add('hidden');
             document.getElementById('geo-submit-btn').classList.remove('hidden');
             document.getElementById('geo-cancel-btn').classList.remove('hidden');
@@ -1155,6 +1174,7 @@
 
         function cancelGeofenceEdit() {
             isEditingGeofence = false;
+            document.getElementById('geo-face-auth').disabled = true;
             if(adminPolygon) adminPolygon.setEditable(false);
             fetchAdminData();
         }
@@ -1202,7 +1222,8 @@
                 attendance_end_time: attendanceEndTime,
                 attendance_start_date: attendanceStartDate,
                 attendance_end_date: attendanceEndDate,
-                polygonCoordinates: currentPolygonPoints
+                polygonCoordinates: currentPolygonPoints,
+                face_auth_enabled: document.getElementById('geo-face-auth').checked
             };
 
             const btn = e.submitter;

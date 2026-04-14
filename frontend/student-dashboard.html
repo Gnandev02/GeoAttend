@@ -10,6 +10,7 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="js/map-config.js"></script>
+    <script src="https://unpkg.com/face-api.js@0.22.2/dist/face-api.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -30,6 +31,13 @@
         .tab-btn.active { background: #e0f2fe; color: #0369a1; }
         .tab-btn.inactive { color: #64748b; }
         .tab-btn.inactive:hover { background: #f8fafc; color: #1e293b; }
+        
+        /* Face Auth Styles */
+        #video-container { position: relative; width: 100%; max-width: 400px; aspect-ratio: 4/3; overflow: hidden; border-radius: 1rem; background: #000; }
+        #webcam-video { width: 100%; height: 100%; object-fit: cover; }
+        .face-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; border: 2px solid rgba(255,255,255,0.3); }
+        .scanner-line { position: absolute; width: 100%; height: 2px; background: rgba(59, 130, 246, 0.5); box-shadow: 0 0 15px 5px rgba(59, 130, 246, 0.3); animation: scan 2s linear infinite; }
+        @keyframes scan { from { top: 0; } to { top: 100%; } }
     </style>
 </head>
 
@@ -47,6 +55,7 @@
             <div class="p-4 space-y-1.5 flex flex-col">
                 <button id="nav-dashboard" onclick="showSection('dashboardSection')" class="tab-btn active"><i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard</button>
                 <button id="nav-profile" onclick="showSection('profileSection')" class="tab-btn inactive"><i data-lucide="user" class="w-4 h-4"></i> Profile</button>
+                <button id="nav-face" onclick="showSection('faceSection')" class="tab-btn inactive"><i data-lucide="scan-face" class="w-4 h-4"></i> Face Verification</button>
                 <button onclick="window.location.href='student-attendance.html'" class="tab-btn inactive"><i data-lucide="clipboard-list" class="w-4 h-4"></i> Attendance Records</button>
                 <button onclick="window.location.href='change-password.html'" class="tab-btn inactive"><i data-lucide="lock" class="w-4 h-4"></i> Change Password</button>
             </div>
@@ -153,6 +162,81 @@
                             <p id="attendancePercent" class="text-xl font-extrabold text-blue-700">0%</p>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Face Verification Section -->
+            <div id="faceSection" class="section hidden space-y-6">
+                <div class="saas-card p-8 flex flex-col items-center">
+                    <div class="w-20 h-20 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-6">
+                        <i data-lucide="scan-face" class="w-10 h-10"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-slate-900">Face Authentication</h2>
+                    <p class="text-slate-500 text-center max-w-sm mt-2">Manage your biometric profile for secure attendance marking.</p>
+                    
+                    <div id="face-status-card" class="w-full max-w-md mt-10 p-6 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between">
+                        <div>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Current Status</p>
+                            <h4 id="face-reg-status" class="font-bold text-slate-700">Checking...</h4>
+                        </div>
+                        <div id="face-status-icon" class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center">
+                            <i data-lucide="help-circle" class="w-4 h-4 text-slate-400"></i>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-md mt-6">
+                        <button onclick="startFaceAction('register')" id="btn-face-reg" class="flex items-center justify-center gap-2 p-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100">
+                            <i data-lucide="plus-circle" class="w-5 h-5"></i> Register Face
+                        </button>
+                        <button onclick="startFaceAction('verify')" id="btn-face-test" class="flex items-center justify-center gap-2 p-4 bg-white border-2 border-slate-100 text-slate-700 rounded-2xl font-bold hover:bg-slate-50 transition-all">
+                            <i data-lucide="shield-check" class="w-5 h-5"></i> Test Verify
+                        </button>
+                        <button onclick="deleteFaceProfile()" id="btn-face-del" class="md:col-span-2 flex items-center justify-center gap-2 p-3 text-red-500 font-bold hover:bg-red-50 rounded-xl transition-all opacity-0 pointer-events-none">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i> Delete Biometric Data
+                        </button>
+                    </div>
+
+                    <div class="mt-8 p-4 bg-blue-50 border border-blue-100 rounded-xl max-w-md">
+                        <div class="flex gap-3">
+                            <i data-lucide="info" class="w-5 h-5 text-blue-500 shrink-0"></i>
+                            <p class="text-xs text-blue-700 leading-relaxed font-medium"><b>Privacy Note:</b> Your facial biometrics are stored as encrypted mathematical descriptors. No actual photos are saved on our servers.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Face Capture Modal -->
+    <div id="faceModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl scale-in-center">
+            <div class="p-6 border-b border-slate-50 flex justify-between items-center">
+                <div>
+                    <h3 id="faceModalTitle" class="font-extrabold text-slate-900">Face Capture</h3>
+                    <p id="faceModalSub" class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Initializing Camera...</p>
+                </div>
+                <button onclick="closeFaceModal()" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-xl transition-all">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div class="p-8 flex flex-col items-center">
+                <div id="video-container">
+                    <video id="webcam-video" autoplay muted playsinline></video>
+                    <div class="face-overlay">
+                        <div class="scanner-line"></div>
+                    </div>
+                </div>
+                
+                <div id="face-feedback" class="mt-6 px-4 py-2 rounded-full bg-slate-100 text-slate-600 text-xs font-bold uppercase tracking-widest">
+                    Position your face in the frame
+                </div>
+
+                <div class="w-full mt-8 flex gap-4">
+                    <button onclick="closeFaceModal()" class="flex-1 py-4 font-bold text-slate-500 hover:bg-slate-50 rounded-2xl transition-all">Cancel</button>
+                    <button id="captureBtn" onclick="captureFace()" disabled class="flex-1 py-4 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed">
+                        Capture Biometric
+                    </button>
                 </div>
             </div>
         </div>
@@ -272,6 +356,10 @@
         let currentAccuracy = 0;
         let hasMarkedInToday = false;
         let attendanceWindow = { start: null, end: null };
+        let faceAuthEnabled = false;
+        let faceModelsLoaded = false;
+        let currentFaceAction = null; // 'register' or 'verify' or 'mark'
+        let markTypePending = null; // 'IN' or 'OUT'
 
         function isWithinCollegeHours() {
             if (!attendanceWindow.start || !attendanceWindow.end) return true;
@@ -312,6 +400,8 @@
                 // Global configs (Task 1)
                 attendanceWindow = { start: data.attendance_start_time, end: data.attendance_end_time };
                 radius = data.radius;
+                faceAuthEnabled = !!data.face_auth_enabled;
+                console.log("Face Auth Enabled for Campus:", faceAuthEnabled);
                 const polygonPoints = data.polygon_coordinates || data.polygon_points || [];
 
                 // Attendance Period Display
@@ -510,28 +600,40 @@
             }
 
             // Automatic marking logic (Task 3)
-            if (isInside && withinTime && !hasMarkedInToday) {
-                console.log("Triggering auto-attendance: Inside and within hours.");
-                markAttendance("IN");
-            }
+                if (isInside && withinTime && !hasMarkedInToday) {
+                    console.log("Triggering auto-attendance: Inside and within hours.");
+                    // Check Face Auth Hook
+                    if (faceAuthEnabled) {
+                        console.log("[FaceAuth] Required. Triggering verification.");
+                        triggerFaceVerification("IN");
+                    } else {
+                        markAttendance("IN");
+                    }
+                }
 
-            // Hysteresis logic for status changes (OUT tracking)
-            if (currentStatus !== lastRealStatus) {
-                if (currentStatus === pendingStatus) {
-                    consecutiveMatches++;
-                    if (consecutiveMatches >= 2) {
-                        lastRealStatus = currentStatus;
-                        if (currentStatus === "OUT") markAttendance("OUT");
-                        consecutiveMatches = 0;
+                // Hysteresis logic for status changes (OUT tracking)
+                if (currentStatus !== lastRealStatus) {
+                    if (currentStatus === pendingStatus) {
+                        consecutiveMatches++;
+                        if (consecutiveMatches >= 2) {
+                            lastRealStatus = currentStatus;
+                            if (currentStatus === "OUT") {
+                                if (faceAuthEnabled) {
+                                    triggerFaceVerification("OUT");
+                                } else {
+                                    markAttendance("OUT");
+                                }
+                            }
+                            consecutiveMatches = 0;
+                        }
+                    } else {
+                        pendingStatus = currentStatus;
+                        consecutiveMatches = 1;
                     }
                 } else {
-                    pendingStatus = currentStatus;
-                    consecutiveMatches = 1;
+                    pendingStatus = null;
+                    consecutiveMatches = 0;
                 }
-            } else {
-                pendingStatus = null;
-                consecutiveMatches = 0;
-            }
         }
 
         // STEP 7: CALL BACKEND FOR ATTENDANCE
@@ -650,6 +752,219 @@
             box.innerText = msg; box.className = `p-4 rounded-xl border mb-4 ${success ? 'bg-green-50 text-green-800 border-green-200' : 'bg-red-50 text-red-800 border-red-200'}`;
             box.classList.remove('hidden');
             setTimeout(() => box.classList.add('hidden'), 5000);
+        }
+
+        // --- FACE API LOGIC ---
+
+        async function loadFaceModels() {
+            if (faceModelsLoaded) return true;
+            try {
+                const MODEL_URL = '/public/models';
+                document.getElementById('faceModalSub').textContent = "Loading Models...";
+                await Promise.all([
+                    faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+                    faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+                    faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+                ]);
+                faceModelsLoaded = true;
+                return true;
+            } catch (err) {
+                console.error("Face models load error:", err);
+                alert("Failed to load Face Recognition models. Please ensure they are uploaded to /public/models/");
+                return false;
+            }
+        }
+
+        function showSection(sectionId) {
+            document.querySelectorAll(".section").forEach(sec => {
+                sec.classList.add("hidden");
+            });
+            document.getElementById(sectionId).classList.remove("hidden");
+
+            // Update Nav UI
+            document.querySelectorAll(".tab-btn").forEach(btn => {
+                btn.classList.replace("active", "inactive");
+            });
+            
+            if (sectionId === 'dashboardSection') {
+                document.getElementById('nav-dashboard').classList.replace("inactive", "active");
+            } else if (sectionId === 'profileSection') {
+                document.getElementById('nav-profile').classList.replace("inactive", "active");
+                fetchProfile();
+            } else if (sectionId === 'faceSection') {
+                document.getElementById('nav-face').classList.replace("inactive", "active");
+                checkFaceStatus();
+            }
+        }
+
+        async function checkFaceStatus() {
+            try {
+                const res = await fetch("/api/main?action=face-status", { headers: { "Authorization": "Bearer " + token } });
+                const data = await res.json();
+                const statusEl = document.getElementById('face-reg-status');
+                const iconEl = document.getElementById('face-status-icon');
+                const delBtn = document.getElementById('btn-face-del');
+                const regBtn = document.getElementById('btn-face-reg');
+
+                if (data.registered) {
+                    statusEl.textContent = "Verified & Registered";
+                    statusEl.className = "font-bold text-green-600";
+                    iconEl.className = "w-8 h-8 rounded-full bg-green-100 flex items-center justify-center";
+                    iconEl.innerHTML = '<i data-lucide="check-circle-2" class="w-4 h-4 text-green-600"></i>';
+                    delBtn.classList.remove('opacity-0', 'pointer-events-none');
+                    regBtn.innerHTML = '<i data-lucide="refresh-cw" class="w-5 h-5"></i> Update Biometrics';
+                } else {
+                    statusEl.textContent = "Not Registered";
+                    statusEl.className = "font-bold text-rose-500";
+                    iconEl.className = "w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center";
+                    iconEl.innerHTML = '<i data-lucide="alert-circle" class="w-4 h-4 text-rose-500"></i>';
+                    delBtn.classList.add('opacity-0', 'pointer-events-none');
+                    regBtn.innerHTML = '<i data-lucide="plus-circle" class="w-5 h-5"></i> Register Face';
+                }
+                lucide.createIcons();
+            } catch (err) { console.error(err); }
+        }
+
+        async function startFaceAction(action, type = null) {
+            currentFaceAction = action;
+            markTypePending = type;
+            
+            document.getElementById('faceModal').classList.remove('hidden');
+            document.getElementById('faceModalTitle').textContent = action === 'register' ? 'Register Face' : 'Verify Identity';
+            document.getElementById('faceModalSub').textContent = "Initializing Camera...";
+            document.getElementById('captureBtn').disabled = true;
+
+            const loaded = await loadFaceModels();
+            if (!loaded) return closeFaceModal();
+
+            try {
+                const video = document.getElementById('webcam-video');
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+                video.srcObject = stream;
+                document.getElementById('faceModalSub').textContent = "Camera Ready";
+                
+                // Detection loop
+                const feedbackEl = document.getElementById('face-feedback');
+                let detectionInterval = setInterval(async () => {
+                    if (video.paused || video.ended || !faceModelsLoaded) return;
+                    const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions());
+                    if (detection) {
+                        feedbackEl.textContent = "Face Detected - Hold Still";
+                        feedbackEl.className = "mt-6 px-4 py-2 rounded-full bg-green-100 text-green-600 text-xs font-bold uppercase tracking-widest";
+                        document.getElementById('captureBtn').disabled = false;
+                    } else {
+                        feedbackEl.textContent = "Position your face in the frame";
+                        feedbackEl.className = "mt-6 px-4 py-2 rounded-full bg-slate-100 text-slate-600 text-xs font-bold uppercase tracking-widest";
+                        document.getElementById('captureBtn').disabled = true;
+                    }
+                }, 500);
+                
+                video.dataset.interval = detectionInterval;
+            } catch (err) {
+                console.error(err);
+                alert("Could not access camera. Please check permissions.");
+                closeFaceModal();
+            }
+        }
+
+        async function captureFace() {
+            const video = document.getElementById('webcam-video');
+            const captureBtn = document.getElementById('captureBtn');
+            captureBtn.disabled = true;
+            captureBtn.textContent = "Processing...";
+
+            try {
+                const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+                                           .withFaceLandmarks()
+                                           .withFaceDescriptor();
+
+                if (!detection) {
+                    alert("Face lost. Please try again.");
+                    captureBtn.disabled = false;
+                    captureBtn.textContent = "Capture Biometric";
+                    return;
+                }
+
+                const descriptor = detection.descriptor.join(',');
+
+                if (currentFaceAction === 'register') {
+                    const res = await fetch("/api/main?action=face-register", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+                        body: JSON.stringify({ descriptor })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        alert("Face biometrics registered successfully!");
+                        closeFaceModal();
+                        checkFaceStatus();
+                    } else {
+                        alert(data.message || "Registration failed");
+                    }
+                } else if (currentFaceAction === 'verify' || currentFaceAction === 'mark') {
+                    const res = await fetch("/api/main?action=face-verify", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+                        body: JSON.stringify({ descriptor })
+                    });
+                    const data = await res.json();
+                    if (data.success && data.verified) {
+                        if (currentFaceAction === 'mark') {
+                            closeFaceModal();
+                            markAttendance(markTypePending);
+                        } else {
+                            alert("Identity Verified Successfully!");
+                            closeFaceModal();
+                        }
+                    } else {
+                        alert(data.message || "Face identity mismatch. Access denied.");
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Processing error. Try again.");
+            } finally {
+                captureBtn.disabled = false;
+                captureBtn.textContent = "Capture Biometric";
+            }
+        }
+
+        function triggerFaceVerification(type) {
+            // Check if registered first
+            fetch("/api/main?action=face-status", { headers: { "Authorization": "Bearer " + token } })
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.registered) {
+                        if (confirm("Face Authentication is required by your institution, but you haven't registered your face yet. Click OK to go to Face Registration.")) {
+                            showSection('faceSection');
+                        }
+                    } else {
+                        startFaceAction('mark', type);
+                    }
+                });
+        }
+
+        async function deleteFaceProfile() {
+            if (!confirm("Are you sure you want to delete your biometric data? You will need to re-register before you can mark attendance if your institution requires it.")) return;
+            try {
+                const res = await fetch("/api/main?action=face-delete", {
+                    method: "POST",
+                    headers: { "Authorization": "Bearer " + token }
+                });
+                if (res.ok) {
+                    alert("Face profile deleted");
+                    checkFaceStatus();
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        function closeFaceModal() {
+            const video = document.getElementById('webcam-video');
+            if (video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop());
+            }
+            if (video.dataset.interval) clearInterval(parseInt(video.dataset.interval));
+            document.getElementById('faceModal').classList.add('hidden');
         }
 
         window.initMap = initDashboard;
