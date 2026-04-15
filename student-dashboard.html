@@ -884,18 +884,22 @@
             markTypePending = type;
             
             console.log(`[FaceAuth] Starting action: ${action}`);
-            document.getElementById('faceModal').classList.remove('hidden');
+            const modal = document.getElementById('faceModal');
+            modal.classList.remove('hidden');
+            
             document.getElementById('faceModalTitle').textContent = action === 'register' ? 'Register Face' : (action === 'gate' ? 'Face Identity Check' : 'Verify Identity');
-            document.getElementById('faceModalSub').textContent = "Initializing Camera...";
-            document.getElementById('captureBtn').disabled = true;
+            const subEl = document.getElementById('faceModalSub');
+            const feedbackEl = document.getElementById('face-feedback');
+            const captureBtn = document.getElementById('captureBtn');
+            
+            subEl.textContent = "Loading Models...";
+            captureBtn.disabled = true;
 
             const loaded = await loadFaceModels();
             if (!loaded) return;
             
             const video = document.getElementById('faceVideo');
             const canvas = document.getElementById('faceCanvas');
-            const feedbackEl = document.getElementById('face-feedback');
-            const subEl = document.getElementById('faceModalSub');
 
             try {
                 subEl.textContent = "Requesting Camera...";
@@ -910,24 +914,52 @@
                     audio: false
                 });
                 
-                console.log("[FaceAuth] Stream acquired");
-                video.srcObject = stream;
+                console.log("[FaceAuth] Stream acquired:", stream.id);
+                subEl.textContent = "Stream Acquired";
+
+                // SETUP VIDEO BEFORE SETTING SRC
+                video.setAttribute('autoplay', '');
+                video.setAttribute('muted', '');
+                video.setAttribute('playsinline', '');
+                video.muted = true;
+                video.autoplay = true;
+                video.playsInline = true;
+
+                // Listeners BEFORE srcObject
                 video.onloadedmetadata = () => {
+                    console.log("[FaceAuth] Video metadata loaded");
+                    subEl.textContent = "Configuring Lens...";
+                };
+
+                video.oncanplay = () => {
+                    console.log("[FaceAuth] Video can play");
                     video.play().then(() => {
-                        console.log("[FaceAuth] Video playing");
+                        console.log("[FaceAuth] Playback started");
                         subEl.textContent = "Camera Ready";
-                        feedbackEl.textContent = "Adjusting view...";
-                    }).catch(e => {
-                        console.error("[FaceAuth] Video play failed:", e);
-                        subEl.textContent = "Video Play Error";
+                        feedbackEl.textContent = "Position your face in the frame";
+                    }).catch(err => {
+                        console.warn("[FaceAuth] Play failed, retrying...", err);
+                        subEl.textContent = "Retrying Playback...";
                     });
                 };
 
+                video.srcObject = stream;
+                
+                // Force play after a short delay as a fallback
+                setTimeout(() => {
+                    if (video.paused) {
+                        console.log("[FaceAuth] Video still paused, forcing play...");
+                        video.play().catch(e => console.error("[FaceAuth] Final play attempt failed", e));
+                    }
+                }, 1000);
+
                 // Visualization Setup
-                const displaySize = { width: video.clientWidth || 640, height: video.clientHeight || 480 };
+                const displaySize = { width: video.clientWidth || 440, height: video.clientHeight || 330 };
                 faceapi.matchDimensions(canvas, displaySize);
                 
                 // Detection loop
+                if (video.dataset.interval) clearInterval(parseInt(video.dataset.interval));
+                
                 let detectionInterval = setInterval(async () => {
                     if (video.paused || video.ended || !faceModelsLoaded) return;
                     
@@ -938,8 +970,12 @@
                         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
                         if (detection) {
+                            const resizedDetections = faceapi.resizeResults(detection, { 
+                                width: video.offsetWidth, 
+                                height: video.offsetHeight 
+                            });
+                            
                             // Draw Green Rectangle
-                            const resizedDetections = faceapi.resizeResults(detection, displaySize);
                             ctx.strokeStyle = '#22c55e'; // green-500
                             ctx.lineWidth = 4;
                             const { x, y, width, height } = resizedDetections.box;
@@ -947,31 +983,23 @@
 
                             feedbackEl.textContent = "Face Detected - Hold Still";
                             feedbackEl.className = "mt-6 px-4 py-2 rounded-full bg-green-100 text-green-600 text-xs font-bold uppercase tracking-widest";
-                            document.getElementById('captureBtn').disabled = false;
+                            captureBtn.disabled = false;
                         } else {
                             feedbackEl.textContent = "Position your face in the frame";
                             feedbackEl.className = "mt-6 px-4 py-2 rounded-full bg-slate-100 text-slate-600 text-xs font-bold uppercase tracking-widest";
-                            document.getElementById('captureBtn').disabled = true;
+                            captureBtn.disabled = true;
                         }
-                    } catch (e) { 
-                        // console.warn("Detection skipped frame", e); 
-                    }
-                }, 100);
+                    } catch (e) { }
+                }, 150);
                 
                 video.dataset.interval = detectionInterval;
             } catch (err) {
-                console.error("[FaceAuth] Camera Error:", err);
+                console.error("[FaceAuth] Fatal Camera Error:", err);
                 subEl.textContent = "Camera Access Error";
                 subEl.className = "text-[10px] text-red-500 font-bold uppercase tracking-widest mt-0.5";
                 
-                feedbackEl.textContent = "ERROR: " + (err.name === 'NotAllowedError' ? "Permission Denied" : "Device/Camera Busy");
+                feedbackEl.textContent = "ERROR: " + (err.name === 'NotAllowedError' ? "Permission Denied" : "Camera Busy");
                 feedbackEl.className = "mt-6 px-4 py-2 rounded-full bg-red-100 text-red-600 text-xs font-bold uppercase tracking-widest";
-                
-                if (err.name === 'NotAllowedError') {
-                    alert("Camera Permission Denied. Please enable camera access in your browser settings and refresh.");
-                } else {
-                    alert("Camera Error: " + (err.message || "Could not access camera."));
-                }
             }
         }
 
