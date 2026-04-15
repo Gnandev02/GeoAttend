@@ -124,8 +124,6 @@ export default async function handler(req, res) {
 
             return res.status(200).json({
                 name: row.name,
-                lat: Number(row.latitude), // Backward compatibility
-                lng: Number(row.longitude), // Backward compatibility
                 latitude: Number(row.latitude),
                 longitude: Number(row.longitude),
                 radius: Number(row.radius),
@@ -134,7 +132,7 @@ export default async function handler(req, res) {
                 attendance_start_date: row.attendance_start_date,
                 attendance_end_date: row.attendance_end_date,
                 college_code: row.college_code,
-                branch_code: row.branch_code || row.college_code, 
+                branch_code: row.branch_code, // Source of truth: return exactly what's in DB
                 college_name: collegeName,
                 polygon_coordinates: row.polygon_coordinates,
                 polygon_points: polygonPoints,
@@ -782,14 +780,25 @@ export default async function handler(req, res) {
                 }
 
                 if (collegeCode) {
-                    // Direct Login with Campus verification
-                    const student = result.rows.find(s => s.college_code && s.college_code.toLowerCase() === collegeCode.toLowerCase());
+                    // STRICT RESOLUTION: Resolve input Branch Code to internal college_code
+                    const campusLookup = await query('SELECT college_code FROM campus_setup WHERE branch_code = $1', [collegeCode]);
+                    
+                    if (campusLookup.rows.length === 0) {
+                        console.warn(`[studentLogin] No campus found for branch_code "${collegeCode}". Rejecting login.`);
+                        return res.status(401).json({ success: false, message: 'Invalid Branch Code.' });
+                    }
+
+                    const actualCollegeCode = campusLookup.rows[0].college_code;
+                    console.log(`[studentLogin] Resolved branch_code "${collegeCode}" to internal code "${actualCollegeCode}"`);
+
+                    // Direct Login with Resolved Campus
+                    const student = result.rows.find(s => s.college_code && s.college_code.toLowerCase() === actualCollegeCode.toLowerCase());
                     
                     if (!student) {
                         return res.status(401).json({ success: false, message: 'Wrong campus selected.' });
                     }
 
-                    // Temporary Debug Log (Requirement 5)
+                    // Temporary Debug Log
                     console.log(`[studentLogin] DEBUG: Entered Password="${password}", Stored Hash="${student.password.substring(0, 10)}..."`);
 
                     if (await comparePassword(password, student.password)) {
@@ -802,7 +811,7 @@ export default async function handler(req, res) {
                             email: student.email, 
                             rollNumber: student.roll_number, 
                             role: 'student', 
-                            collegeCode: student.college_code 
+                            collegeCode: collegeCode // Return the input branch_code for display
                         });
                     }
                     return res.status(401).json({ success: false, message: 'Incorrect password.' });
@@ -837,13 +846,16 @@ export default async function handler(req, res) {
 
                 // Multiple valid password matches
                 const campusIds = validMatches.map(s => s.college_code);
-                const campusNamesQ = await query('SELECT college_code, name FROM campus_setup WHERE college_code = ANY($1)', [campusIds]);
+                const campusNamesQ = await query('SELECT college_code, name, branch_code FROM campus_setup WHERE college_code = ANY($1)', [campusIds]);
+                
                 const campusMap = {};
-                campusNamesQ.rows.forEach(r => campusMap[r.college_code] = r.name);
+                campusNamesQ.rows.forEach(r => campusMap[r.college_code] = r.branch_code || r.college_code);
+                const campusDisplayNames = {};
+                campusNamesQ.rows.forEach(r => campusDisplayNames[r.college_code] = r.name);
 
                 const choices = validMatches.map(s => ({
-                    collegeCode: s.college_code,
-                    collegeName: campusMap[s.college_code] || 'Institution ' + s.college_code
+                    collegeCode: campusMap[s.college_code],
+                    collegeName: campusDisplayNames[s.college_code] || 'Institution ' + s.college_code
                 }));
 
                 return res.status(200).json({ 
@@ -877,6 +889,10 @@ export default async function handler(req, res) {
                 console.log(`[adminLogin] DEBUG: Entered Password="${password}", Stored Hash="${admin.password.substring(0, 10)}..."`);
 
                 if (await comparePassword(password, admin.password)) {
+                    // Resolve branch_code for UI consistency
+                    const campusRes = await query('SELECT branch_code FROM campus_setup WHERE college_code = $1', [admin.college_code]);
+                    const branchCode = (campusRes.rows.length > 0 && campusRes.rows[0].branch_code) ? campusRes.rows[0].branch_code : admin.college_code;
+
                     const token = generateToken(admin.id, admin.email, admin.college_code, 'admin');
                     return res.status(200).json({ 
                         success: true,
@@ -885,7 +901,8 @@ export default async function handler(req, res) {
                         name: admin.name, 
                         email: admin.email, 
                         role: 'admin', 
-                        collegeCode: admin.college_code,
+                        collegeCode: branchCode, // Return user-friendly branch_code
+                        internalCollegeCode: admin.college_code,
                         collegeName: admin.college_name
                     });
                 }
@@ -1178,9 +1195,10 @@ export default async function handler(req, res) {
                     [name, email, hashedPassword, rollNumber, department || 'General', admin.college_code]
                 );
                 try {
-                    // Fetch configured branch code for emails (Requirement 11)
+                    // REQUIREMENT: Use strictly current branch_code for onboarding
                     const cRes = await query('SELECT branch_code FROM campus_setup WHERE college_code = $1', [admin.college_code]);
                     const emailBranchCode = (cRes.rows.length > 0 && cRes.rows[0].branch_code) ? cRes.rows[0].branch_code : admin.college_code;
+                    console.log(`[addStudent] Generated credentials with branch_code: ${emailBranchCode}`);
 
                     await sendOnboardingEmail(email, name, tempPassword, emailBranchCode, `${req.headers.origin || 'https://geoattend.vercel.app'}/student-login.html`);
                 } catch (e) { 
@@ -1234,6 +1252,7 @@ export default async function handler(req, res) {
                 } = req.body;
                 
                 const branch_code = (branchCode || req.body.collegeCode || "").toString().trim();
+                console.log(`[update-geofence] Saving branch_code: "${branch_code}" for Org: ${admin.college_code}`);
 
                 if (!admin.college_code) {
                     return res.status(400).json({ error: "Admin college code missing. Please contact support." });

@@ -774,14 +774,19 @@
                 });
                 const campusData = await c.json();
 
-                // Update local user object if college name is returned
-                if (campusData && campusData.college_name) {
-                    user.collegeName = campusData.college_name;
+                // Update local user object from campus data for reactive sidebar updates
+                if (campusData) {
+                    if (campusData.college_name) user.collegeName = campusData.college_name;
+                    if (campusData.branch_code) user.collegeCode = campusData.branch_code;
+                    
                     localStorage.setItem('student', JSON.stringify(user));
                     
-                    // Update sidebar display
+                    // Update sidebar display immediately
                     if (document.getElementById('brand-college-name')) {
-                        document.getElementById('brand-college-name').textContent = user.collegeName;
+                        document.getElementById('brand-college-name').textContent = user.collegeName || 'Admin Portal';
+                    }
+                    if (document.getElementById('brand-college-code')) {
+                        document.getElementById('brand-college-code').textContent = user.collegeCode || 'Master Panel';
                     }
                 }
 
