@@ -1060,34 +1060,56 @@
             const feedbackEl = document.getElementById('face-feedback');
             
             captureBtn.disabled = true;
-            captureBtn.textContent = "Processing...";
+            captureBtn.textContent = "Scanning...";
 
             try {
-                console.log("[FaceAuth] Starting capture sequence...");
-                feedbackEl.textContent = "HOLD STILL FOR 1 SEC...";
-                feedbackEl.className = "mt-6 px-4 py-2 rounded-full bg-blue-100 text-blue-600 text-xs font-bold uppercase tracking-widest";
+                console.log("[FaceAuth] Starting secure multi-frame capture sequence...");
                 
-                // USER REQUIREMENT: Hold still 1 sec before capture for sensor stabilization
-                await new Promise(r => setTimeout(r, 1000));
+                const descriptors = [];
+                const sampleCount = 3;
+                
+                for (let i = 1; i <= sampleCount; i++) {
+                    feedbackEl.textContent = `SCANNING PHASE ${i}/${sampleCount}... HOLD STILL`;
+                    feedbackEl.className = "mt-6 px-4 py-2 rounded-full bg-blue-100 text-blue-600 text-xs font-bold uppercase tracking-widest";
+                    
+                    // Small delay between samples for temporal variance
+                    await new Promise(r => setTimeout(r, 600));
 
-                const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
-                                           .withFaceLandmarks()
-                                           .withFaceDescriptor();
+                    const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+                                               .withFaceLandmarks()
+                                               .withFaceDescriptor();
 
-                if (!detection) {
-                    console.warn("[FaceAuth] Capture failed: No face detected.");
-                    alert("Face not detected. Please position your face clearly and try again.");
-                    return; // finally block will reset state
+                    if (!detection) {
+                        console.warn(`[FaceAuth] Sample ${i} failed: No face detected.`);
+                        alert(`Sample ${i} failed. Please ensure your face is clearly visible.`);
+                        return;
+                    }
+
+                    descriptors.push(Array.from(detection.descriptor));
                 }
 
-                console.log("[FaceAuth] Extracting biometric signature...");
-                const descriptorArray = Array.from(detection.descriptor);
-                const descriptor = JSON.stringify(descriptorArray);
+                // SECURITY: Liveness Check - check for descriptor variance
+                // If descriptors are 100% identical across samples, it's likely a static photo or frozen buffer
+                let totalVariance = 0;
+                for (let i = 0; i < descriptors[0].length; i++) {
+                    const diff = Math.abs(descriptors[0][i] - descriptors[1][i]);
+                    totalVariance += diff;
+                }
                 
-                const payload = {
-                    descriptor,
-                    mobile: window.innerWidth < 768 // Pass mobile flag for adaptive thresholding
-                };
+                if (totalVariance === 0) {
+                    console.error("[FaceAuth] Anti-Spoofing Triggered: Zero variance detected.");
+                    alert("Verification Failed: Please use a live face, not a static image.");
+                    return;
+                }
+
+                console.log("[FaceAuth] Calculating averaged biometric signature...");
+                // Element-wise average of all sampled descriptors
+                const averagedDescriptor = descriptors[0].map((_, i) => {
+                    return descriptors.reduce((sum, d) => sum + d[i], 0) / descriptors.length;
+                });
+
+                const descriptor = JSON.stringify(averagedDescriptor);
+                const payload = { descriptor };
 
                 if (currentFaceAction === 'register') {
                     const res = await fetch("/api/main?action=face-register", {
@@ -1097,13 +1119,14 @@
                     });
                     const data = await res.json();
                     if (data.success) {
-                        alert("Face biometrics registered successfully!");
+                        alert("Secure face biometrics registered successfully!");
                         closeFaceModal();
                         checkFaceStatus();
                     } else {
                         alert(data.message || "Registration failed");
                     }
                 } else if (currentFaceAction === 'verify' || currentFaceAction === 'mark' || currentFaceAction === 'gate') {
+                    feedbackEl.textContent = "VERIFYING IDENTITY...";
                     const res = await fetch("/api/main?action=face-verify", {
                         method: "POST",
                         headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
@@ -1127,8 +1150,7 @@
                         }
                     } else {
                         console.warn(`[FaceAuth] Rejected (Dist: ${data.distance}, Threshold: ${data.threshold})`);
-                        const distInfo = data.distance ? ` (Diff: ${data.distance.toFixed(3)})` : "";
-                        alert(`Face mismatch. Please retry in good light.${distInfo}`);
+                        alert(data.message || "Face mismatch. Access Denied.");
                     }
                 }
             } catch (err) {

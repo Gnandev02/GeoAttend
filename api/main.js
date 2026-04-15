@@ -1495,13 +1495,13 @@ export default async function handler(req, res) {
             }
             const distance = Math.sqrt(sum);
             
-            // USER REQUIREMENT: Adaptive Threshold
-            // Mobile (smaller sensor, more noise) gets 0.78. Desktop gets 0.72.
-            const threshold = mobile ? 0.78 : 0.72; 
-            const isMatch = distance < threshold;
+            // SECURITY REQUIREMENT: Strict threshold (0.48) for TRUE identity verification.
+            // A threshold > 0.60 allows too many false positives.
+            const threshold = 0.48; 
+            const isMatch = distance <= threshold;
 
-            // USER REQUIREMENT: Detailed logs
-            console.log(`[FaceVerify] Evaluation | Distance: ${distance.toFixed(4)} | Threshold: ${threshold} | Match: ${isMatch}`);
+            // SECURITY REQUIREMENT: Detailed logging for audit
+            console.log(`[FaceVerify] Identity Audit | Student: ${student.id} | Distance: ${distance.toFixed(4)} | Threshold: ${threshold} | Result: ${isMatch ? 'VERIFIED' : 'REJECTED'}`);
 
             if (isMatch) {
                 return res.status(200).json({ success: true, verified: true, distance, threshold });
@@ -1511,7 +1511,7 @@ export default async function handler(req, res) {
                     verified: false, 
                     distance, 
                     threshold,
-                    message: "Face mismatch. Please retry in good light." 
+                    message: "Face mismatch. Please use your registered face in good lighting." 
                 });
             }
         }
