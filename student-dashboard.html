@@ -37,12 +37,50 @@
         #faceVideo { width: 100%; height: 100%; object-fit: cover; display: block; z-index: 20; position: relative; transform: scaleX(-1); }
         #faceCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 25; pointer-events: none; transform: scaleX(-1); }
         .face-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 30; }
+
+        /* Mobile Adjustments */
+        @media (max-width: 767px) {
+            body { padding: 0; }
+            #sidebar { 
+                position: fixed; 
+                top: 0; 
+                left: 0; 
+                bottom: 0; 
+                width: 85%; 
+                max-width: 320px; 
+                z-index: 1000; 
+                border-radius: 0;
+                transform: translateX(-100%);
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                box-shadow: 20px 0 25px -5px rgba(0,0,0,0.1);
+            }
+            #sidebar.open { transform: translateX(0); }
+            #main-content { padding: 16px; }
+        }
     </style>
 </head>
 
-<body>
-    <div class="max-w-7xl mx-auto flex flex-col lg:flex-row gap-6">
-        <div id="sidebar" class="w-full lg:w-72 saas-card flex flex-col h-fit bg-white">
+    <!-- Mobile Top Navigation (Visible < 768px) -->
+    <nav class="md:hidden sticky top-0 bg-white border-b border-slate-100 z-[900] flex items-center justify-between p-4 mb-2">
+        <div class="flex items-center gap-3">
+            <button onclick="toggleSidebar()" class="p-2 text-slate-500 hover:bg-slate-50 rounded-lg active:scale-95 transition-all">
+                <i data-lucide="menu" class="w-6 h-6"></i>
+            </button>
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                    <i data-lucide="navigation" class="text-white w-4 h-4"></i>
+                </div>
+                <span class="font-bold text-slate-800 tracking-tight">GeoAttend</span>
+            </div>
+        </div>
+        <div id="nav-initial-mobile" class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xs font-bold border border-blue-100/50">S</div>
+    </nav>
+
+    <!-- Sidebar Overlay (Mobile Only) -->
+    <div id="sidebarOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[950] hidden opacity-0 transition-opacity duration-300"></div>
+
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row gap-6">
+        <div id="sidebar" class="w-full md:w-72 saas-card flex flex-col h-fit bg-white">
             <div class="p-10 border-b border-slate-50 flex flex-col items-center relative">
                 <div id="user-initial" class="w-20 h-20 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-3xl font-bold mb-5 border border-blue-100/50">S</div>
                 <h2 id="user-name" class="font-bold text-slate-900 text-2xl">Student</h2>
@@ -272,6 +310,11 @@
 
         document.getElementById('user-name').textContent = user.name || 'Student';
         document.getElementById('user-info').textContent = `${user.rollNumber || ''} • ${user.email}`;
+        
+        // Sync initials for mobile nav and sidebar
+        const initial = (user.name || 'S').charAt(0).toUpperCase();
+        document.getElementById('user-initial').textContent = initial;
+        document.getElementById('nav-initial-mobile').textContent = initial;
 
         function showSection(sectionId) {
             document.querySelectorAll(".section").forEach(sec => {
@@ -305,10 +348,13 @@
                     document.getElementById("profileDept").innerText = data.department || 'Not Assigned';
                     document.getElementById("profileCampus").innerText = data.campus_name || 'GeoAttend Campus';
                     if (data.profile_image) {
+                        const imgHtml = `<img src="${data.profile_image}" class="w-full h-full rounded-full object-cover">`;
                         document.getElementById("profileImg").src = data.profile_image;
-                        document.getElementById("user-initial").innerHTML = `<img src="${data.profile_image}" class="w-full h-full rounded-full object-cover">`;
+                        document.getElementById("user-initial").innerHTML = imgHtml;
+                        document.getElementById("nav-initial-mobile").innerHTML = imgHtml;
                     } else {
-                        document.getElementById("profileImg").src = `https://ui-avatars.com/api/?name=${data.name}&background=random`;
+                        const avatarUrl = `https://ui-avatars.com/api/?name=${data.name}&background=random`;
+                        document.getElementById("profileImg").src = avatarUrl;
                     }
                 }
 
@@ -863,6 +909,30 @@
             } else if (sectionId === 'faceSection') {
                 document.getElementById('nav-face').classList.replace("inactive", "active");
                 checkFaceStatus();
+            }
+
+            // Mobile: Close sidebar after selection
+            if (window.innerWidth < 768) {
+                const sidebar = document.getElementById('sidebar');
+                if (sidebar.classList.contains('open')) {
+                    toggleSidebar();
+                }
+            }
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            const isOpen = sidebar.classList.contains('open');
+
+            if (isOpen) {
+                sidebar.classList.remove('open');
+                overlay.classList.add('opacity-0');
+                setTimeout(() => overlay.classList.add('hidden'), 300);
+            } else {
+                overlay.classList.remove('hidden');
+                setTimeout(() => overlay.classList.remove('opacity-0'), 10);
+                sidebar.classList.add('open');
             }
         }
 
