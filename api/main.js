@@ -122,8 +122,11 @@ export default async function handler(req, res) {
                             !!row.college_code && 
                             (Array.isArray(polygonPoints) && polygonPoints.length >= 3);
 
-            const campusBranchCode = row.branch_code || row.college_code;
-            console.log(`[get-campus] User: ${user.email} | Org: ${row.college_code} | Branch: ${campusBranchCode}`);
+            const campusBranchCode = (row && row.branch_code) || (row && row.college_code) || "default";
+            // Defensive log access
+            const logUserEmail = user ? user.email : 'Unknown';
+            const logOrgCode = row ? row.college_code : 'Unknown';
+            console.log(`[get-campus] User: ${logUserEmail} | Org: ${logOrgCode} | Branch: ${campusBranchCode}`);
 
             return res.status(200).json({
                 name: row.name,
@@ -799,8 +802,9 @@ export default async function handler(req, res) {
                     }
                     if (!student) return res.status(401).json({ success: false, message: 'Wrong campus selected.' });
 
-                    // Temporary Debug Log (Requirement 5)
-                    console.log(`[studentLogin] DEBUG: Entered Password="${password}", Stored Hash="${student.password.substring(0, 10)}..."`);
+                    // Temporary Debug Log
+                    const safeStoredHash = student.password ? student.password.substring(0, 10) : 'none';
+                    console.log(`[studentLogin] DEBUG: Entered Password="${password}", Stored Hash="${safeStoredHash}..."`);
 
                     if (await comparePassword(password, student.password)) {
                         const token = generateToken(student.id, student.email, student.college_code, 'student');

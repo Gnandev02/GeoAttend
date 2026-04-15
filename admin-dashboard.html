@@ -798,10 +798,30 @@
                     console.warn("DEBUG: Campus Setup Incomplete - Name:", !!campusData.college_name, "Code:", !!campusData.branch_code, "Points:", campusData.polygon_points?.length || 0);
                 }
                 
-                renderOverview(studentsData, { overall: statsData }, campusData);  
-                renderStudents(studentsData);
-                renderLogs(allLogs);
-                renderGeofence(campusData);
+                // Defensive Rendering: Wrap each major widget in try-catch to prevent one failure from breaking the whole dashboard
+                try {
+                    renderOverview(studentsData, { overall: statsData }, campusData);  
+                } catch (e) {
+                    console.error("renderOverview fail:", e);
+                }
+
+                try {
+                    renderStudents(studentsData);
+                } catch (e) {
+                    console.error("renderStudents fail:", e);
+                }
+
+                try {
+                    renderLogs(allLogs);
+                } catch (e) {
+                    console.error("renderLogs fail:", e);
+                }
+
+                try {
+                    renderGeofence(campusData);
+                } catch (e) {
+                    console.error("renderGeofence fail:", e);
+                }
 
             } catch (e) {
                 console.error("Fetch DB Error", e);
@@ -1096,6 +1116,7 @@
             // A brand new admin might have a default 'Main Campus' name from the backend.
             const hasData = mainCampus && (mainCampus.latitude || (mainCampus.polygon_coordinates && mainCampus.polygon_coordinates.length >= 3));
 
+            if (hasData) {
                 // Requirement: Prioritize branch_code for display in the 'Code' field
                 document.getElementById('geo-college-name').value = mainCampus.college_name || mainCampus.name || '';
                 document.getElementById('geo-college-code').value = mainCampus.branch_code || '';
@@ -1118,6 +1139,7 @@
                     document.getElementById('geo-end-date').value = d.toISOString().split('T')[0];
                 }
                 document.getElementById('geo-radius').value = mainCampus.radius || '500';
+            }
                 document.getElementById('geo-face-auth').checked = !!mainCampus.face_auth_enabled;
                 document.getElementById('geo-face-auth').disabled = true;
                 
