@@ -761,76 +761,44 @@ export default async function handler(req, res) {
                 let { email, password } = req.body;
                 const collegeCode = (req.body.collegeCode || req.body.college_code || "").toString().trim();
                 
-                if (!email || !password) {
-                    return res.status(400).json({ success: false, message: "Email and password are required." });
+                // FIX: Trim and Normalize (Requirement: Fix Incorrect Password & Security Bypass)
+                email = (email || "").trim().toLowerCase();
+                password = (password || "").trim();
+                const trimmedCollegeCode = collegeCode.trim();
+
+                if (!email || !password || !trimmedCollegeCode) {
+                    return res.status(400).json({ success: false, message: "Email, password, and College Code are required." });
                 }
 
-                // FIX: Trim and Normalize (Requirement: Fix Incorrect Password)
-                email = email.trim().toLowerCase();
-                password = password.trim();
+                console.log(`[studentLogin] Attempt: Email=${email}, Campus=${trimmedCollegeCode}`);
 
-                console.log(`[studentLogin] Attempt: Email=${email}, Campus=${collegeCode || 'none'}`);
-
-                // 1. Fetch ALL records with this email
+                // 1. Fetch records with this email
                 const result = await query('SELECT * FROM students WHERE email = $1', [email]);
-                console.log(`[studentLogin] Database matches for email: ${result.rows.length}`);
-
+                
                 if (result.rows.length === 0) {
                     return res.status(401).json({ success: false, message: 'Student not found.' });
                 }
 
-                if (collegeCode) {
-                    // STRICT RESOLUTION: Resolve input Branch Code to internal college_code
-                    const campusLookup = await query('SELECT college_code FROM campus_setup WHERE branch_code = $1', [collegeCode]);
-                    
-                    if (campusLookup.rows.length === 0) {
-                        console.warn(`[studentLogin] No campus found for branch_code "${collegeCode}". Rejecting login.`);
-                        return res.status(401).json({ success: false, message: 'Invalid Branch Code.' });
-                    }
-
-                    const actualCollegeCode = campusLookup.rows[0].college_code;
-                    console.log(`[studentLogin] Resolved branch_code "${collegeCode}" to internal code "${actualCollegeCode}"`);
-
-                    // Direct Login with Resolved Campus
-                    const student = result.rows.find(s => s.college_code && s.college_code.toLowerCase() === actualCollegeCode.toLowerCase());
-                    
-                    if (!student) {
-                        return res.status(401).json({ success: false, message: 'Wrong campus selected.' });
-                    }
-
-                    // Temporary Debug Log
-                    console.log(`[studentLogin] DEBUG: Entered Password="${password}", Stored Hash="${student.password.substring(0, 10)}..."`);
-
-                    if (await comparePassword(password, student.password)) {
-                        const token = generateToken(student.id, student.email, student.college_code, 'student');
-                        return res.status(200).json({ 
-                            success: true,
-                            token,
-                            id: student.id, 
-                            name: student.name, 
-                            email: student.email, 
-                            rollNumber: student.roll_number, 
-                            role: 'student', 
-                            collegeCode: collegeCode // Return the input branch_code for display
-                        });
-                    }
-                    return res.status(401).json({ success: false, message: 'Incorrect password.' });
+                // 2. STRICT RESOLUTION: Resolve Branch Code (e.g. 015) to internal college_code
+                const campusLookup = await query('SELECT college_code FROM campus_setup WHERE branch_code = $1', [trimmedCollegeCode]);
+                
+                if (campusLookup.rows.length === 0) {
+                    console.warn(`[studentLogin] No campus found for branch_code "${trimmedCollegeCode}". Rejecting.`);
+                    return res.status(401).json({ success: false, message: 'Invalid Branch Code.' });
                 }
 
-                // Smart Login: check all campus matches for this student
-                const validMatches = [];
-                for (const student of result.rows) {
-                    if (await comparePassword(password, student.password)) {
-                        validMatches.push(student);
-                    }
+                const actualCollegeCode = campusLookup.rows[0].college_code;
+                console.log(`[studentLogin] Resolved branch_code "${trimmedCollegeCode}" to internal code "${actualCollegeCode}"`);
+
+                // 3. Find the student for this specific campus
+                const student = result.rows.find(s => s.college_code && s.college_code.toLowerCase() === actualCollegeCode.toLowerCase());
+                
+                if (!student) {
+                    return res.status(401).json({ success: false, message: 'Account not found in this campus.' });
                 }
 
-                if (validMatches.length === 0) {
-                    return res.status(401).json({ success: false, message: 'Incorrect password.' });
-                }
-
-                if (validMatches.length === 1) {
-                    const student = validMatches[0];
+                // 4. Verify Password
+                if (await comparePassword(password, student.password)) {
                     const token = generateToken(student.id, student.email, student.college_code, 'student');
                     return res.status(200).json({ 
                         success: true,
@@ -840,30 +808,11 @@ export default async function handler(req, res) {
                         email: student.email, 
                         rollNumber: student.roll_number, 
                         role: 'student', 
-                        collegeCode: student.college_code 
+                        collegeCode: trimmedCollegeCode 
                     });
                 }
-
-                // Multiple valid password matches
-                const campusIds = validMatches.map(s => s.college_code);
-                const campusNamesQ = await query('SELECT college_code, name, branch_code FROM campus_setup WHERE college_code = ANY($1)', [campusIds]);
                 
-                const campusMap = {};
-                campusNamesQ.rows.forEach(r => campusMap[r.college_code] = r.branch_code || r.college_code);
-                const campusDisplayNames = {};
-                campusNamesQ.rows.forEach(r => campusDisplayNames[r.college_code] = r.name);
-
-                const choices = validMatches.map(s => ({
-                    collegeCode: campusMap[s.college_code],
-                    collegeName: campusDisplayNames[s.college_code] || 'Institution ' + s.college_code
-                }));
-
-                return res.status(200).json({ 
-                    success: true, 
-                    multipleCampuses: true, 
-                    message: 'Multiple institutions detected. Please select yours.',
-                    campuses: choices
-                });
+                return res.status(401).json({ success: false, message: 'Invalid credentials.' });
             }
             else if (action === "adminLogin") {
                 let { email, password } = req.body;

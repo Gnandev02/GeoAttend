@@ -174,9 +174,9 @@
     <script>
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const collegeCode = document.getElementById('collegeCode').value;
+            const email = (document.getElementById('email').value || "").trim();
+            const password = (document.getElementById('password').value || "").trim();
+            const collegeCode = (document.getElementById('collegeCode').value || "").trim();
             const submitBtn = document.getElementById('submit-btn');
             const btnText = document.getElementById('btn-text');
             const errorMsg = document.getElementById('error-msg');
@@ -184,6 +184,12 @@
             const loginForm = document.getElementById('login-form');
             const selectionContainer = document.getElementById('selection-container');
             const campusList = document.getElementById('campus-list');
+
+            if (!email || !password || !collegeCode) {
+                errorText.textContent = "All fields (Email, Password, and College Code) are required.";
+                errorMsg.classList.remove('hidden');
+                return;
+            }
 
             submitBtn.disabled = true;
             btnText.innerHTML = `
