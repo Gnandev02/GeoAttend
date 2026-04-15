@@ -1442,35 +1442,58 @@ export default async function handler(req, res) {
             const student = await protectStudent(req);
             if (!student) return res.status(401).json({ success: false, message: "Unauthorized" });
 
-            const { descriptor } = req.body;
+            const { descriptor, mobile } = req.body;
             if (!descriptor) return res.status(400).json({ success: false, message: "Face descriptor required" });
 
             const result = await query('SELECT face_descriptor FROM student_face_profiles WHERE student_id = $1', [student.id]);
-            const storedDescriptorStr = result.rows[0]?.face_descriptor;
+            const storedDescriptorRaw = result.rows[0]?.face_descriptor;
 
-            if (!storedDescriptorStr) {
+            if (!storedDescriptorRaw) {
                 return res.status(400).json({ success: false, message: "Face not registered. Please register first." });
             }
 
-            // Simple Euclidean Distance Comparison
-            const storedDescriptor = storedDescriptorStr.split(',').map(Number);
-            const currentDescriptor = descriptor.split(',').map(Number);
-
-            if (storedDescriptor.length !== currentDescriptor.length) {
-                return res.status(400).json({ success: false, message: "Descriptor format mismatch" });
+            // --- Robust Parsing ---
+            let storedDescriptor, currentDescriptor;
+            try {
+                storedDescriptor = storedDescriptorRaw.startsWith('[') ? JSON.parse(storedDescriptorRaw) : storedDescriptorRaw.split(',').map(Number);
+                currentDescriptor = descriptor.startsWith('[') ? JSON.parse(descriptor) : descriptor.split(',').map(Number);
+            } catch (e) {
+                console.error("[FaceVerify] Parsing error:", e);
+                return res.status(400).json({ success: false, message: "Invalid descriptor format" });
             }
 
+            // USER REQUIREMENT: Log stored and received lengths
+            console.log(`[FaceVerify] Student ${student.id} | Stored Signature Length: ${storedDescriptor.length} | Received Length: ${currentDescriptor.length}`);
+
+            if (storedDescriptor.length !== currentDescriptor.length) {
+                return res.status(400).json({ success: false, message: "Biometric signature mismatch. Please re-register your face." });
+            }
+
+            // --- Euclidean Distance Calculation ---
             let sum = 0;
             for (let i = 0; i < storedDescriptor.length; i++) {
                 sum += Math.pow(storedDescriptor[i] - currentDescriptor[i], 2);
             }
             const distance = Math.sqrt(sum);
-            const threshold = 0.6; // Default threshold
+            
+            // USER REQUIREMENT: Adaptive Threshold
+            // Mobile (smaller sensor, more noise) gets 0.78. Desktop gets 0.72.
+            const threshold = mobile ? 0.78 : 0.72; 
+            const isMatch = distance < threshold;
 
-            if (distance < threshold) {
-                return res.status(200).json({ success: true, verified: true, distance });
+            // USER REQUIREMENT: Detailed logs
+            console.log(`[FaceVerify] Evaluation | Distance: ${distance.toFixed(4)} | Threshold: ${threshold} | Match: ${isMatch}`);
+
+            if (isMatch) {
+                return res.status(200).json({ success: true, verified: true, distance, threshold });
             } else {
-                return res.status(200).json({ success: true, verified: false, distance, message: "Biometric mismatch" });
+                return res.status(200).json({ 
+                    success: true, 
+                    verified: false, 
+                    distance, 
+                    threshold,
+                    message: "Face mismatch. Please retry in good light." 
+                });
             }
         }
         else {

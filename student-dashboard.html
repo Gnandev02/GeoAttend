@@ -987,22 +987,37 @@
         async function captureFace() {
             const video = document.getElementById('faceVideo');
             const captureBtn = document.getElementById('captureBtn');
+            const feedbackEl = document.getElementById('face-feedback');
+            
             captureBtn.disabled = true;
             captureBtn.textContent = "Processing...";
 
             try {
+                console.log("[FaceAuth] Starting capture sequence...");
+                feedbackEl.textContent = "HOLD STILL FOR 1 SEC...";
+                feedbackEl.className = "mt-6 px-4 py-2 rounded-full bg-blue-100 text-blue-600 text-xs font-bold uppercase tracking-widest";
+                
+                // USER REQUIREMENT: Hold still 1 sec before capture for sensor stabilization
+                await new Promise(r => setTimeout(r, 1000));
+
                 const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
                                            .withFaceLandmarks()
                                            .withFaceDescriptor();
 
                 if (!detection) {
-                    alert("Face lost. Please try again.");
-                    captureBtn.disabled = false;
-                    captureBtn.textContent = "Capture Biometric";
-                    return;
+                    console.warn("[FaceAuth] Capture failed: No face detected.");
+                    alert("Face not detected. Please position your face clearly and try again.");
+                    return; // finally block will reset state
                 }
 
-                const descriptor = detection.descriptor.join(',');
+                console.log("[FaceAuth] Extracting biometric signature...");
+                const descriptorArray = Array.from(detection.descriptor);
+                const descriptor = JSON.stringify(descriptorArray);
+                
+                const payload = {
+                    descriptor,
+                    mobile: window.innerWidth < 768 // Pass mobile flag for adaptive thresholding
+                };
 
                 if (currentFaceAction === 'register') {
                     const res = await fetch("/api/main?action=face-register", {
@@ -1018,14 +1033,16 @@
                     } else {
                         alert(data.message || "Registration failed");
                     }
-                } else if (currentFaceAction === 'verify' || currentFaceAction === 'mark') {
+                } else if (currentFaceAction === 'verify' || currentFaceAction === 'mark' || currentFaceAction === 'gate') {
                     const res = await fetch("/api/main?action=face-verify", {
                         method: "POST",
                         headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
-                        body: JSON.stringify({ descriptor })
+                        body: JSON.stringify(payload)
                     });
                     const data = await res.json();
+                    
                     if (data.success && data.verified) {
+                        console.log(`[FaceAuth] Verified (Dist: ${data.distance}, Threshold: ${data.threshold})`);
                         if (currentFaceAction === 'gate') {
                             isFaceVerifiedToday = true;
                             alert("Identity Verified! Starting Tracking...");
@@ -1039,15 +1056,19 @@
                             closeFaceModal();
                         }
                     } else {
-                        alert(data.message || "Face identity mismatch. Access denied.");
+                        console.warn(`[FaceAuth] Rejected (Dist: ${data.distance}, Threshold: ${data.threshold})`);
+                        const distInfo = data.distance ? ` (Diff: ${data.distance.toFixed(3)})` : "";
+                        alert(`Face mismatch. Please retry in good light.${distInfo}`);
                     }
                 }
             } catch (err) {
-                console.error(err);
-                alert("Processing error. Try again.");
+                console.error("[FaceAuth] Error:", err);
+                alert("Processing error. Ensure your camera is clear and try again.");
             } finally {
                 captureBtn.disabled = false;
                 captureBtn.textContent = "Capture Biometric";
+                feedbackEl.textContent = "POSITION YOUR FACE IN THE FRAME";
+                feedbackEl.className = "mt-6 px-4 py-2 rounded-full bg-slate-100 text-slate-600 text-xs font-bold uppercase tracking-widest";
             }
         }
 
