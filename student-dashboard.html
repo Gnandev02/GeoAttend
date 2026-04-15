@@ -220,9 +220,24 @@
             </div>
             
             <div class="p-8 flex flex-col items-center">
-                <div id="video-container">
-                    <video id="faceVideo"></video>
-                    <canvas id="faceCanvas"></canvas>
+                <div id="video-container" style="position: relative; width: 100%; max-width: 440px; margin: 0 auto; overflow: hidden; border-radius: 18px;">
+                    <video
+                     id="faceVideo"
+                     autoplay
+                     muted
+                     playsinline
+                     style="
+                       width:100%;
+                       height:100%;
+                       object-fit:cover;
+                       border-radius:18px;
+                       background:#111;
+                       z-index: 20;
+                       position: relative;
+                       display:block;
+                     ">
+                    </video>
+                    <canvas id="faceCanvas" style="position: absolute; top:0; left:0; width:100%; height:100%; z-index: 25; pointer-events: none;"></canvas>
                 </div>
                 
                 <div id="face-feedback" class="mt-6 px-4 py-2 rounded-full bg-slate-100 text-slate-600 text-xs font-bold uppercase tracking-widest">
@@ -884,15 +899,13 @@
             markTypePending = type;
             
             console.log(`[FaceAuth] Starting action: ${action}`);
-            const modal = document.getElementById('faceModal');
-            modal.classList.remove('hidden');
-            
+            document.getElementById('faceModal').classList.remove('hidden');
             document.getElementById('faceModalTitle').textContent = action === 'register' ? 'Register Face' : (action === 'gate' ? 'Face Identity Check' : 'Verify Identity');
             const subEl = document.getElementById('faceModalSub');
             const feedbackEl = document.getElementById('face-feedback');
             const captureBtn = document.getElementById('captureBtn');
             
-            subEl.textContent = "Loading Models...";
+            subEl.textContent = "INITIALIZING CAMERA...";
             captureBtn.disabled = true;
 
             const loaded = await loadFaceModels();
@@ -902,62 +915,27 @@
             const canvas = document.getElementById('faceCanvas');
 
             try {
-                subEl.textContent = "Requesting Camera...";
-                console.log("[FaceAuth] Requesting getUserMedia");
-                
+                console.log("[FaceAuth] Requesting camera access...");
                 const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: {
-                        facingMode: "user",
-                        width: { ideal: 640 },
-                        height: { ideal: 480 }
-                    },
-                    audio: false
+                    video: { facingMode: "user" },
+                    audio: false 
                 });
                 
-                console.log("[FaceAuth] Stream acquired:", stream.id);
-                subEl.textContent = "Stream Acquired";
-
-                // SETUP VIDEO BEFORE SETTING SRC
-                video.setAttribute('autoplay', '');
-                video.setAttribute('muted', '');
-                video.setAttribute('playsinline', '');
-                video.muted = true;
-                video.autoplay = true;
-                video.playsInline = true;
-
-                // Listeners BEFORE srcObject
-                video.onloadedmetadata = () => {
-                    console.log("[FaceAuth] Video metadata loaded");
-                    subEl.textContent = "Configuring Lens...";
-                };
-
-                video.oncanplay = () => {
-                    console.log("[FaceAuth] Video can play");
-                    video.play().then(() => {
-                        console.log("[FaceAuth] Playback started");
-                        subEl.textContent = "Camera Ready";
-                        feedbackEl.textContent = "Position your face in the frame";
-                    }).catch(err => {
-                        console.warn("[FaceAuth] Play failed, retrying...", err);
-                        subEl.textContent = "Retrying Playback...";
-                    });
-                };
-
+                console.log("[FaceAuth] Camera stream acquired");
                 video.srcObject = stream;
                 
-                // Force play after a short delay as a fallback
-                setTimeout(() => {
-                    if (video.paused) {
-                        console.log("[FaceAuth] Video still paused, forcing play...");
-                        video.play().catch(e => console.error("[FaceAuth] Final play attempt failed", e));
-                    }
-                }, 1000);
+                // USER REQUESTED PATTERN
+                video.autoplay = true;
+                video.muted = true;
+                video.playsInline = true;
+                
+                await video.play();
+                console.log(`[FaceAuth] Playback started. Dimensions: ${video.videoWidth}x${video.videoHeight}`);
+                
+                subEl.textContent = "CAMERA READY";
+                feedbackEl.textContent = "POSITION YOUR FACE IN THE FRAME";
 
                 // Visualization Setup
-                const displaySize = { width: video.clientWidth || 440, height: video.clientHeight || 330 };
-                faceapi.matchDimensions(canvas, displaySize);
-                
-                // Detection loop
                 if (video.dataset.interval) clearInterval(parseInt(video.dataset.interval));
                 
                 let detectionInterval = setInterval(async () => {
@@ -965,41 +943,36 @@
                     
                     try {
                         const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions());
-                        
                         const ctx = canvas.getContext('2d');
                         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
                         if (detection) {
-                            const resizedDetections = faceapi.resizeResults(detection, { 
-                                width: video.offsetWidth, 
-                                height: video.offsetHeight 
-                            });
+                            // Ensure canvas matches video display size
+                            canvas.width = video.offsetWidth;
+                            canvas.height = video.offsetHeight;
                             
-                            // Draw Green Rectangle
-                            ctx.strokeStyle = '#22c55e'; // green-500
+                            const resized = faceapi.resizeResults(detection, { width: canvas.width, height: canvas.height });
+                            
+                            ctx.strokeStyle = '#22c55e';
                             ctx.lineWidth = 4;
-                            const { x, y, width, height } = resizedDetections.box;
-                            ctx.strokeRect(x, y, width, height);
+                            ctx.strokeRect(resized.box.x, resized.box.y, resized.box.width, resized.box.height);
 
-                            feedbackEl.textContent = "Face Detected - Hold Still";
+                            feedbackEl.textContent = "FACE DETECTED - HOLD STILL";
                             feedbackEl.className = "mt-6 px-4 py-2 rounded-full bg-green-100 text-green-600 text-xs font-bold uppercase tracking-widest";
                             captureBtn.disabled = false;
                         } else {
-                            feedbackEl.textContent = "Position your face in the frame";
+                            feedbackEl.textContent = "POSITION YOUR FACE IN THE FRAME";
                             feedbackEl.className = "mt-6 px-4 py-2 rounded-full bg-slate-100 text-slate-600 text-xs font-bold uppercase tracking-widest";
                             captureBtn.disabled = true;
                         }
                     } catch (e) { }
-                }, 150);
+                }, 200);
                 
                 video.dataset.interval = detectionInterval;
             } catch (err) {
-                console.error("[FaceAuth] Fatal Camera Error:", err);
-                subEl.textContent = "Camera Access Error";
-                subEl.className = "text-[10px] text-red-500 font-bold uppercase tracking-widest mt-0.5";
-                
-                feedbackEl.textContent = "ERROR: " + (err.name === 'NotAllowedError' ? "Permission Denied" : "Camera Busy");
-                feedbackEl.className = "mt-6 px-4 py-2 rounded-full bg-red-100 text-red-600 text-xs font-bold uppercase tracking-widest";
+                console.error("[FaceAuth] Camera Error:", err);
+                subEl.textContent = "CAMERA ERROR";
+                feedbackEl.textContent = "ERROR: " + (err.message || "Access Denied");
             }
         }
 
