@@ -236,6 +236,10 @@
                     <div class="nav-indicator"></div>
                     <i data-lucide="settings-2"></i> Campus Setup
                 </button>
+                <button onclick="switchTab('approvals')" id="tab-approvals" class="sidebar-item w-full">
+                    <div class="nav-indicator"></div>
+                    <i data-lucide="shield-alert"></i> Biometric Approvals
+                </button>
             </nav>
 
             <div class="p-6 border-t border-slate-50 bg-slate-50/30">
@@ -434,6 +438,49 @@
 
             <!-- GEOFENCE TAB -->
             <div id="content-geofence" class="max-w-3xl animate-in fade-in slide-in-from-bottom-4 duration-700" style="display: none;">
+                <!-- ... existing geofence content ... -->
+            </div>
+
+            <!-- BIOMETRIC APPROVALS TAB -->
+            <div id="content-approvals" class="premium-card overflow-hidden flex flex-col h-[calc(100vh-120px)] animate-in fade-in slide-in-from-bottom-4 duration-700" style="display: none;">
+                <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-white">
+                    <div>
+                        <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">Biometric Change Requests</h2>
+                        <p class="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Review student identity updates</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <select id="approval-status-filter" onchange="fetchBiometricRequests()" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all">
+                            <option value="pending">Pending</option>
+                            <option value="approved">Approved</option>
+                            <option value="rejected">Rejected</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="overflow-y-auto flex-1 h-full pb-10 scrollbar-hide">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-white sticky top-0 border-b border-slate-100 z-10 shadow-sm">
+                            <tr>
+                                <th class="py-4 px-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50/50 backdrop-blur-md">Student</th>
+                                <th class="py-4 px-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50/50 backdrop-blur-md">Biometric</th>
+                                <th class="py-4 px-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50/50 backdrop-blur-md">Action</th>
+                                <th class="py-4 px-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50/50 backdrop-blur-md">Requested At</th>
+                                <th class="py-4 px-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right bg-slate-50/50 backdrop-blur-md">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-approvals-body" class="divide-y divide-slate-100/50">
+                            <!-- JS populated -->
+                        </tbody>
+                    </table>
+                    <div id="no-requests-msg" class="hidden p-20 text-center flex flex-col items-center justify-center space-y-4">
+                        <div class="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center text-slate-300">
+                            <i data-lucide="check-circle" class="w-8 h-8"></i>
+                        </div>
+                        <p class="text-slate-400 font-medium">No pending requests found.</p>
+                    </div>
+                </div>
+            </div>
                 <div class="premium-card overflow-hidden">
                     <div class="p-6 border-b border-slate-100 bg-white">
                         <h2 class="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-3">
@@ -1428,26 +1475,143 @@
         });
 
         function switchTab(tabId) {
+            console.log("Switching to tab:", tabId);
+
             // Requirement 7: Auto-redirect if campus not set (Bypassed if in Demo mode to allow UI inspection)
-            if (!isDemo && !isCampusConfigured && (tabId === 'students' || tabId === 'logs' || tabId === 'overview')) {
+            if (!isDemo && !isCampusConfigured && (tabId === 'students' || tabId === 'logs' || tabId === 'overview' || tabId === 'approvals')) {
                 alert("Please complete your Campus Setup (Geofence & Name) before accessing this section.");
                 tabId = 'geofence';
             }
+            
+            // Update Sidebar UI
+            document.querySelectorAll(".sidebar-item").forEach(item => item.classList.remove("active"));
+            const activeTabBtn = document.getElementById(`tab-${tabId}`);
+            if (activeTabBtn) activeTabBtn.classList.add("active");
 
-            ['overview', 'students', 'logs', 'geofence'].forEach(id => {
-                const btn = document.getElementById(`tab-${id}`);
+            // Update Content UI
+            ['overview', 'students', 'logs', 'geofence', 'approvals'].forEach(id => {
                 const content = document.getElementById(`content-${id}`);
-                if (btn) btn.classList.remove('active');
                 if (content) content.style.display = 'none';
             });
-            
-            const activeBtn = document.getElementById(`tab-${tabId}`);
+
             const activeContent = document.getElementById(`content-${tabId}`);
-            if (activeBtn) activeBtn.classList.add('active');
-            if (activeContent) activeContent.style.display = 'block';
+            if (activeContent) {
+                // Different tabs use different display modes for layout consistency
+                if (tabId === 'geofence' || tabId === 'overview') {
+                    activeContent.style.display = "block";
+                } else {
+                    activeContent.style.display = "flex";
+                }
+            }
+
+            // Tab-specific logic
+            if (tabId === 'overview') fetchAdminData();
+            if (tabId === 'students') fetchStudents();
+            if (tabId === 'logs') fetchLogs();
+            if (tabId === 'approvals') fetchBiometricRequests();
             
             if (window.innerWidth < 768) toggleSidebar(false);
         }
+
+        async function fetchBiometricRequests() {
+            const tableBody = document.getElementById('table-approvals-body');
+            const noMsg = document.getElementById('no-requests-msg');
+            const statusFilter = document.getElementById('approval-status-filter').value;
+            
+            tableBody.innerHTML = `<tr><td colspan="5" class="p-10 text-center text-slate-400 animate-pulse">Loading requests...</td></tr>`;
+
+            try {
+                const res = await fetch(`/api/main?action=admin-biometric-requests-list&status=${statusFilter}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    const requests = data.requests || [];
+                    if (requests.length === 0) {
+                        tableBody.innerHTML = '';
+                        noMsg.classList.remove('hidden');
+                        return;
+                    }
+
+                    noMsg.classList.add('hidden');
+                    tableBody.innerHTML = requests.map(req => `
+                        <tr class="hover:bg-slate-50/50 transition-colors group">
+                            <td class="py-5 px-8">
+                                <p class="font-extrabold text-slate-800">${req.student_name}</p>
+                                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">${req.roll_number}</p>
+                            </td>
+                            <td class="py-5 px-8">
+                                <span class="px-2 py-1 rounded-lg bg-indigo-50 text-indigo-700 text-[10px] font-bold uppercase tracking-tighter">
+                                    ${req.biometric_type}
+                                </span>
+                            </td>
+                            <td class="py-5 px-8">
+                                <p class="text-xs font-bold text-slate-600 capitalize">${req.action_type.replace('-', ' ')}</p>
+                                <p class="text-[9px] text-slate-400 font-medium italic mt-0.5 truncate max-w-[200px]" title="${req.remarks || ''}">
+                                    "${req.remarks || 'No remarks provided'}"
+                                </p>
+                            </td>
+                            <td class="py-5 px-8">
+                                <p class="text-xs font-bold text-slate-600">${new Date(req.requested_at).toLocaleDateString()}</p>
+                                <p class="text-[9px] text-slate-400 font-bold uppercase">${new Date(req.requested_at).toLocaleTimeString()}</p>
+                            </td>
+                            <td class="py-5 px-8 text-right">
+                                ${req.status === 'pending' ? `
+                                    <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button onclick="reviewRequest(${req.id}, 'approved')" class="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-lg transition-all shadow-sm">
+                                            <i data-lucide="check" class="w-4 h-4"></i>
+                                        </button>
+                                        <button onclick="reviewRequest(${req.id}, 'rejected')" class="p-2 bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white rounded-lg transition-all shadow-sm">
+                                            <i data-lucide="x" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
+                                ` : `
+                                    <span class="text-[10px] font-bold uppercase tracking-widest ${req.status === 'approved' ? 'text-emerald-500' : 'text-slate-400'}">
+                                        ${req.status}
+                                    </span>
+                                `}
+                            </td>
+                        </tr>
+                    `).join('');
+                    lucide.createIcons();
+                }
+            } catch (err) {
+                console.error("Fetch requests error:", err);
+                tableBody.innerHTML = '<tr><td colspan="5" class="p-10 text-center text-rose-500 font-bold">Failed to load requests</td></tr>';
+            }
+        }
+
+        async function reviewRequest(requestId, status) {
+            const remarks = prompt(`Enter optional remarks for ${status}:`, "");
+            
+            try {
+                const res = await fetch("/api/main?action=admin-biometric-request-review", {
+                    method: "POST",
+                    headers: { 
+                        "Content-Type": "application/json", 
+                        "Authorization": "Bearer " + token 
+                    },
+                    body: JSON.stringify({ request_id: requestId, status, remarks })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`Request ${status} successfully`, "success");
+                    fetchBiometricRequests();
+                } else {
+                    showToast(data.message, "error");
+                }
+            } catch (err) {
+                console.error("Review request error:", err);
+            }
+        }
+
+        function showToast(msg, type) {
+            // Placeholder: Use alert for now or implement a nice toast
+            alert(msg);
+        }
+
+
 
         function toggleSidebar(forceOpen) {
             const sidebar = document.getElementById('sidebar');

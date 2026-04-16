@@ -263,16 +263,19 @@
                                 <div class="p-3 bg-white rounded-xl shadow-sm text-indigo-600">
                                     <i data-lucide="scan-face" class="w-6 h-6"></i>
                                 </div>
-                                <div id="face-status-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-500 uppercase tracking-tighter">Not Set</div>
+                                <div class="flex flex-col items-end">
+                                    <div id="face-status-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-500 uppercase tracking-tighter">Not Set</div>
+                                    <div id="face-request-badge" class="mt-1 hidden px-2 py-0.5 rounded-full text-[8px] font-bold uppercase">Pending Approval</div>
+                                </div>
                             </div>
                             <h4 class="font-bold text-slate-900">Face Authentication</h4>
-                            <p class="text-xs text-slate-400 mt-1 mb-6">High-speed facial recognition using your camera.</p>
+                            <p class="text-[10px] text-slate-400 mt-1 mb-6">Version: <span id="face-version">0</span> | Registered: <span id="face-once">No</span></p>
                             <div class="mt-auto flex flex-col gap-2">
-                                <button onclick="startFaceAction('register')" class="w-full p-3 bg-indigo-600 text-white rounded-xl font-bold text-xs hover:bg-indigo-700 transition-all flex items-center justify-center gap-2">
-                                    <i data-lucide="plus" class="w-3.4 h-3.5"></i> Register Face
+                                <button id="btn-face-action" onclick="handleBiometricAction('face')" class="w-full p-3 bg-indigo-600 text-white rounded-xl font-bold text-xs hover:bg-indigo-700 transition-all flex items-center justify-center gap-2">
+                                    <i data-lucide="plus" class="w-3.5 h-3.5"></i> Register Face
                                 </button>
-                                <button onclick="deleteFaceProfile()" id="btn-face-del-new" class="w-full p-2 text-red-500 text-[10px] font-bold opacity-0 pointer-events-none transition-all">
-                                    Remove Face Data
+                                <button id="btn-face-del-request" onclick="handleBiometricAction('face', 'remove')" class="w-full p-2 text-red-500 text-[10px] font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed">
+                                    Request Removal
                                 </button>
                             </div>
                         </div>
@@ -283,16 +286,19 @@
                                 <div class="p-3 bg-white rounded-xl shadow-sm text-amber-600">
                                     <i data-lucide="fingerprint" class="w-6 h-6"></i>
                                 </div>
-                                <div id="fingerprint-status-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-500 uppercase tracking-tighter">Not Set</div>
+                                <div class="flex flex-col items-end">
+                                    <div id="fingerprint-status-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-500 uppercase tracking-tighter">Not Set</div>
+                                    <div id="fingerprint-request-badge" class="mt-1 hidden px-2 py-0.5 rounded-full text-[8px] font-bold uppercase">Pending Approval</div>
+                                </div>
                             </div>
                             <h4 class="font-bold text-slate-900">Device Biometrics</h4>
-                            <p class="text-xs text-slate-400 mt-1 mb-6">Fingerprint, TouchID, or Windows Hello security.</p>
+                            <p class="text-[10px] text-slate-400 mt-1 mb-6">Version: <span id="fingerprint-version">0</span> | Registered: <span id="fingerprint-once">No</span></p>
                             <div class="mt-auto flex flex-col gap-2">
-                                <button onclick="registerFingerprint()" class="w-full p-3 bg-amber-500 text-white rounded-xl font-bold text-xs hover:bg-amber-600 transition-all flex items-center justify-center gap-2">
+                                <button id="btn-fingerprint-action" onclick="handleBiometricAction('fingerprint')" class="w-full p-3 bg-amber-500 text-white rounded-xl font-bold text-xs hover:bg-amber-600 transition-all flex items-center justify-center gap-2">
                                     <i data-lucide="shield" class="w-3.5 h-3.5"></i> Register Biometric
                                 </button>
-                                <button onclick="deleteFingerprint()" id="btn-fingerprint-del" class="w-full p-2 text-red-500 text-[10px] font-bold opacity-0 pointer-events-none transition-all">
-                                    Remove Device Key
+                                <button id="btn-fingerprint-del-request" onclick="handleBiometricAction('fingerprint', 'remove')" class="w-full p-2 text-red-500 text-[10px] font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed">
+                                    Request Removal
                                 </button>
                             </div>
                         </div>
@@ -449,29 +455,15 @@
                     document.getElementById("profileDept").innerText = data.department || 'Not Assigned';
                     document.getElementById("profileCampus").innerText = data.campus_name || 'GeoAttend Campus';
                     
-                    // Update Biometric UI
-                    const faceBadge = document.getElementById('face-status-badge');
-                    const faceDel = document.getElementById('btn-face-del-new');
-                    if (data.face_registered) {
-                        faceBadge.innerText = "Registered";
-                        faceBadge.className = "px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-600 uppercase tracking-tighter";
-                        faceDel.classList.remove('opacity-0', 'pointer-events-none');
-                    } else {
-                        faceBadge.innerText = "Not Set";
-                        faceBadge.className = "px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-500 uppercase tracking-tighter";
-                        faceDel.classList.add('opacity-0', 'pointer-events-none');
-                    }
-
-                    const fingerBadge = document.getElementById('fingerprint-status-badge');
-                    const fingerDel = document.getElementById('btn-fingerprint-del');
-                    if (data.fingerprint_registered) {
-                        fingerBadge.innerText = "Registered";
-                        fingerBadge.className = "px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-600 uppercase tracking-tighter";
-                        fingerDel.classList.remove('opacity-0', 'pointer-events-none');
-                    } else {
-                        fingerBadge.innerText = "Not Set";
-                        fingerBadge.className = "px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-500 uppercase tracking-tighter";
-                        fingerDel.classList.add('opacity-0', 'pointer-events-none');
+                    // Update Biometric UI securely (Multi-Biometric Admin Approval Logic)
+                    const bioStatusRes = await fetch("/api/main?action=biometric-status", {
+                        headers: { "Authorization": "Bearer " + token }
+                    });
+                    const bioStatus = await bioStatusRes.json();
+                    
+                    if (bioStatus.success) {
+                        updateBiometricUI('face', bioStatus);
+                        updateBiometricUI('fingerprint', bioStatus);
                     }
 
                     // Update Auth Preference Radio
@@ -656,6 +648,160 @@
             } catch (err) {
                 console.error("Delete fingerprint error:", err);
             }
+        }
+
+        function updateBiometricUI(type, status) {
+            const badge = document.getElementById(`${type}-status-badge`);
+            const reqBadge = document.getElementById(`${type}-request-badge`);
+            const actionBtn = document.getElementById(`btn-${type}-action`);
+            const delBtn = document.getElementById(`btn-${type}-del-request`);
+            const versionEl = document.getElementById(`${type}-version`);
+            const onceEl = document.getElementById(`${type}-once`);
+
+            const isRegistered = status[`${type}_registered`];
+            const isRegisteredOnce = status[`${type}_registered_once`];
+            const version = status[`${type}_version`];
+            const activeRequest = status.active_requests.find(r => r.biometric_type === type);
+
+            // Version info
+            versionEl.textContent = version;
+            onceEl.textContent = isRegisteredOnce ? "Yes" : "No";
+
+            // Main Status Badge
+            if (isRegistered) {
+                badge.innerText = "Registered";
+                badge.className = "px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-600 uppercase tracking-tighter";
+            } else {
+                badge.innerText = "Not Set";
+                badge.className = "px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-500 uppercase tracking-tighter";
+            }
+
+            // Request Badge
+            if (activeRequest) {
+                reqBadge.classList.remove('hidden');
+                reqBadge.innerText = activeRequest.status;
+                if (activeRequest.status === 'pending') {
+                    reqBadge.className = "mt-1 px-2 py-0.5 rounded-full text-[8px] font-bold uppercase bg-amber-100 text-amber-600";
+                } else if (activeRequest.status === 'approved') {
+                    reqBadge.className = "mt-1 px-2 py-0.5 rounded-full text-[8px] font-bold uppercase bg-emerald-100 text-emerald-600";
+                } else if (activeRequest.status === 'rejected') {
+                    reqBadge.className = "mt-1 px-2 py-0.5 rounded-full text-[8px] font-bold uppercase bg-rose-100 text-rose-600";
+                }
+            } else {
+                reqBadge.classList.add('hidden');
+            }
+
+            // Buttons Logic
+            if (!isRegisteredOnce) {
+                actionBtn.innerText = type === 'face' ? "Register Face" : "Register Biometric";
+                actionBtn.className = `w-full p-3 ${type === 'face' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-amber-500 hover:bg-amber-600'} text-white rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2`;
+                delBtn.classList.add('hidden');
+            } else {
+                if (activeRequest && activeRequest.status === 'approved') {
+                    actionBtn.innerText = activeRequest.action_type === 'remove' ? "Complete Removal" : "Perform Update";
+                    actionBtn.className = "w-full p-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2";
+                } else if (activeRequest && activeRequest.status === 'pending') {
+                    actionBtn.innerText = "Waiting for Admin...";
+                    actionBtn.className = "w-full p-3 bg-slate-300 text-slate-600 rounded-xl font-bold text-xs cursor-not-allowed flex items-center justify-center gap-2";
+                } else {
+                    actionBtn.innerText = "Request Change";
+                    actionBtn.className = "w-full p-3 bg-slate-800 hover:bg-black text-white rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2";
+                }
+                
+                if (isRegistered) {
+                    delBtn.classList.remove('hidden');
+                } else {
+                    delBtn.classList.add('hidden');
+                }
+            }
+        }
+
+        async function handleBiometricAction(type, actionOverride = null) {
+            const status = await getBiometricStatus();
+            if (!status.success) return;
+
+            const isRegisteredOnce = status[`${type}_registered_once`];
+            const activeRequest = status.active_requests.find(r => r.biometric_type === type);
+
+            // 1. First Time -> Direct Action
+            if (!isRegisteredOnce) {
+                if (type === 'face') startFaceAction('register');
+                else registerFingerprint();
+                return;
+            }
+
+            // 2. Approved exists -> Perform action
+            if (activeRequest && activeRequest.status === 'approved') {
+                const now = new Date();
+                if (new Date(activeRequest.expires_at) < now) {
+                    showAlert("Approval expired. Please request again.", false);
+                    return;
+                }
+
+                if (activeRequest.action_type === 'remove') {
+                    if (type === 'face') deleteFaceProfileActual();
+                    else deleteFingerprintActual();
+                } else {
+                    if (type === 'face') startFaceAction('register');
+                    else registerFingerprint();
+                }
+                return;
+            }
+
+            // 3. Pending exists -> Block
+            if (activeRequest && activeRequest.status === 'pending') {
+                showAlert("Your request is still pending admin approval.", false);
+                return;
+            }
+
+            // 4. Otherwise -> Create Request
+            const actionType = actionOverride || (status[`${type}_registered`] ? 'update' : 're-register');
+            const remarks = prompt(`Why do you want to ${actionType} your ${type} biometrics?`, "Device changed / Verification issues");
+            if (!remarks) return;
+
+            try {
+                const res = await fetch("/api/main?action=biometric-request-create", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+                    body: JSON.stringify({ biometric_type: type, action_type: actionType, remarks })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showAlert("Request sent to Administrator.", true);
+                    fetchProfile();
+                } else {
+                    showAlert(data.message, false);
+                }
+            } catch (err) {
+                console.error("Biometric request error:", err);
+            }
+        }
+
+        async function deleteFaceProfileActual() {
+            try {
+                const res = await fetch("/api/main?action=face-delete", {
+                    method: "POST",
+                    headers: { "Authorization": "Bearer " + token }
+                });
+                if (res.ok) {
+                    showAlert("Face profile deleted successfully.", true);
+                    fetchProfile();
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        async function deleteFingerprintActual() {
+            try {
+                const res = await fetch("/api/main?action=webauthn-delete", {
+                    method: "POST",
+                    headers: { "Authorization": "Bearer " + token }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showAlert("Device key removed successfully.", true);
+                    fetchProfile();
+                }
+            } catch (err) { console.error(err); }
         }
 
         async function getBiometricStatus() {

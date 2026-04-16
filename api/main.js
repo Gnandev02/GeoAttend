@@ -1389,6 +1389,21 @@ export default async function handler(req, res) {
             const { descriptor } = req.body;
             if (!descriptor) return res.status(400).json({ success: false, message: "Face descriptor required" });
 
+            // BIOMETRIC APPROVAL GATE
+            if (student.face_registered_once) {
+                const approval = await query(
+                    `SELECT id FROM biometric_requests 
+                     WHERE student_id = $1 AND biometric_type = 'face' AND status = 'approved' AND expires_at > CURRENT_TIMESTAMP
+                     ORDER BY requested_at DESC LIMIT 1`,
+                    [student.id]
+                );
+                if (approval.rows.length === 0) {
+                    return res.status(403).json({ success: false, message: "Admin approval required for biometric updates." });
+                }
+                // Mark request as completed
+                await query('UPDATE biometric_requests SET status = \'completed\' WHERE id = $1', [approval.rows[0].id]);
+            }
+
             // Store as comma-separated text
             await query(`
                 INSERT INTO student_face_profiles (student_id, face_descriptor) 
@@ -1396,7 +1411,11 @@ export default async function handler(req, res) {
                 ON CONFLICT (student_id) DO UPDATE SET face_descriptor = EXCLUDED.face_descriptor, updated_at = CURRENT_TIMESTAMP
             `, [student.id, descriptor]);
 
-            await query('UPDATE students SET face_registered = true WHERE id = $1', [student.id]);
+            await query(`
+                UPDATE students 
+                SET face_registered = true, face_registered_once = true, face_version = face_version + 1 
+                WHERE id = $1
+            `, [student.id]);
             
             return res.status(200).json({ success: true, message: "Face biometric updated successfully" });
         }
@@ -1404,6 +1423,21 @@ export default async function handler(req, res) {
         else if (action === "face-delete") {
             const student = await protectStudent(req);
             if (!student) return res.status(401).json({ success: false, message: "Unauthorized" });
+
+            // BIOMETRIC APPROVAL GATE for deletion
+            if (student.face_registered) {
+                const approval = await query(
+                    `SELECT id FROM biometric_requests 
+                     WHERE student_id = $1 AND biometric_type = 'face' AND action_type = 'remove' AND status = 'approved' AND expires_at > CURRENT_TIMESTAMP
+                     ORDER BY requested_at DESC LIMIT 1`,
+                    [student.id]
+                );
+                if (approval.rows.length === 0) {
+                    return res.status(403).json({ success: false, message: "Admin approval required for biometric removal." });
+                }
+                // Mark request as completed
+                await query('UPDATE biometric_requests SET status = \'completed\' WHERE id = $1', [approval.rows[0].id]);
+            }
 
             await query('DELETE FROM student_face_profiles WHERE student_id = $1', [student.id]);
             await query('UPDATE students SET face_registered = false WHERE id = $1', [student.id]);
@@ -1508,11 +1542,28 @@ export default async function handler(req, res) {
                 return res.status(400).json({ success: false, message: "Missing credential data" });
             }
 
+            // BIOMETRIC APPROVAL GATE
+            if (student.fingerprint_registered_once) {
+                const approval = await query(
+                    `SELECT id FROM biometric_requests 
+                     WHERE student_id = $1 AND biometric_type = 'fingerprint' AND status = 'approved' AND expires_at > CURRENT_TIMESTAMP
+                     ORDER BY requested_at DESC LIMIT 1`,
+                    [student.id]
+                );
+                if (approval.rows.length === 0) {
+                    return res.status(403).json({ success: false, message: "Admin approval required for biometric updates." });
+                }
+                // Mark request as completed
+                await query('UPDATE biometric_requests SET status = \'completed\' WHERE id = $1', [approval.rows[0].id]);
+            }
+
             // In a real production app, we would verify the attestation signature here.
             // For this implementation, we follow the requirement to save credentialId + publicKey only.
             await query(
                 `UPDATE students 
-                 SET webauthn_credential_id = $1, webauthn_public_key = $2, fingerprint_registered = true 
+                 SET webauthn_credential_id = $1, webauthn_public_key = $2, 
+                     fingerprint_registered = true, fingerprint_registered_once = true,
+                     fingerprint_version = fingerprint_version + 1
                  WHERE id = $3`, 
                 [credentialId, publicKey, student.id]
             );
@@ -1557,6 +1608,21 @@ export default async function handler(req, res) {
             const student = await protectStudent(req);
             if (!student) return res.status(401).json({ success: false, message: "Unauthorized" });
 
+            // BIOMETRIC APPROVAL GATE for deletion
+            if (student.fingerprint_registered) {
+                const approval = await query(
+                    `SELECT id FROM biometric_requests 
+                     WHERE student_id = $1 AND biometric_type = 'fingerprint' AND action_type = 'remove' AND status = 'approved' AND expires_at > CURRENT_TIMESTAMP
+                     ORDER BY requested_at DESC LIMIT 1`,
+                    [student.id]
+                );
+                if (approval.rows.length === 0) {
+                    return res.status(403).json({ success: false, message: "Admin approval required for biometric removal." });
+                }
+                // Mark request as completed
+                await query('UPDATE biometric_requests SET status = \'completed\' WHERE id = $1', [approval.rows[0].id]);
+            }
+
             await query(
                 `UPDATE students 
                  SET webauthn_credential_id = NULL, webauthn_public_key = NULL, fingerprint_registered = false 
@@ -1572,18 +1638,95 @@ export default async function handler(req, res) {
             if (!student) return res.status(401).json({ success: false, message: "Unauthorized" });
 
             const result = await query(
-                'SELECT face_registered, fingerprint_registered, auth_method FROM students WHERE id = $1',
+                `SELECT 
+                    face_registered, fingerprint_registered, auth_method,
+                    face_registered_once, fingerprint_registered_once,
+                    face_version, fingerprint_version
+                 FROM students WHERE id = $1`,
                 [student.id]
             );
 
             if (result.rows.length === 0) return res.status(404).json({ success: false, message: "Student not found" });
 
+            // Also check for any pending or approved biometric requests
+            const requests = await query(
+                `SELECT * FROM biometric_requests 
+                 WHERE student_id = $1 AND status IN ('pending', 'approved', 'rejected')
+                 ORDER BY requested_at DESC LIMIT 5`,
+                [student.id]
+            );
+
             return res.status(200).json({ 
                 success: true, 
-                face_registered: result.rows[0].face_registered,
-                fingerprint_registered: result.rows[0].fingerprint_registered,
-                auth_method: result.rows[0].auth_method
+                ...result.rows[0],
+                active_requests: requests.rows
             });
+        }
+        
+        else if (action === "biometric-request-create") {
+            const student = await protectStudent(req);
+            if (!student) return res.status(401).json({ success: false, message: "Unauthorized" });
+
+            const { biometric_type, action_type, remarks } = req.body;
+            if (!biometric_type || !action_type) {
+                return res.status(400).json({ success: false, message: "Missing required fields" });
+            }
+
+            // Check for existing pending request of same type
+            const existing = await query(
+                'SELECT id FROM biometric_requests WHERE student_id = $1 AND biometric_type = $2 AND status = \'pending\'',
+                [student.id, biometric_type]
+            );
+
+            if (existing.rows.length > 0) {
+                return res.status(400).json({ success: false, message: "A request for this biometric is already pending." });
+            }
+
+            await query(
+                `INSERT INTO biometric_requests (student_id, student_name, roll_number, biometric_type, action_type, remarks)
+                 VALUES ($1, $2, $3, $4, $5, $6)`,
+                [student.id, student.name, student.roll_number, biometric_type, action_type, remarks]
+            );
+
+            return res.status(200).json({ success: true, message: "Biometric request submitted for admin approval." });
+        }
+
+        else if (action === "admin-biometric-requests-list") {
+            const admin = await protectAdmin(req);
+            if (!admin) return res.status(401).json({ success: false, message: "Unauthorized" });
+
+            const status = req.query.status || 'pending';
+            const result = await query(
+                'SELECT * FROM biometric_requests WHERE status = $1 ORDER BY requested_at DESC',
+                [status]
+            );
+
+            return res.status(200).json({ success: true, requests: result.rows });
+        }
+
+        else if (action === "admin-biometric-request-review") {
+            const admin = await protectAdmin(req);
+            if (!admin) return res.status(401).json({ success: false, message: "Unauthorized" });
+
+            const { request_id, status, remarks } = req.body;
+            if (!['approved', 'rejected'].includes(status)) {
+                return res.status(400).json({ success: false, message: "Status must be approved or rejected" });
+            }
+
+            let expires_at = null;
+            if (status === 'approved') {
+                expires_at = new Date();
+                expires_at.setHours(expires_at.getHours() + 24); // 24 hour window
+            }
+
+            await query(
+                `UPDATE biometric_requests 
+                 SET status = $1, remarks = $2, reviewed_at = CURRENT_TIMESTAMP, reviewed_by = $3, expires_at = $4
+                 WHERE id = $5`,
+                [status, remarks, admin.id, expires_at, request_id]
+            );
+
+            return res.status(200).json({ success: true, message: `Request successfully ${status}` });
         }
         else {
             return res.status(400).json({ error: "Invalid action: " + action });
