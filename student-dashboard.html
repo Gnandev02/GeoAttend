@@ -316,29 +316,31 @@
     <div id="biometricChoiceModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl scale-in-center">
             <div class="p-6 text-center border-b border-slate-50">
-                <h3 class="font-extrabold text-slate-900">Choose Verification</h3>
-                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Select your preferred method</p>
+                <h3 class="font-extrabold text-slate-900 text-lg">Verify Identity</h3>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Choose a verification method</p>
             </div>
-            <div class="p-6 space-y-3">
-                <button onclick="pickBiometric('face')" class="w-full p-4 bg-indigo-50 hover:bg-indigo-100 rounded-2xl flex items-center gap-4 transition-all group">
+            <div class="p-6 space-y-4">
+                <button onclick="pickBiometric('face')" class="w-full p-4 bg-slate-50 hover:bg-indigo-50 border border-slate-100 hover:border-indigo-200 rounded-2xl flex items-center gap-4 transition-all group">
                     <div class="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
                         <i data-lucide="scan-face" class="w-6 h-6"></i>
                     </div>
                     <div class="text-left">
-                        <p class="font-bold text-slate-800">Face Recognition</p>
-                        <p class="text-[10px] text-slate-400">Use device camera</p>
+                        <p class="font-bold text-slate-800">🧑 Face Authentication</p>
+                        <p class="text-[10px] text-slate-400">High-speed recognition</p>
                     </div>
                 </button>
-                <button onclick="pickBiometric('fingerprint')" class="w-full p-4 bg-amber-50 hover:bg-amber-100 rounded-2xl flex items-center gap-4 transition-all group">
+                <button onclick="pickBiometric('fingerprint')" class="w-full p-4 bg-slate-50 hover:bg-amber-50 border border-slate-100 hover:border-amber-200 rounded-2xl flex items-center gap-4 transition-all group">
                     <div class="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform">
                         <i data-lucide="fingerprint" class="w-6 h-6"></i>
                     </div>
                     <div class="text-left">
-                        <p class="font-bold text-slate-800">Fingerprint / Key</p>
-                        <p class="text-[10px] text-slate-400">Use device sensor</p>
+                        <p class="font-bold text-slate-800">👆 Fingerprint Authentication</p>
+                        <p class="text-[10px] text-slate-400">Device-native biometric</p>
                     </div>
                 </button>
-                <button onclick="closeBiometricChoice()" class="w-full p-3 text-slate-400 text-xs font-bold hover:text-slate-600 mt-2">Maybe Later</button>
+                <button onclick="closeBiometricChoice()" class="w-full p-3 text-slate-400 text-xs font-bold hover:text-slate-600 mt-2 transition-colors">
+                    Cancel
+                </button>
             </div>
         </div>
     </div>
@@ -656,6 +658,18 @@
             }
         }
 
+        async function getBiometricStatus() {
+            try {
+                const res = await fetch("/api/main?action=biometric-status", {
+                    headers: { "Authorization": "Bearer " + token }
+                });
+                return await res.json();
+            } catch (err) {
+                console.error("Fetch biometric status error:", err);
+                return { success: false };
+            }
+        }
+
         async function verifyFingerprint() {
             try {
                 const challengeRes = await fetch("/api/main?action=webauthn-auth-challenge", {
@@ -843,7 +857,7 @@
             }
         }
 
-        // STEP 2.5: HANDLE START TRACKING GATE
+        // STEP 2.5: HANDLE START TRACKING GATE (Intelligent Multi-Biometric Selection)
         async function handleStartTracking() {
             if (!faceAuthEnabled) {
                 startTracking();
@@ -851,47 +865,44 @@
             }
 
             try {
-                const res = await fetch("/api/main?action=get-student-profile", { headers: { "Authorization": "Bearer " + token } });
-                const { data } = await res.json();
+                const status = await getBiometricStatus();
+                if (!status.success) {
+                    showAlert("Could not verify identity settings.", false);
+                    return;
+                }
                 
-                const method = data.auth_method || 'face';
-                
-                if (method === 'both') {
-                    if (!data.face_registered && !data.fingerprint_registered) {
-                        if (confirm("Biometric Authentication is required, but you haven't registered any method. Setup now?")) {
-                            showSection('faceSection');
-                        }
-                        return;
-                    }
-                    // Show choice modal
+                // CASE 1: Both registered -> Show selection popup
+                if (status.face_registered && status.fingerprint_registered) {
                     document.getElementById('biometricChoiceModal').classList.remove('hidden');
-                } else if (method === 'fingerprint') {
-                    if (!data.fingerprint_registered) {
-                        if (confirm("Fingerprint Auth is your preference, but it's not registered. Setup now?")) {
-                            showSection('faceSection');
-                        }
-                        return;
-                    }
-                    const success = await verifyFingerprint();
-                    if (success) {
+                    return;
+                }
+                
+                // CASE 2: Only Face registered -> Open face verification directly
+                if (status.face_registered) {
+                    startFaceAction('gate');
+                    return;
+                }
+                
+                // CASE 3: Only Fingerprint registered -> Open fingerprint prompt directly
+                if (status.fingerprint_registered) {
+                    const ok = await verifyFingerprint();
+                    if (ok) {
                         isFaceVerifiedToday = true;
                         startTracking();
                     } else {
                         showAlert("Fingerprint verification failed.", false);
                     }
-                } else {
-                    // Default Face
-                    if (!data.face_registered) {
-                        if (confirm("Face Authentication is required, but you haven't registered your face yet. Setup now?")) {
-                            showSection('faceSection');
-                        }
-                        return;
-                    }
-                    startFaceAction('gate');
+                    return;
+                }
+                
+                // CASE 4: None registered -> Show error
+                showAlert("No biometric registered. Please register Face or Fingerprint first.", false);
+                if (confirm("Go to Identity Verification setup now?")) {
+                    showSection('faceSection');
                 }
             } catch (err) {
                 console.error("Gate check error:", err);
-                showAlert("Could not verify identity settings.", false);
+                showAlert("An error occurred during verification.", false);
             }
         }
 
@@ -1056,24 +1067,25 @@
 
         async function triggerBiometricVerification(type) {
             markTypePending = type;
-            const res = await fetch("/api/main?action=get-student-profile", { headers: { "Authorization": "Bearer " + token } });
-            const { data } = await res.json();
-            const method = data.auth_method || 'face';
-
-            if (method === 'fingerprint') {
-                const success = await verifyFingerprint();
-                if (success) {
-                    isFaceVerifiedToday = true;
-                    markAttendance(type);
+            try {
+                const status = await getBiometricStatus();
+                
+                // Case logic should be consistent with handleStartTracking
+                if (status.face_registered && status.fingerprint_registered) {
+                    document.getElementById('biometricChoiceModal').classList.remove('hidden');
+                } else if (status.fingerprint_registered) {
+                    const success = await verifyFingerprint();
+                    if (success) {
+                        isFaceVerifiedToday = true;
+                        markAttendance(type);
+                    }
+                } else if (status.face_registered) {
+                    startFaceAction('mark');
+                } else {
+                    showAlert("Identity verification required to continue tracking.", false);
                 }
-            } else if (method === 'both') {
-                // For auto-re-verify, we might just pick one or ask. 
-                // Usually auto-verify at boundary should be less intrusive.
-                // We'll ask if both are set.
-                document.getElementById('biometricChoiceModal').classList.remove('hidden');
-                // The pickBiometric will handle the rest.
-            } else {
-                startFaceAction('mark');
+            } catch (err) {
+                console.error("Auto-verify error:", err);
             }
         }
 

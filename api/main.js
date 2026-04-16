@@ -1566,6 +1566,25 @@ export default async function handler(req, res) {
 
             return res.status(200).json({ success: true, message: "Fingerprint data removed" });
         }
+
+        else if (action === "biometric-status") {
+            const student = await protectStudent(req);
+            if (!student) return res.status(401).json({ success: false, message: "Unauthorized" });
+
+            const result = await query(
+                'SELECT face_registered, fingerprint_registered, auth_method FROM students WHERE id = $1',
+                [student.id]
+            );
+
+            if (result.rows.length === 0) return res.status(404).json({ success: false, message: "Student not found" });
+
+            return res.status(200).json({ 
+                success: true, 
+                face_registered: result.rows[0].face_registered,
+                fingerprint_registered: result.rows[0].fingerprint_registered,
+                auth_method: result.rows[0].auth_method
+            });
+        }
         else {
             return res.status(400).json({ error: "Invalid action: " + action });
         }
