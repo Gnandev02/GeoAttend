@@ -459,20 +459,29 @@
                 </div>
                 
                 <div class="overflow-y-auto flex-1 h-full pb-10 scrollbar-hide">
-                    <table class="w-full text-left border-collapse">
-                        <thead class="bg-white sticky top-0 border-b border-slate-100 z-10 shadow-sm">
-                            <tr>
-                                <th class="py-4 px-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50/50 backdrop-blur-md">Student</th>
-                                <th class="py-4 px-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50/50 backdrop-blur-md">Biometric</th>
-                                <th class="py-4 px-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50/50 backdrop-blur-md">Action</th>
-                                <th class="py-4 px-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50/50 backdrop-blur-md">Requested At</th>
-                                <th class="py-4 px-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right bg-slate-50/50 backdrop-blur-md">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="table-approvals-body" class="divide-y divide-slate-100/50">
-                            <!-- JS populated -->
-                        </tbody>
-                    </table>
+                    <!-- Desktop Table View -->
+                    <div class="hidden md:block">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-white sticky top-0 border-b border-slate-100 z-10 shadow-sm">
+                                <tr>
+                                    <th class="py-4 px-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50/50 backdrop-blur-md">Student</th>
+                                    <th class="py-4 px-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50/50 backdrop-blur-md">Biometric</th>
+                                    <th class="py-4 px-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50/50 backdrop-blur-md">Action</th>
+                                    <th class="py-4 px-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50/50 backdrop-blur-md">Requested At</th>
+                                    <th class="py-4 px-8 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right bg-slate-50/50 backdrop-blur-md">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-approvals-body" class="divide-y divide-slate-100/50">
+                                <!-- JS populated -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Mobile Card View -->
+                    <div id="mobile-approvals-cards" class="md:hidden p-4 space-y-4">
+                        <!-- JS populated -->
+                    </div>
+
                     <div id="no-requests-msg" class="hidden p-20 text-center flex flex-col items-center justify-center space-y-4">
                         <div class="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center text-slate-300">
                             <i data-lucide="check-circle" class="w-8 h-8"></i>
@@ -1515,10 +1524,13 @@
 
         async function fetchBiometricRequests() {
             const tableBody = document.getElementById('table-approvals-body');
+            const mobileCards = document.getElementById('mobile-approvals-cards');
             const noMsg = document.getElementById('no-requests-msg');
             const statusFilter = document.getElementById('approval-status-filter').value;
             
-            tableBody.innerHTML = `<tr><td colspan="5" class="p-10 text-center text-slate-400 animate-pulse">Loading requests...</td></tr>`;
+            const loadingHtml = `<div class="p-10 text-center text-slate-400 animate-pulse">Loading requests...</div>`;
+            tableBody.innerHTML = `<tr><td colspan="5">${loadingHtml}</td></tr>`;
+            mobileCards.innerHTML = loadingHtml;
 
             try {
                 const res = await fetch(`/api/main?action=admin-biometric-requests-list&status=${statusFilter}`, {
@@ -1530,60 +1542,159 @@
                     const requests = data.requests || [];
                     if (requests.length === 0) {
                         tableBody.innerHTML = '';
+                        mobileCards.innerHTML = '';
                         noMsg.classList.remove('hidden');
                         return;
                     }
 
                     noMsg.classList.add('hidden');
-                    tableBody.innerHTML = requests.map(req => `
-                        <tr class="hover:bg-slate-50/50 transition-colors group">
-                            <td class="py-5 px-8">
-                                <p class="font-extrabold text-slate-800">${req.student_name}</p>
-                                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">${req.roll_number}</p>
-                            </td>
-                            <td class="py-5 px-8">
-                                <span class="px-2 py-1 rounded-lg bg-indigo-50 text-indigo-700 text-[10px] font-bold uppercase tracking-tighter">
-                                    ${req.biometric_type}
-                                </span>
-                            </td>
-                            <td class="py-5 px-8">
-                                <p class="text-xs font-bold text-slate-600 capitalize">${req.action_type.replace('-', ' ')}</p>
-                                <p class="text-[9px] text-slate-400 font-medium italic mt-0.5 truncate max-w-[200px]" title="${req.remarks || ''}">
-                                    "${req.remarks || 'No remarks provided'}"
-                                </p>
-                            </td>
-                            <td class="py-5 px-8">
-                                <p class="text-xs font-bold text-slate-600">${new Date(req.requested_at).toLocaleDateString()}</p>
-                                <p class="text-[9px] text-slate-400 font-bold uppercase">${new Date(req.requested_at).toLocaleTimeString()}</p>
-                            </td>
-                            <td class="py-5 px-8 text-right">
-                                ${req.status === 'pending' ? `
-                                    <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button onclick="reviewRequest(${req.id}, 'approved')" class="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white rounded-lg transition-all shadow-sm">
-                                            <i data-lucide="check" class="w-4 h-4"></i>
-                                        </button>
-                                        <button onclick="reviewRequest(${req.id}, 'rejected')" class="p-2 bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white rounded-lg transition-all shadow-sm">
-                                            <i data-lucide="x" class="w-4 h-4"></i>
-                                        </button>
-                                    </div>
-                                ` : `
-                                    <span class="text-[10px] font-bold uppercase tracking-widest ${req.status === 'approved' ? 'text-emerald-500' : 'text-slate-400'}">
-                                        ${req.status}
+                    
+                    // Render Table (Desktop)
+                    tableBody.innerHTML = requests.map(req => {
+                        const actionButtons = getActionButtons(req);
+                        return `
+                            <tr class="hover:bg-slate-50/50 transition-colors group">
+                                <td class="py-5 px-8">
+                                    <p class="font-extrabold text-slate-800">${req.student_name}</p>
+                                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">${req.roll_number}</p>
+                                </td>
+                                <td class="py-5 px-8">
+                                    <span class="px-2 py-1 rounded-lg bg-indigo-50 text-indigo-700 text-[10px] font-bold uppercase tracking-tighter">
+                                        ${req.biometric_type}
                                     </span>
-                                `}
-                            </td>
-                        </tr>
-                    `).join('');
+                                </td>
+                                <td class="py-5 px-8">
+                                    <p class="text-xs font-bold text-slate-600 capitalize">${req.action_type.replace('-', ' ')}</p>
+                                    <p class="text-[9px] text-slate-400 font-medium italic mt-0.5 truncate max-w-[200px]" title="${req.remarks || ''}">
+                                        "${req.remarks || 'No remarks provided'}"
+                                    </p>
+                                </td>
+                                <td class="py-5 px-8">
+                                    <p class="text-xs font-bold text-slate-600">${new Date(req.requested_at).toLocaleDateString()}</p>
+                                    <p class="text-[9px] text-slate-400 font-bold uppercase">${new Date(req.requested_at).toLocaleTimeString()}</p>
+                                </td>
+                                <td class="py-5 px-8 text-right">
+                                    <div class="flex justify-end items-center gap-2">
+                                        ${actionButtons}
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+
+                    // Render Cards (Mobile)
+                    mobileCards.innerHTML = requests.map(req => {
+                        const actionButtons = getActionButtons(req, true);
+                        return `
+                            <div class="premium-card p-5 space-y-4">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <h4 class="font-bold text-slate-900">${req.student_name}</h4>
+                                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">${req.roll_number}</p>
+                                    </div>
+                                    <span class="px-2 py-1 rounded-lg bg-indigo-50 text-indigo-700 text-[10px] font-bold uppercase tracking-widest">
+                                        ${req.biometric_type}
+                                    </span>
+                                </div>
+                                <div class="pt-2 border-t border-slate-50 flex flex-col gap-1">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Request:</span>
+                                        <span class="text-xs font-bold text-slate-600 capitalize">${req.action_type.replace('-', ' ')}</span>
+                                    </div>
+                                    <div class="flex flex-col gap-1">
+                                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Reason:</span>
+                                        <p class="text-xs text-slate-500 italic">"${req.remarks || 'No remarks provided'}"</p>
+                                    </div>
+                                </div>
+                                <div class="pt-2 flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                                    <span>${new Date(req.requested_at).toLocaleDateString()}</span>
+                                    <span>${new Date(req.requested_at).toLocaleTimeString()}</span>
+                                </div>
+                                <div class="pt-4 flex gap-2">
+                                    ${actionButtons}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+
                     lucide.createIcons();
                 }
             } catch (err) {
                 console.error("Fetch requests error:", err);
-                tableBody.innerHTML = '<tr><td colspan="5" class="p-10 text-center text-rose-500 font-bold">Failed to load requests</td></tr>';
+                const errorHtml = `<div class="p-10 text-center text-rose-500 font-bold">Failed to load requests</div>`;
+                tableBody.innerHTML = `<tr><td colspan="5">${errorHtml}</td></tr>`;
+                mobileCards.innerHTML = errorHtml;
+            }
+        }
+
+        function getActionButtons(req, isMobile = false) {
+            const btnClass = isMobile ? "flex-1 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all text-center" : "px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all";
+            
+            if (req.status === 'pending') {
+                return `
+                    <button onclick="approveBiometricRequest(${req.id})" class="${btnClass} bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white border border-emerald-100">
+                        Approve
+                    </button>
+                    <button onclick="rejectBiometricRequest(${req.id})" class="${btnClass} bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white border border-rose-100">
+                        Reject
+                    </button>
+                `;
+            } else if (req.status === 'approved' && req.action_type === 'remove') {
+                return `
+                    <button onclick="confirmRemoveBiometric(${req.id}, '${req.biometric_type}')" class="${btnClass} bg-indigo-600 text-white hover:bg-indigo-700 shadow-md w-full">
+                        Confirm Remove
+                    </button>
+                `;
+            } else {
+                const statusColors = {
+                    'approved': 'bg-emerald-100 text-emerald-700 border-emerald-200',
+                    'rejected': 'bg-rose-100 text-rose-700 border-rose-200',
+                    'completed': 'bg-blue-100 text-blue-700 border-blue-200'
+                };
+                const colorClass = statusColors[req.status] || 'bg-slate-100 text-slate-700 border-slate-200';
+                return `
+                    <span class="px-3 py-1 rounded-full border text-[10px] font-bold uppercase tracking-widest ${colorClass} ${isMobile ? 'w-full text-center' : ''}">
+                        ${req.status}
+                    </span>
+                `;
+            }
+        }
+
+        async function approveBiometricRequest(requestId) {
+            await reviewRequest(requestId, 'approved');
+        }
+
+        async function rejectBiometricRequest(requestId) {
+            await reviewRequest(requestId, 'rejected');
+        }
+
+        async function confirmRemoveBiometric(requestId, bioType) {
+            if (!confirm(`Permanently remove registered ${bioType.toUpperCase()} biometric for this student? This cannot be undone.`)) return;
+
+            try {
+                const res = await fetch("/api/main?action=admin-biometric-request-remove", {
+                    method: "POST",
+                    headers: { 
+                        "Content-Type": "application/json", 
+                        "Authorization": "Bearer " + token 
+                    },
+                    body: JSON.stringify({ request_id: requestId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`${bioType.toUpperCase()} removed successfully`, "success");
+                    fetchBiometricRequests();
+                } else {
+                    showToast(data.message, "error");
+                }
+            } catch (err) {
+                console.error("Remove request error:", err);
             }
         }
 
         async function reviewRequest(requestId, status) {
-            const remarks = prompt(`Enter optional remarks for ${status}:`, "");
+            const remarks = prompt(`Add optional ${status} remarks (sent to student):`, "");
+            if (remarks === null) return; // Cancelled prompt
             
             try {
                 const res = await fetch("/api/main?action=admin-biometric-request-review", {

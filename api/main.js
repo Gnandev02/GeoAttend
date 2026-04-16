@@ -1728,6 +1728,47 @@ export default async function handler(req, res) {
 
             return res.status(200).json({ success: true, message: `Request successfully ${status}` });
         }
+
+        else if (action === "admin-biometric-request-remove") {
+            const admin = await protectAdmin(req);
+            if (!admin) return res.status(401).json({ success: false, message: "Unauthorized" });
+
+            const { request_id } = req.body;
+            if (!request_id) return res.status(400).json({ success: false, message: "Missing request ID" });
+
+            // 1. Get request details
+            const reqRes = await query('SELECT * FROM biometric_requests WHERE id = $1', [request_id]);
+            if (reqRes.rows.length === 0) return res.status(404).json({ success: false, message: "Request not found" });
+            
+            const bioReq = reqRes.rows[0];
+            if (bioReq.status !== 'approved' || bioReq.action_type !== 'remove') {
+                return res.status(400).json({ success: false, message: "Only approved removal requests can be processed manually." });
+            }
+
+            // 2. Clear student biometric fields
+            if (bioReq.biometric_type === 'face') {
+                await query(
+                    'UPDATE students SET face_data = NULL, face_registered = false WHERE id = $1',
+                    [bioReq.student_id]
+                );
+            } else if (bioReq.biometric_type === 'fingerprint') {
+                await query(
+                    `UPDATE students 
+                     SET webauthn_credential_id = NULL, webauthn_public_key = NULL, fingerprint_registered = false 
+                     WHERE id = $1`,
+                    [bioReq.student_id]
+                );
+            }
+
+            // 3. Complete the request
+            await query(
+                'UPDATE biometric_requests SET status = \'completed\', reviewed_at = CURRENT_TIMESTAMP WHERE id = $1',
+                [request_id]
+            );
+
+            return res.status(200).json({ success: true, message: `${bioReq.biometric_type} biometric permanently removed.` });
+        }
+
         else {
             return res.status(400).json({ error: "Invalid action: " + action });
         }
