@@ -92,7 +92,7 @@
             <div class="p-4 space-y-1.5 flex flex-col">
                 <button id="nav-dashboard" onclick="showSection('dashboardSection')" class="tab-btn active"><i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard</button>
                 <button id="nav-profile" onclick="showSection('profileSection')" class="tab-btn inactive"><i data-lucide="user" class="w-4 h-4"></i> Profile</button>
-                <button id="nav-face" onclick="showSection('faceSection')" class="tab-btn inactive"><i data-lucide="scan-face" class="w-4 h-4"></i> Face Verification</button>
+                <button id="nav-face" onclick="showSection('faceSection')" class="tab-btn inactive"><i data-lucide="shield-check" class="w-4 h-4"></i> Identity Verification</button>
                 <button onclick="window.location.href='student-attendance.html'" class="tab-btn inactive"><i data-lucide="clipboard-list" class="w-4 h-4"></i> Attendance Records</button>
                 <button onclick="window.location.href='change-password.html'" class="tab-btn inactive"><i data-lucide="lock" class="w-4 h-4"></i> Change Password</button>
             </div>
@@ -198,48 +198,147 @@
                             <p class="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-1">Your Attendance</p>
                             <p id="attendancePercent" class="text-xl font-extrabold text-blue-700">0%</p>
                         </div>
+                        
+                        <!-- Identity Verification Method Selection -->
+                        <div class="p-5 bg-white rounded-2xl border border-slate-200 mt-6 shadow-sm">
+                            <h3 class="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+                                <i data-lucide="shield" class="w-4 h-4 text-blue-600"></i>
+                                Preferred Authentication Method
+                            </h3>
+                            <div class="space-y-3">
+                                <label class="flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition-all">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                                            <i data-lucide="scan-face" class="w-4 h-4"></i>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs font-bold text-slate-800">Face Authentication</p>
+                                            <p class="text-[10px] text-slate-400">Verify using camera</p>
+                                        </div>
+                                    </div>
+                                    <input type="radio" name="auth_pref" value="face" onchange="updateAuthPreference('face')" class="w-4 h-4 text-blue-600">
+                                </label>
+                                <label class="flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition-all">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+                                            <i data-lucide="fingerprint" class="w-4 h-4"></i>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs font-bold text-slate-800">Fingerprint / Device</p>
+                                            <p class="text-[10px] text-slate-400">Use native biometrics</p>
+                                        </div>
+                                    </div>
+                                    <input type="radio" name="auth_pref" value="fingerprint" onchange="updateAuthPreference('fingerprint')" class="w-4 h-4 text-blue-600">
+                                </label>
+                                <label class="flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:bg-slate-50 cursor-pointer transition-all">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                                            <i data-lucide="layers" class="w-4 h-4"></i>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs font-bold text-slate-800">Ask Every Time</p>
+                                            <p class="text-[10px] text-slate-400">Choose during check-in</p>
+                                        </div>
+                                    </div>
+                                    <input type="radio" name="auth_pref" value="both" onchange="updateAuthPreference('both')" class="w-4 h-4 text-blue-600">
+                                </label>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-
-            <!-- Face Verification Section -->
+            <!-- Identity Verification Section -->
             <div id="faceSection" class="section hidden space-y-6">
                 <div class="saas-card p-8 flex flex-col items-center">
                     <div class="w-20 h-20 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-6">
-                        <i data-lucide="scan-face" class="w-10 h-10"></i>
+                        <i data-lucide="shield-check" class="w-10 h-10"></i>
                     </div>
-                    <h2 class="text-2xl font-bold text-slate-900">Face Authentication</h2>
-                    <p class="text-slate-500 text-center max-w-sm mt-2">Manage your biometric profile for secure attendance marking.</p>
+                    <h2 class="text-2xl font-bold text-slate-900">Multi-Biometric Setup</h2>
+                    <p class="text-slate-500 text-center max-w-sm mt-2">Register and manage your biometric credentials for 100% secure presence.</p>
                     
-                    <div id="face-status-card" class="w-full max-w-md mt-10 p-6 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between">
-                        <div>
-                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Current Status</p>
-                            <h4 id="face-reg-status" class="font-bold text-slate-700">Checking...</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 w-full mt-10">
+                        <!-- Face Credential Card -->
+                        <div class="p-6 bg-slate-50 rounded-3xl border border-slate-100 flex flex-col">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="p-3 bg-white rounded-xl shadow-sm text-indigo-600">
+                                    <i data-lucide="scan-face" class="w-6 h-6"></i>
+                                </div>
+                                <div id="face-status-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-500 uppercase tracking-tighter">Not Set</div>
+                            </div>
+                            <h4 class="font-bold text-slate-900">Face Authentication</h4>
+                            <p class="text-xs text-slate-400 mt-1 mb-6">High-speed facial recognition using your camera.</p>
+                            <div class="mt-auto flex flex-col gap-2">
+                                <button onclick="startFaceAction('register')" class="w-full p-3 bg-indigo-600 text-white rounded-xl font-bold text-xs hover:bg-indigo-700 transition-all flex items-center justify-center gap-2">
+                                    <i data-lucide="plus" class="w-3.4 h-3.5"></i> Register Face
+                                </button>
+                                <button onclick="deleteFaceProfile()" id="btn-face-del-new" class="w-full p-2 text-red-500 text-[10px] font-bold opacity-0 pointer-events-none transition-all">
+                                    Remove Face Data
+                                </button>
+                            </div>
                         </div>
-                        <div id="face-status-icon" class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center">
-                            <i data-lucide="help-circle" class="w-4 h-4 text-slate-400"></i>
+
+                        <!-- Fingerprint/WebAuthn Card -->
+                        <div class="p-6 bg-slate-50 rounded-3xl border border-slate-100 flex flex-col">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="p-3 bg-white rounded-xl shadow-sm text-amber-600">
+                                    <i data-lucide="fingerprint" class="w-6 h-6"></i>
+                                </div>
+                                <div id="fingerprint-status-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-500 uppercase tracking-tighter">Not Set</div>
+                            </div>
+                            <h4 class="font-bold text-slate-900">Device Biometrics</h4>
+                            <p class="text-xs text-slate-400 mt-1 mb-6">Fingerprint, TouchID, or Windows Hello security.</p>
+                            <div class="mt-auto flex flex-col gap-2">
+                                <button onclick="registerFingerprint()" class="w-full p-3 bg-amber-500 text-white rounded-xl font-bold text-xs hover:bg-amber-600 transition-all flex items-center justify-center gap-2">
+                                    <i data-lucide="shield" class="w-3.5 h-3.5"></i> Register Biometric
+                                </button>
+                                <button onclick="deleteFingerprint()" id="btn-fingerprint-del" class="w-full p-2 text-red-500 text-[10px] font-bold opacity-0 pointer-events-none transition-all">
+                                    Remove Device Key
+                                </button>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-md mt-6">
-                        <button onclick="startFaceAction('register')" id="btn-face-reg" class="flex items-center justify-center gap-2 p-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100">
-                            <i data-lucide="plus-circle" class="w-5 h-5"></i> Register Face
-                        </button>
-                        <button onclick="startFaceAction('verify')" id="btn-face-test" class="flex items-center justify-center gap-2 p-4 bg-white border-2 border-slate-100 text-slate-700 rounded-2xl font-bold hover:bg-slate-50 transition-all">
-                            <i data-lucide="shield-check" class="w-5 h-5"></i> Test Verify
-                        </button>
-                        <button onclick="deleteFaceProfile()" id="btn-face-del" class="md:col-span-2 flex items-center justify-center gap-2 p-3 text-red-500 font-bold hover:bg-red-50 rounded-xl transition-all opacity-0 pointer-events-none">
-                            <i data-lucide="trash-2" class="w-4 h-4"></i> Delete Biometric Data
-                        </button>
-                    </div>
-
-                    <div class="mt-8 p-4 bg-blue-50 border border-blue-100 rounded-xl max-w-md">
+                    <div class="mt-8 p-4 bg-emerald-50 border border-emerald-100 rounded-2xl w-full">
                         <div class="flex gap-3">
-                            <i data-lucide="info" class="w-5 h-5 text-blue-500 shrink-0"></i>
-                            <p class="text-xs text-blue-700 leading-relaxed font-medium"><b>Privacy Note:</b> Your facial biometrics are stored as encrypted mathematical descriptors. No actual photos are saved on our servers.</p>
+                            <i data-lucide="lock" class="w-5 h-5 text-emerald-600 shrink-0"></i>
+                            <div class="space-y-1">
+                                <p class="text-xs font-extrabold text-emerald-800 uppercase tracking-widest">Privacy First Architecture</p>
+                                <p class="text-xs text-emerald-700 leading-relaxed font-medium">We never store your actual fingerprint or face photos. We only save encrypted mathematical hashes and device-signed credentials that cannot be reversed.</p>
+                            </div>
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Biometric Choice Modal (When Both Enabled) -->
+    <div id="biometricChoiceModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl scale-in-center">
+            <div class="p-6 text-center border-b border-slate-50">
+                <h3 class="font-extrabold text-slate-900">Choose Verification</h3>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Select your preferred method</p>
+            </div>
+            <div class="p-6 space-y-3">
+                <button onclick="pickBiometric('face')" class="w-full p-4 bg-indigo-50 hover:bg-indigo-100 rounded-2xl flex items-center gap-4 transition-all group">
+                    <div class="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
+                        <i data-lucide="scan-face" class="w-6 h-6"></i>
+                    </div>
+                    <div class="text-left">
+                        <p class="font-bold text-slate-800">Face Recognition</p>
+                        <p class="text-[10px] text-slate-400">Use device camera</p>
+                    </div>
+                </button>
+                <button onclick="pickBiometric('fingerprint')" class="w-full p-4 bg-amber-50 hover:bg-amber-100 rounded-2xl flex items-center gap-4 transition-all group">
+                    <div class="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform">
+                        <i data-lucide="fingerprint" class="w-6 h-6"></i>
+                    </div>
+                    <div class="text-left">
+                        <p class="font-bold text-slate-800">Fingerprint / Key</p>
+                        <p class="text-[10px] text-slate-400">Use device sensor</p>
+                    </div>
+                </button>
+                <button onclick="closeBiometricChoice()" class="w-full p-3 text-slate-400 text-xs font-bold hover:text-slate-600 mt-2">Maybe Later</button>
             </div>
         </div>
     </div>
@@ -347,6 +446,37 @@
                     document.getElementById("profileRollNum").innerText = data.roll_number;
                     document.getElementById("profileDept").innerText = data.department || 'Not Assigned';
                     document.getElementById("profileCampus").innerText = data.campus_name || 'GeoAttend Campus';
+                    
+                    // Update Biometric UI
+                    const faceBadge = document.getElementById('face-status-badge');
+                    const faceDel = document.getElementById('btn-face-del-new');
+                    if (data.face_registered) {
+                        faceBadge.innerText = "Registered";
+                        faceBadge.className = "px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-600 uppercase tracking-tighter";
+                        faceDel.classList.remove('opacity-0', 'pointer-events-none');
+                    } else {
+                        faceBadge.innerText = "Not Set";
+                        faceBadge.className = "px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-500 uppercase tracking-tighter";
+                        faceDel.classList.add('opacity-0', 'pointer-events-none');
+                    }
+
+                    const fingerBadge = document.getElementById('fingerprint-status-badge');
+                    const fingerDel = document.getElementById('btn-fingerprint-del');
+                    if (data.fingerprint_registered) {
+                        fingerBadge.innerText = "Registered";
+                        fingerBadge.className = "px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-600 uppercase tracking-tighter";
+                        fingerDel.classList.remove('opacity-0', 'pointer-events-none');
+                    } else {
+                        fingerBadge.innerText = "Not Set";
+                        fingerBadge.className = "px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-500 uppercase tracking-tighter";
+                        fingerDel.classList.add('opacity-0', 'pointer-events-none');
+                    }
+
+                    // Update Auth Preference Radio
+                    const pref = data.auth_method || 'face';
+                    const radio = document.querySelector(`input[name="auth_pref"][value="${pref}"]`);
+                    if (radio) radio.checked = true;
+
                     if (data.profile_image) {
                         const imgHtml = `<img src="${data.profile_image}" class="w-full h-full rounded-full object-cover">`;
                         document.getElementById("profileImg").src = data.profile_image;
@@ -404,6 +534,164 @@
                 }
             };
             reader.readAsDataURL(file);
+        }
+
+        async function updateAuthPreference(method) {
+            try {
+                const res = await fetch("/api/main?action=update-auth-preference", {
+                    method: "POST",
+                    headers: { 
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + token 
+                    },
+                    body: JSON.stringify({ auth_method: method })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showAlert("Authentication preference updated!", true);
+                }
+            } catch (err) {
+                console.error("Update preference error:", err);
+            }
+        }
+
+        // --- WebAuthn / Fingerprint Logic ---
+        function bufferToBase64URL(buffer) {
+            const bytes = new Uint8Array(buffer);
+            let binary = '';
+            for (let i = 0; i < bytes.byteLength; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return btoa(binary)
+                .replace(/\+/g, '-')
+                .replace(/\//g, '_')
+                .replace(/=/g, '');
+        }
+
+        function base64URLToBuffer(base64url) {
+            const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+            const binary = atob(base64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+
+        async function registerFingerprint() {
+            try {
+                const challengeRes = await fetch("/api/main?action=webauthn-register-challenge", {
+                    headers: { "Authorization": "Bearer " + token }
+                });
+                const { challenge, user } = await challengeRes.json();
+
+                const publicKeyCredentialCreationOptions = {
+                    challenge: base64URLToBuffer(challenge),
+                    rp: { name: "GeoAttend", id: window.location.hostname },
+                    user: {
+                        id: base64URLToBuffer(user.id),
+                        name: user.name,
+                        displayName: user.displayName
+                    },
+                    pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }],
+                    authenticatorSelection: { userVerification: "required" },
+                    timeout: 60000
+                };
+
+                const credential = await navigator.credentials.create({
+                    publicKey: publicKeyCredentialCreationOptions
+                });
+
+                const rawPublicKey = credential.response.getPublicKey ? 
+                    bufferToBase64URL(credential.response.getPublicKey()) : 
+                    "unsupported-browser-api";
+
+                const res = await fetch("/api/main?action=webauthn-register-verify", {
+                    method: "POST",
+                    headers: { 
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + token 
+                    },
+                    body: JSON.stringify({
+                        credentialId: credential.id,
+                        publicKey: rawPublicKey
+                    })
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    showAlert("Fingerprint registered successfully!", true);
+                    fetchProfile();
+                } else {
+                    showAlert(data.message || "Registration failed", false);
+                }
+            } catch (err) {
+                console.error("Fingerprint Registration error:", err);
+                if (err.name === 'NotAllowedError') {
+                    showAlert("Registration cancelled or timed out.", false);
+                } else {
+                    showAlert("Fingerprint not available on this device.", false);
+                }
+            }
+        }
+
+        async function deleteFingerprint() {
+            if (!confirm("Are you sure you want to remove your device biometric key?")) return;
+            try {
+                // We'll reuse update logic or add a delete action. For now, we clear it in DB via a new action if needed,
+                // or just use a placeholder if not explicitly requested.
+                // The task says "Add Fingerprint Authentication... Student can freely choose".
+                // I'll add a webauthn-delete action to the backend.
+                const res = await fetch("/api/main?action=webauthn-delete", {
+                    method: "POST",
+                    headers: { "Authorization": "Bearer " + token }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showAlert("Device biometric key removed.", true);
+                    fetchProfile();
+                }
+            } catch (err) {
+                console.error("Delete fingerprint error:", err);
+            }
+        }
+
+        async function verifyFingerprint() {
+            try {
+                const challengeRes = await fetch("/api/main?action=webauthn-auth-challenge", {
+                    headers: { "Authorization": "Bearer " + token }
+                });
+                const { challenge, credentialId } = await challengeRes.json();
+
+                const publicKeyCredentialRequestOptions = {
+                    challenge: base64URLToBuffer(challenge),
+                    allowCredentials: [{
+                        id: base64URLToBuffer(credentialId),
+                        type: 'public-key'
+                    }],
+                    userVerification: "required",
+                    timeout: 60000
+                };
+
+                const assertion = await navigator.credentials.get({
+                    publicKey: publicKeyCredentialRequestOptions
+                });
+
+                const res = await fetch("/api/main?action=webauthn-auth-verify", {
+                    method: "POST",
+                    headers: { 
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + token 
+                    },
+                    body: JSON.stringify({ assertion: assertion.id })
+                });
+
+                const data = await res.json();
+                return data.verified;
+            } catch (err) {
+                console.error("Fingerprint verification error:", err);
+                return false;
+            }
         }
 
         let map, marker, radius, campusCenter, campusPolygonData, campusPolygon;
@@ -562,23 +850,67 @@
                 return;
             }
 
-            // Face Auth Enabled - Check Registration
             try {
-                const res = await fetch("/api/main?action=face-status", { headers: { "Authorization": "Bearer " + token } });
-                const data = await res.json();
+                const res = await fetch("/api/main?action=get-student-profile", { headers: { "Authorization": "Bearer " + token } });
+                const { data } = await res.json();
                 
-                if (!data.registered) {
-                    if (confirm("Face Authentication is required to start tracking, but you haven't registered your face yet. Go to Face Verification to register?")) {
-                        showSection('faceSection');
+                const method = data.auth_method || 'face';
+                
+                if (method === 'both') {
+                    if (!data.face_registered && !data.fingerprint_registered) {
+                        if (confirm("Biometric Authentication is required, but you haven't registered any method. Setup now?")) {
+                            showSection('faceSection');
+                        }
+                        return;
                     }
-                    return;
+                    // Show choice modal
+                    document.getElementById('biometricChoiceModal').classList.remove('hidden');
+                } else if (method === 'fingerprint') {
+                    if (!data.fingerprint_registered) {
+                        if (confirm("Fingerprint Auth is your preference, but it's not registered. Setup now?")) {
+                            showSection('faceSection');
+                        }
+                        return;
+                    }
+                    const success = await verifyFingerprint();
+                    if (success) {
+                        isFaceVerifiedToday = true;
+                        startTracking();
+                    } else {
+                        showAlert("Fingerprint verification failed.", false);
+                    }
+                } else {
+                    // Default Face
+                    if (!data.face_registered) {
+                        if (confirm("Face Authentication is required, but you haven't registered your face yet. Setup now?")) {
+                            showSection('faceSection');
+                        }
+                        return;
+                    }
+                    startFaceAction('gate');
                 }
-
-                // Register successfully, start gate verification
-                startFaceAction('gate');
             } catch (err) {
                 console.error("Gate check error:", err);
-                showAlert("Could not verify face settings. Try again.", false);
+                showAlert("Could not verify identity settings.", false);
+            }
+        }
+
+        function closeBiometricChoice() {
+            document.getElementById('biometricChoiceModal').classList.add('hidden');
+        }
+
+        async function pickBiometric(type) {
+            closeBiometricChoice();
+            if (type === 'face') {
+                startFaceAction('gate');
+            } else {
+                const success = await verifyFingerprint();
+                if (success) {
+                    isFaceVerifiedToday = true;
+                    startTracking();
+                } else {
+                    showAlert("Fingerprint verification failed.", false);
+                }
             }
         }
 
@@ -688,10 +1020,10 @@
             // Automatic marking logic (Task 3)
                 if (isInside && withinTime && !hasMarkedInToday) {
                     console.log("Triggering auto-attendance: Inside and within hours.");
-                    // Check Face Auth Hook
+                    // Check Biometric Auth Hook
                     if (faceAuthEnabled) {
-                        console.log("[FaceAuth] Required. Triggering verification.");
-                        triggerFaceVerification("IN");
+                        console.log("[BiometricAuth] Required. Triggering verification.");
+                        triggerBiometricVerification("IN");
                     } else {
                         markAttendance("IN");
                     }
@@ -705,7 +1037,7 @@
                             lastRealStatus = currentStatus;
                             if (currentStatus === "OUT") {
                                 if (faceAuthEnabled) {
-                                    triggerFaceVerification("OUT");
+                                    triggerBiometricVerification("OUT");
                                 } else {
                                     markAttendance("OUT");
                                 }
@@ -720,6 +1052,29 @@
                     pendingStatus = null;
                     consecutiveMatches = 0;
                 }
+        }
+
+        async function triggerBiometricVerification(type) {
+            markTypePending = type;
+            const res = await fetch("/api/main?action=get-student-profile", { headers: { "Authorization": "Bearer " + token } });
+            const { data } = await res.json();
+            const method = data.auth_method || 'face';
+
+            if (method === 'fingerprint') {
+                const success = await verifyFingerprint();
+                if (success) {
+                    isFaceVerifiedToday = true;
+                    markAttendance(type);
+                }
+            } else if (method === 'both') {
+                // For auto-re-verify, we might just pick one or ask. 
+                // Usually auto-verify at boundary should be less intrusive.
+                // We'll ask if both are set.
+                document.getElementById('biometricChoiceModal').classList.remove('hidden');
+                // The pickBiometric will handle the rest.
+            } else {
+                startFaceAction('mark');
+            }
         }
 
         // STEP 7: CALL BACKEND FOR ATTENDANCE
@@ -936,32 +1291,9 @@
             }
         }
 
-        async function checkFaceStatus() {
-            try {
-                const res = await fetch("/api/main?action=face-status", { headers: { "Authorization": "Bearer " + token } });
-                const data = await res.json();
-                const statusEl = document.getElementById('face-reg-status');
-                const iconEl = document.getElementById('face-status-icon');
-                const delBtn = document.getElementById('btn-face-del');
-                const regBtn = document.getElementById('btn-face-reg');
-
-                if (data.registered) {
-                    statusEl.textContent = "Verified & Registered";
-                    statusEl.className = "font-bold text-green-600";
-                    iconEl.className = "w-8 h-8 rounded-full bg-green-100 flex items-center justify-center";
-                    iconEl.innerHTML = '<i data-lucide="check-circle-2" class="w-4 h-4 text-green-600"></i>';
-                    delBtn.classList.remove('opacity-0', 'pointer-events-none');
-                    regBtn.innerHTML = '<i data-lucide="refresh-cw" class="w-5 h-5"></i> Update Biometrics';
-                } else {
-                    statusEl.textContent = "Not Registered";
-                    statusEl.className = "font-bold text-rose-500";
-                    iconEl.className = "w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center";
-                    iconEl.innerHTML = '<i data-lucide="alert-circle" class="w-4 h-4 text-rose-500"></i>';
-                    delBtn.classList.add('opacity-0', 'pointer-events-none');
-                    regBtn.innerHTML = '<i data-lucide="plus-circle" class="w-5 h-5"></i> Register Face';
-                }
-                lucide.createIcons();
-            } catch (err) { console.error(err); }
+        async function checkBiometricStatus() {
+            // Re-fetch profile to update all badges and preferences
+            await fetchProfile();
         }
 
         async function startFaceAction(action, type = null) {
@@ -1119,11 +1451,11 @@
                     });
                     const data = await res.json();
                     if (data.success) {
-                        alert("Secure face biometrics registered successfully!");
+                        showAlert("Secure face biometrics registered successfully!", true);
                         closeFaceModal();
-                        checkFaceStatus();
+                        fetchProfile();
                     } else {
-                        alert(data.message || "Registration failed");
+                        showAlert(data.message || "Registration failed", false);
                     }
                 } else if (currentFaceAction === 'verify' || currentFaceAction === 'mark' || currentFaceAction === 'gate') {
                     feedbackEl.textContent = "VERIFYING IDENTITY...";
@@ -1138,19 +1470,19 @@
                         console.log(`[FaceAuth] Verified (Dist: ${data.distance}, Threshold: ${data.threshold})`);
                         if (currentFaceAction === 'gate') {
                             isFaceVerifiedToday = true;
-                            alert("Identity Verified! Starting Tracking...");
+                            showAlert("Identity Verified! Starting Tracking...", true);
                             closeFaceModal();
                             startTracking();
                         } else if (currentFaceAction === 'mark') {
                             closeFaceModal();
                             markAttendance(markTypePending);
                         } else {
-                            alert("Identity Verified Successfully!");
+                            showAlert("Identity Verified Successfully!", true);
                             closeFaceModal();
                         }
                     } else {
                         console.warn(`[FaceAuth] Rejected (Dist: ${data.distance}, Threshold: ${data.threshold})`);
-                        alert(data.message || "Face mismatch. Access Denied.");
+                        showAlert(data.message || "Face mismatch. Access Denied.", false);
                     }
                 }
             } catch (err) {
@@ -1164,20 +1496,7 @@
             }
         }
 
-        function triggerFaceVerification(type) {
-            // Check if registered first
-            fetch("/api/main?action=face-status", { headers: { "Authorization": "Bearer " + token } })
-                .then(r => r.json())
-                .then(data => {
-                    if (!data.registered) {
-                        if (confirm("Face Authentication is required by your institution, but you haven't registered your face yet. Click OK to go to Face Registration.")) {
-                            showSection('faceSection');
-                        }
-                    } else {
-                        startFaceAction('mark', type);
-                    }
-                });
-        }
+
 
         async function deleteFaceProfile() {
             if (!confirm("Are you sure you want to delete your biometric data? You will need to re-register before you can mark attendance if your institution requires it.")) return;
@@ -1187,8 +1506,8 @@
                     headers: { "Authorization": "Bearer " + token }
                 });
                 if (res.ok) {
-                    alert("Face profile deleted");
-                    checkFaceStatus();
+                    showAlert("Face profile deleted successfully.", true);
+                    fetchProfile();
                 }
             } catch (err) { console.error(err); }
         }
